@@ -1,26 +1,24 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { auth } from '../firebase';
+import { useAuthState } from 'react-firebase-hooks/auth';
 import { signOut } from 'firebase/auth';
 
 export default function Dashboard() {
+  const [user, loading] = useAuthState(auth);
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    await signOut(auth);
-    navigate('/login');
-  };
+  if (loading) return <p>Carregando...</p>;
+  if (!user) return <p>Redirecionando ao login...</p>;
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>Bem-vindo(a)!</h1>
-      <button onClick={handleLogout}>Sair</button>
-      <hr/>
-      <h2>O que deseja fazer?</h2>
-      <ul>
-        <li><Link to="/upload">Upload de Documento</Link></li>
-        <li><Link to="/games">Jogos</Link></li>
-      </ul>
+    <div style={{padding:20}}>
+      <h2>Bem-vindo, {user.name}</h2>
+      <button onClick={()=>navigate('/upload')}>Upload de Documento</button>
+      <button onClick={()=>navigate('/games')}>Jogos</button>
+      <button onClick={async ()=>{ await signOut(auth); navigate('/login'); }}>
+        Sair
+      </button>
     </div>
   );
 }

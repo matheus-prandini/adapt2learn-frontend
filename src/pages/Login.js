@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { auth, googleProvider } from "../firebase";
 import {
   signInWithEmailAndPassword,
@@ -37,6 +38,7 @@ export default function Login() {
         <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Senha" required/>
         <button type="submit">Entrar</button>
       </form>
+      <p>Não tem conta? <Link to="/register">Cadastre-se</Link></p>
       <button onClick={handleGoogleSignIn}>
         Entrar com Google
       </button>
