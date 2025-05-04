@@ -1,29 +1,44 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import Upload from './pages/Upload';
-import Games from './pages/Games';
-import PrivateRoute from './components/PrivateRoute';
+import React from 'react'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import Login from './pages/Login'
+import Register from './pages/Register'
+import Dashboard from './pages/Dashboard'
+import Upload from './pages/Upload'
+import Games from './pages/Games'
+import GameSelect from './pages/GameSelect'
+import PrivateRoute from './components/PrivateRoute'
 
-function App() {
+export default function App() {
   return (
     <Routes>
-      <Route path="/login" element={<Login/>} />
-      <Route path="/register" element={<Register/>} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+
       <Route path="/" element={
-        <PrivateRoute><Dashboard/></PrivateRoute>
-      } />
+        <PrivateRoute>
+          <Dashboard/>
+        </PrivateRoute>
+      }/>
+
       <Route path="/upload" element={
-        <PrivateRoute><Upload/></PrivateRoute>
-      } />
+        <PrivateRoute>
+          <Upload/>
+        </PrivateRoute>
+      }/>
+
       <Route path="/games" element={
-        <PrivateRoute><Games/></PrivateRoute>
-      } />
+        <PrivateRoute>
+          <Games/>
+        </PrivateRoute>
+      }/>
+
+      <Route path="/games/:gameId/select" element={
+        <PrivateRoute>
+          <GameSelect/>
+        </PrivateRoute>
+      }/>
+
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-  );
+  )
 }
-
-export default App;

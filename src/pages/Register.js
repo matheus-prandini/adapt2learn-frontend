@@ -1,72 +1,76 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { auth } from '../firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth, googleProvider } from '../firebase';
+import { signInWithPopup, signOut } from 'firebase/auth';
 
 export default function Register() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [grade, setGrade] = useState('');
   const [school, setSchool] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const schoolOptions = [
-    'Colégio Objetivo',
-  ];
+  const schoolOptions = [ 'Colégio Objetivo', 'Escola ABC', 'Escola Municipal XYZ' ];
 
-  const handleSubmit = async e => {
-    e.preventDefault();
+  const handleGoogleRegister = async () => {
+    setLoading(true);
     try {
-      const res = await fetch('/api/signup', {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      const token = await user.getIdToken();
+
+      const res = await fetch('http://localhost:8080/api/signup-google', {
         method: 'POST',
-        headers: { 'Content-Type':'application/json' },
+        headers: {
+          'Content-Type':'application/json',
+          Authorization: 'Bearer ' + token
+        },
         body: JSON.stringify({
-          name,
-          mail: email,
-          password,
           birth_date: birthDate,
           grade_level: grade,
           school_id: school
         })
       });
-      if (!res.ok) throw new Error(await res.text());
-      await signInWithEmailAndPassword(auth, email, password);
+      if (!res.ok) {
+        await signOut(auth);
+        throw new Error(await res.text());
+      }
+
       navigate('/');
     } catch(err) {
-      alert('Erro no cadastro: ' + err.message);
+      alert('Erro no cadastro com Google: ' + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div style={{maxWidth:400,margin:'auto',padding:20}}>
       <h2>Cadastro</h2>
-      <form onSubmit={handleSubmit}>
-        <input required placeholder="Nome" value={name} onChange={e=>setName(e.target.value)} />
-        <input required type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} />
-        <input required type="password" placeholder="Senha" value={password} onChange={e=>setPassword(e.target.value)} />
-        <input required type="date" placeholder="Data de Nascimento" value={birthDate} onChange={e=>setBirthDate(e.target.value)} />
-        <input required placeholder="Série / Ano" value={grade} onChange={e=>setGrade(e.target.value)} />
+      <p>Preencha seus dados e depois clique em “Cadastrar com Google”:</p>
 
-        <input
-          required
-          list="schools"
-          placeholder="Nome da Escola"
-          value={school}
-          onChange={e=>setSchool(e.target.value)}
-        />
-        <datalist id="schools">
-          {schoolOptions.map(s => (
-            <option key={s} value={s} />
-          ))}
-        </datalist>
+      <input required type="date"
+             placeholder="Data de Nascimento"
+             value={birthDate}
+             onChange={e=>setBirthDate(e.target.value)} />
 
-        <button type="submit">Cadastrar</button>
-      </form>
-      <p>
-        Já tem conta? <Link to="/login">Entre aqui</Link>
-      </p>
+      <input required placeholder="Série / Ano"
+             value={grade}
+             onChange={e=>setGrade(e.target.value)} />
+
+      <input required list="schools"
+             placeholder="Nome da Escola"
+             value={school}
+             onChange={e=>setSchool(e.target.value)} />
+      <datalist id="schools">
+        {schoolOptions.map(s => <option key={s} value={s}/>)}
+      </datalist>
+
+      <button onClick={handleGoogleRegister} disabled={loading}>
+        {loading ? 'Cadastrando…' : 'Cadastrar com Google'}
+      </button>
+
+      <p>Já tem conta? <Link to="/login">Entre aqui</Link></p>
     </div>
   );
 }

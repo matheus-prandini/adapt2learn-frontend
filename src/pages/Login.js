@@ -1,43 +1,41 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Link } from 'react-router-dom';
-import { auth, googleProvider } from "../firebase";
+import { useNavigate, Link } from 'react-router-dom';
+import { auth, googleProvider } from '../firebase';
 import {
   signInWithEmailAndPassword,
-  signInWithPopup
-} from "firebase/auth";
+  signInWithPopup,
+  signOut
+} from 'firebase/auth';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
-  const handleSubmit = async e => {
-    e.preventDefault();
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      navigate('/');
-    } catch (err) {
-      alert(err.message);
-    }
+
+  const checkProfile = async (token) => {
+    const res = await fetch('http://localhost:8080/api/me', {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    return res.ok;
   };
 
-  async function handleGoogleSignIn() {
+  const handleGoogleSignIn = async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      navigate("/");
+      const token = await result.user.getIdToken();
+      if (!await checkProfile(token)) {
+        await signOut(auth);
+        alert("Usuário não cadastrado. Faça o registro primeiro.");
+        return;
+      }
+      navigate('/');
     } catch (err) {
       alert("Erro ao entrar com Google: " + err.message);
     }
-  }
+  };
 
   return (
     <div>
-      <form onSubmit={handleSubmit}>
-        <h2>Login</h2>
-        <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" required/>
-        <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Senha" required/>
-        <button type="submit">Entrar</button>
-      </form>
       <p>Não tem conta? <Link to="/register">Cadastre-se</Link></p>
       <button onClick={handleGoogleSignIn}>
         Entrar com Google

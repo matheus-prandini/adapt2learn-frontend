@@ -10,10 +10,10 @@ export default function Dashboard() {
 
   if (loading) return <p>Carregando...</p>;
   if (!user) return <p>Redirecionando ao login...</p>;
-
+  console.log(user)
   return (
     <div style={{padding:20}}>
-      <h2>Bem-vindo, {user.name}</h2>
+      <h2>Bem-vindo, {user.displayName}</h2>
       <button onClick={()=>navigate('/upload')}>Upload de Documento</button>
       <button onClick={()=>navigate('/games')}>Jogos</button>
       <button onClick={async ()=>{ await signOut(auth); navigate('/login'); }}>
