@@ -1,16 +1,22 @@
-// src/pages/GameSelect.js
 import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate }    from 'react-router-dom'
 import { auth }                        from '../firebase'
 
 export default function GameSelect() {
-  const { state }    = useLocation()
-  const { game }     = state || {}
-  const navigate     = useNavigate()
+  const { state }             = useLocation()
+  const { game }              = state || {}
+  const navigate              = useNavigate()
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [discipline, setDiscipline] = useState('')
+  const [subarea, setSubarea]       = useState('')
 
-  // Se não veio o game, volta pra lista
+  // opções estáticas (você pode buscar da API futuramente)
+  const disciplineOptions = ['Matemática']
+  const subareaOptionsMap = { 'Matemática': ['Geometria'] }
+  const subareas = discipline ? subareaOptionsMap[discipline] : []
+
+  // 1) Se não veio o “game” redireciona
   useEffect(() => {
     if (!game) {
       navigate('/games')
@@ -33,14 +39,6 @@ export default function GameSelect() {
     })()
   }, [game, navigate])
 
-  const [discipline, setDiscipline] = useState('')
-  const [subarea, setSubarea]       = useState('')
-
-  // TODO: buscar de verdade na API
-  const disciplineOptions   = ['Matemática']
-  const subareaOptionsMap   = { 'Matemática': ['Geometria'] }
-  const subareas = discipline ? subareaOptionsMap[discipline] : []
-
   if (loading) {
     return <p style={{ padding:20, textAlign:'center' }}>Carregando…</p>
   }
@@ -56,7 +54,10 @@ export default function GameSelect() {
         <label>Disciplina:</label>
         <select
           value={discipline}
-          onChange={e => setDiscipline(e.target.value)}
+          onChange={e => {
+            setDiscipline(e.target.value)
+            setSubarea('')
+          }}
           style={{ width:'100%', padding:8, marginTop:4 }}
         >
           <option value="">Selecione…</option>
@@ -84,7 +85,8 @@ export default function GameSelect() {
       <button
         onClick={() => {
           const qs = new URLSearchParams({
-            school_id: profile.school_id,
+            user_id:    profile.uid,
+            school_id:  profile.school_id,
             discipline,
             subarea
           }).toString()

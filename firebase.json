@@ -1,7 +1,11 @@
 {
   "hosting": {
     "public": "build",
-    "ignore": ["firebase.json","**/.*","**/node_modules/**"],
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
     "rewrites": [
       {
         "source": "/api/**",
@@ -11,8 +15,12 @@
         }
       },
       {
-        "source": "/games/**",
+        "source": "/games/maze-revolution/**",
         "destination": "/games/maze-revolution/index.html"
+      },
+      {
+        "source": "/games/new-maze-revolution/**",
+        "destination": "/games/new-maze-revolution/index.html"
       },
       {
         "source": "**",

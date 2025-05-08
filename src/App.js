@@ -32,11 +32,7 @@ export default function App() {
         </PrivateRoute>
       }/>
 
-      <Route path="/games/:gameId/select" element={
-        <PrivateRoute>
-          <GameSelect/>
-        </PrivateRoute>
-      }/>
+      <Route path="/launch"   element={<PrivateRoute><GameSelect/></PrivateRoute>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
