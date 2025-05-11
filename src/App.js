@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
-import Upload from './pages/Upload'
+import Documents from './pages/Documents'
 import Games from './pages/Games'
 import GameSelect from './pages/GameSelect'
 import PrivateRoute from './components/PrivateRoute'
@@ -20,9 +20,9 @@ export default function App() {
         </PrivateRoute>
       }/>
 
-      <Route path="/upload" element={
+      <Route path="/documents" element={
         <PrivateRoute>
-          <Upload/>
+          <Documents/>
         </PrivateRoute>
       }/>
 

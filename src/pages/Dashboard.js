@@ -14,7 +14,7 @@ export default function Dashboard() {
   return (
     <div style={{padding:20}}>
       <h2>Bem-vindo, {user.displayName}</h2>
-      <button onClick={()=>navigate('/upload')}>Upload de Documento</button>
+      <button onClick={()=>navigate('/documents')}>Documentos</button>
       <button onClick={()=>navigate('/games')}>Jogos</button>
       <button onClick={async ()=>{ await signOut(auth); navigate('/login'); }}>
         Sair

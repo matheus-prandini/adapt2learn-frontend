@@ -8,15 +8,11 @@ export default function GameSelect() {
   const navigate              = useNavigate()
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [docsList, setDocsList] = useState([])
   const [discipline, setDiscipline] = useState('')
   const [subarea, setSubarea]       = useState('')
 
-  // opções estáticas (você pode buscar da API futuramente)
-  const disciplineOptions = ['Matemática']
-  const subareaOptionsMap = { 'Matemática': ['Geometria'] }
-  const subareas = discipline ? subareaOptionsMap[discipline] : []
-
-  // 1) Se não veio o “game” redireciona
+  // 1) Se não veio o “game” redireciona e carrega perfil + documentos
   useEffect(() => {
     if (!game) {
       navigate('/games')
@@ -25,11 +21,21 @@ export default function GameSelect() {
     ;(async () => {
       try {
         const token = await auth.currentUser.getIdToken()
-        const res   = await fetch('http://localhost:8080/api/me', {
+        // busca perfil
+        const profileRes = await fetch('http://localhost:8080/api/me', {
           headers: { Authorization: 'Bearer ' + token }
         })
-        if (!res.ok) throw new Error('Não foi possível carregar seu perfil')
-        setProfile(await res.json())
+        if (!profileRes.ok) throw new Error('Não foi possível carregar seu perfil')
+        const user = await profileRes.json()
+        setProfile(user)
+
+        // busca documentos para extrair disciplinas e subáreas
+        const docsRes = await fetch('http://localhost:8080/api/documents', {
+          headers: { Authorization: 'Bearer ' + token }
+        })
+        if (!docsRes.ok) throw new Error('Falha ao carregar documentos')
+        const docs  = await docsRes.json()
+        setDocsList(docs)
       } catch (err) {
         console.error(err)
         navigate('/games')
@@ -42,6 +48,16 @@ export default function GameSelect() {
   if (loading) {
     return <p style={{ padding:20, textAlign:'center' }}>Carregando…</p>
   }
+
+  // gera opções únicas de disciplinas e subáreas a partir dos documentos
+  const disciplineOptions = Array.from(new Set(docsList.map(d => d.discipline)))
+  const subareaOptions   = discipline
+    ? Array.from(new Set(
+        docsList
+          .filter(d => d.discipline === discipline)
+          .map(d => d.subarea)
+      ))
+    : []
 
   return (
     <div style={{ maxWidth:400, margin:'auto', padding:20 }}>
@@ -76,7 +92,7 @@ export default function GameSelect() {
           style={{ width:'100%', padding:8, marginTop:4 }}
         >
           <option value="">Selecione…</option>
-          {subareas.map(s => (
+          {subareaOptions.map(s => (
             <option key={s} value={s}>{s}</option>
           ))}
         </select>
