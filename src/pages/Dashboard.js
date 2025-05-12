@@ -1,16 +1,17 @@
+// src/pages/Dashboard.js
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { auth } from '../firebase';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { signOut } from 'firebase/auth';
+import { useNavigate }           from 'react-router-dom';
+import { auth }                  from '../firebase';
+import { useAuthState }          from 'react-firebase-hooks/auth';
+import { signOut }               from 'firebase/auth';
 
 export default function Dashboard() {
-  const [user, loadingAuth] = useAuthState(auth);
-  const [profile, setProfile] = useState(null);
+  const [user, loadingAuth]       = useAuthState(auth);
+  const [profile, setProfile]     = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
-  const navigate = useNavigate();
+  const navigate                  = useNavigate();
 
-  // Load profile to determine role
+  // Carrega perfil para saber o papel
   useEffect(() => {
     if (!user) {
       setLoadingProfile(false);
@@ -19,12 +20,11 @@ export default function Dashboard() {
     (async () => {
       try {
         const token = await auth.currentUser.getIdToken();
-        const res = await fetch('http://localhost:8080/api/me', {
+        const res   = await fetch('http://localhost:8080/api/me', {
           headers: { Authorization: 'Bearer ' + token }
         });
         if (!res.ok) throw new Error('Falha ao carregar perfil');
-        const data = await res.json();
-        setProfile(data);
+        setProfile(await res.json());
       } catch (err) {
         console.error(err);
       } finally {
@@ -34,11 +34,11 @@ export default function Dashboard() {
   }, [user]);
 
   if (loadingAuth || loadingProfile) {
-    return <p style={{ padding: 20, textAlign: 'center' }}>Carregando...</p>;
+    return <p style={{ padding:20, textAlign:'center' }}>Carregando…</p>;
   }
   if (!user) {
     navigate('/login');
-    return <p style={{ padding: 20, textAlign: 'center' }}>Redirecionando ao login...</p>;
+    return <p style={{ padding:20, textAlign:'center' }}>Redirecionando ao login…</p>;
   }
 
   const isTeacher = profile?.role === 'teacher';
@@ -53,23 +53,22 @@ export default function Dashboard() {
       boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
       textAlign: 'center'
     }}>
-      <h2 style={{ color: '#1565c0', marginBottom: 12 }}>🎉 Olá, {user.displayName || 'Amigo'}!</h2>
-      <p style={{ marginBottom: 24, fontSize: 16, color: '#333' }}>
+      <h2 style={{ color: '#1565c0', marginBottom: 12 }}>
+        🎉 Olá, {user.displayName || 'Amigo'}!
+      </h2>
+      <p style={{ marginBottom: 24, fontSize:16, color:'#333' }}>
         Escolha uma opção para começar:
       </p>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
         {isTeacher && (
           <button
             onClick={() => navigate('/documents')}
             style={{
-              padding: 12,
-              fontSize: 16,
-              backgroundColor: '#29b6f6',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 8,
-              cursor: 'pointer'
+              padding:12,fontSize:16,
+              backgroundColor:'#29b6f6',
+              color:'#fff',border:'none',
+              borderRadius:8,cursor:'pointer'
             }}
           >
             📂 Documentos
@@ -77,15 +76,12 @@ export default function Dashboard() {
         )}
 
         <button
-          onClick={() => navigate('/games')}
+          onClick={() => navigate('/select')}
           style={{
-            padding: 12,
-            fontSize: 16,
-            backgroundColor: '#66bb6a',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 8,
-            cursor: 'pointer'
+            padding:12,fontSize:16,
+            backgroundColor:'#66bb6a',
+            color:'#fff',border:'none',
+            borderRadius:8,cursor:'pointer'
           }}
         >
           🕹️ Jogar
@@ -97,13 +93,10 @@ export default function Dashboard() {
             navigate('/login');
           }}
           style={{
-            padding: 12,
-            fontSize: 16,
-            backgroundColor: '#ef5350',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 8,
-            cursor: 'pointer'
+            padding:12,fontSize:16,
+            backgroundColor:'#ef5350',
+            color:'#fff',border:'none',
+            borderRadius:8,cursor:'pointer'
           }}
         >
           🚪 Sair

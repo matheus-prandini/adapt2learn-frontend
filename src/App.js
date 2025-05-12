@@ -4,7 +4,6 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Documents from './pages/Documents'
-import Games from './pages/Games'
 import GameSelect from './pages/GameSelect'
 import PrivateRoute from './components/PrivateRoute'
 
@@ -26,13 +25,7 @@ export default function App() {
         </PrivateRoute>
       }/>
 
-      <Route path="/games" element={
-        <PrivateRoute>
-          <Games/>
-        </PrivateRoute>
-      }/>
-
-      <Route path="/launch"   element={<PrivateRoute><GameSelect/></PrivateRoute>} />
+      <Route path="/select"   element={<PrivateRoute><GameSelect/></PrivateRoute>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
