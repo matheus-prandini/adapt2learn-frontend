@@ -1,21 +1,22 @@
 // src/pages/GameSelect.js
 import React, { useState, useEffect } from 'react';
-import { auth }                          from '../firebase';
-import { useNavigate }                   from 'react-router-dom';
-import { getStorage, ref, getDownloadURL } from "firebase/storage";
+import { auth } from '../firebase';
+import { useNavigate } from 'react-router-dom';
+import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 
 export default function GameSelect() {
-  const [profile, setProfile]   = useState(null);
-  const [docsList, setDocsList] = useState([]);
-  const [gamesList, setGamesList] = useState([]);
+  const [profile, setProfile]       = useState(null);
+  const [docsList, setDocsList]     = useState([]);
+  const [gamesList, setGamesList]   = useState([]);
   const [discipline, setDiscipline] = useState('');
   const [subarea, setSubarea]       = useState('');
   const [loading, setLoading]       = useState(true);
+  const [loadingSession, setLoadingSession] = useState(false);
   const [error, setError]           = useState('');
   const navigate = useNavigate();
   const storage  = getStorage();
 
-  // Carrega perfil, documentos (pra disciplinas) e lista de jogos
+  // Load user profile, documents and games
   useEffect(() => {
     (async () => {
       try {
@@ -31,23 +32,30 @@ export default function GameSelect() {
             headers: { Authorization: 'Bearer ' + token }
           })
         ]);
+
         if (!prRes.ok || !docsRes.ok || !gamesRes.ok) {
           throw new Error('Erro ao carregar dados iniciais');
         }
+
         const pr    = await prRes.json();
         const docs  = await docsRes.json();
         const games = await gamesRes.json();
-        // baixa icons
-        const withIcons = await Promise.all(games.map(async g => {
-          let iconUrl = '';
-          if (g.icon_url) {
-            iconUrl = await getDownloadURL(ref(storage, g.icon_url));
-          }
-          return { ...g, iconUrl };
-        }));
+
+        // Download icons for each game
+        const withIcons = await Promise.all(
+          games.map(async g => {
+            let iconUrl = '';
+            if (g.icon_url) {
+              iconUrl = await getDownloadURL(ref(storage, g.icon_url));
+            }
+            return { ...g, iconUrl };
+          })
+        );
+
         setProfile(pr);
         setDocsList(docs);
         setGamesList(withIcons);
+
       } catch (err) {
         console.error(err);
         setError(err.message);
@@ -64,7 +72,7 @@ export default function GameSelect() {
     return <p style={{ padding:20, textAlign:'center', color:'red' }}>{error}</p>;
   }
 
-  // opções únicas de disciplina e subárea
+  // Unique discipline and subarea options
   const disciplineOptions = Array.from(new Set(docsList.map(d => d.discipline)));
   const subareaOptions = discipline
     ? Array.from(
@@ -76,15 +84,48 @@ export default function GameSelect() {
       )
     : [];
 
-  // quando clicar no jogo, usa window.location.href pra manter consistente
-  const startGame = game => {
-    const qs = new URLSearchParams({
-      user_id:    profile.uid,
-      school_id:  profile.school_id,
+  // Create a new session and return its number
+  async function createSession(gameId) {
+    const token = await auth.currentUser.getIdToken();
+    const payload = {
+      game_id:    gameId,
       discipline,
       subarea
-    }).toString();
-    window.location.href = `/${game.path}/?${qs}`;
+    };
+    const res = await fetch('http://localhost:8080/api/sessions', {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      throw new Error(`Não foi possível criar sessão (status ${res.status})`);
+    }
+    const json = await res.json();
+    return json.session_number;
+  }
+
+  // Handle game click: create session, then redirect
+  const startGame = async game => {
+    setLoadingSession(true);
+    try {
+      const sessionNumber = await createSession(game.id);
+      const qs = new URLSearchParams({
+        user_id:        profile.uid,
+        school_id:      profile.school_id,
+        discipline,
+        subarea,
+        session_number: sessionNumber
+      }).toString();
+      window.location.href = `/${game.path}/?${qs}`;
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao iniciar sessão: ' + err.message);
+    } finally {
+      setLoadingSession(false);
+    }
   };
 
   return (
@@ -150,6 +191,7 @@ export default function GameSelect() {
       {discipline && subarea && (
         <>
           <h3 style={{ textAlign:'center', color:'#2e7d32', marginBottom:16 }}>🕹️ Escolha um Jogo</h3>
+          {loadingSession && <p style={{ textAlign:'center' }}>⏳ Criando sua sessão…</p>}
           <div style={{
             display:'grid',
             gridTemplateColumns:'repeat(auto-fill,minmax(140px,1fr))',
