@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import Documents from './pages/Documents'
 import GameSelect from './pages/GameSelect'
 import Report from './pages/Report'
+import Warmup from './pages/Warmup'
 import PrivateRoute from './components/PrivateRoute'
 
 export default function App() {
@@ -28,7 +29,9 @@ export default function App() {
 
       <Route path="/select"   element={<PrivateRoute><GameSelect/></PrivateRoute>} />
 
-      <Route path="/report"    element={<Report />} /> 
+      <Route path="/report"    element={<Report />} />
+
+      <Route path="/warmup"    element={<Warmup />} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

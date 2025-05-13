@@ -1,22 +1,22 @@
-// src/pages/GameSelect.js
 import React, { useState, useEffect } from 'react';
 import { auth } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 
 export default function GameSelect() {
-  const [profile, setProfile]       = useState(null);
-  const [docsList, setDocsList]     = useState([]);
-  const [gamesList, setGamesList]   = useState([]);
-  const [discipline, setDiscipline] = useState('');
-  const [subarea, setSubarea]       = useState('');
-  const [loading, setLoading]       = useState(true);
+  const [profile, setProfile]         = useState(null);
+  const [docsList, setDocsList]       = useState([]);
+  const [gamesList, setGamesList]     = useState([]);
+  const [selectedGame, setSelectedGame] = useState(null);
+  const [discipline, setDiscipline]   = useState('');
+  const [subarea, setSubarea]         = useState('');
+  const [loading, setLoading]         = useState(true);
   const [loadingSession, setLoadingSession] = useState(false);
-  const [error, setError]           = useState('');
-  const navigate = useNavigate();
-  const storage  = getStorage();
+  const [error, setError]             = useState('');
+  const navigate                       = useNavigate();
+  const storage                        = getStorage();
 
-  // Load user profile, documents and games
+  // Carrega perfil, documentos e jogos
   useEffect(() => {
     (async () => {
       try {
@@ -32,16 +32,14 @@ export default function GameSelect() {
             headers: { Authorization: 'Bearer ' + token }
           })
         ]);
-
         if (!prRes.ok || !docsRes.ok || !gamesRes.ok) {
           throw new Error('Erro ao carregar dados iniciais');
         }
-
         const pr    = await prRes.json();
         const docs  = await docsRes.json();
         const games = await gamesRes.json();
 
-        // Download icons for each game
+        // Baixa icons
         const withIcons = await Promise.all(
           games.map(async g => {
             let iconUrl = '';
@@ -55,7 +53,6 @@ export default function GameSelect() {
         setProfile(pr);
         setDocsList(docs);
         setGamesList(withIcons);
-
       } catch (err) {
         console.error(err);
         setError(err.message);
@@ -65,16 +62,11 @@ export default function GameSelect() {
     })();
   }, []);
 
-  if (loading) {
-    return <p style={{ padding:20, textAlign:'center' }}>🔄 Carregando…</p>;
-  }
-  if (error) {
-    return <p style={{ padding:20, textAlign:'center', color:'red' }}>{error}</p>;
-  }
+  if (loading) return <p style={styles.loading}>🔄 Carregando…</p>;
+  if (error)   return <p style={styles.error}>{error}</p>;
 
-  // Unique discipline and subarea options
   const disciplineOptions = Array.from(new Set(docsList.map(d => d.discipline)));
-  const subareaOptions = discipline
+  const subareaOptions    = discipline
     ? Array.from(
         new Set(
           docsList
@@ -84,42 +76,45 @@ export default function GameSelect() {
       )
     : [];
 
-  // Create a new session and return its number
   async function createSession(gameId) {
     const token = await auth.currentUser.getIdToken();
-    const payload = {
-      game_id:    gameId,
-      discipline,
-      subarea
-    };
+    const payload = { game_id: gameId, discipline, subarea };
     const res = await fetch('http://localhost:8080/api/sessions', {
       method: 'POST',
       headers: {
         'Content-Type':  'application/json',
-        'Authorization': `Bearer ${token}`
+        Authorization:   `Bearer ${token}`
       },
       body: JSON.stringify(payload)
     });
     if (!res.ok) {
       throw new Error(`Não foi possível criar sessão (status ${res.status})`);
     }
-    const json = await res.json();
-    return json.session_number;
+    const { session_number } = await res.json();
+    return session_number;
   }
 
-  // Handle game click: create session, then redirect
-  const startGame = async game => {
+  const onStart = async () => {
     setLoadingSession(true);
     try {
-      const sessionNumber = await createSession(game.id);
-      const qs = new URLSearchParams({
+      const sessionNumber = await createSession(selectedGame.id);
+      // monta os params
+      const params = new URLSearchParams({
         user_id:        profile.uid,
         school_id:      profile.school_id,
         discipline,
         subarea,
-        session_number: sessionNumber
+        session_number: sessionNumber,
+        game_path:      selectedGame.path
       }).toString();
-      window.location.href = `/${game.path}/?${qs}`;
+
+      if (selectedGame.has_warmup) {
+        // redireciona para Warmup.js
+        navigate(`/warmup?${params}`);
+      } else {
+        // inicia o jogo direto
+        window.location.href = `/${selectedGame.path}/?${params}`;
+      }
     } catch (err) {
       console.error(err);
       alert('Erro ao iniciar sessão: ' + err.message);
@@ -128,114 +123,92 @@ export default function GameSelect() {
     }
   };
 
+  const onGameSelect = g => {
+    setSelectedGame(g);
+    setDiscipline('');
+    setSubarea('');
+  };
+
   return (
-    <div style={{
-      padding: 20,
-      maxWidth: 600,
-      margin: '40px auto',
-      backgroundColor: '#fffde7',
-      borderRadius: 12,
-      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-    }}>
-      <button
-        onClick={() => navigate(-1)}
-        style={{
-          background: 'transparent',
-          border: 'none',
-          cursor: 'pointer',
-          fontSize: 16,
-          marginBottom: 20
-        }}
-      >
-        ← Voltar
-      </button>
+    <div style={styles.container}>
+      <button onClick={() => navigate(-1)} style={styles.back}>← Voltar</button>
 
-      <h2 style={{
-        textAlign: 'center',
-        color: '#f57f17',
-        marginBottom: 20
-      }}>
-        🎲 Selecione Disciplina e Subárea
-      </h2>
-
-      <div style={{ display:'flex', flexDirection:'column', gap:16, marginBottom:24 }}>
-        <div style={{ textAlign:'left' }}>
-          <label style={{ fontWeight:'bold' }}>Disciplina</label>
-          <select
-            value={discipline}
-            onChange={e => { setDiscipline(e.target.value); setSubarea(''); }}
-            style={{ width:'100%', padding:10, borderRadius:6, border:'1px solid #ccc', marginTop:4 }}
-          >
-            <option value="">Selecione…</option>
-            {disciplineOptions.map(d => (
-              <option key={d} value={d}>{d}</option>
-            ))}
-          </select>
-        </div>
-        <div style={{ textAlign:'left' }}>
-          <label style={{ fontWeight:'bold' }}>Subárea</label>
-          <select
-            value={subarea}
-            onChange={e => setSubarea(e.target.value)}
-            disabled={!discipline}
-            style={{ width:'100%', padding:10, borderRadius:6, border:'1px solid #ccc', marginTop:4 }}
-          >
-            <option value="">Selecione…</option>
-            {subareaOptions.map(s => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {discipline && subarea && (
+      {!selectedGame ? (
         <>
-          <h3 style={{ textAlign:'center', color:'#2e7d32', marginBottom:16 }}>🕹️ Escolha um Jogo</h3>
-          {loadingSession && <p style={{ textAlign:'center' }}>⏳ Criando sua sessão…</p>}
-          <div style={{
-            display:'grid',
-            gridTemplateColumns:'repeat(auto-fill,minmax(140px,1fr))',
-            gap:20
-          }}>
+          <h2 style={styles.header}>🕹️ Escolha um Jogo</h2>
+          <div style={styles.grid}>
             {gamesList.map(game => (
-              <div
-                key={game.id}
-                onClick={() => startGame(game)}
-                style={{
-                  cursor:'pointer',
-                  backgroundColor:'#ffffff',
-                  border:'2px solid #ffe082',
-                  borderRadius:12,
-                  padding:16,
-                  textAlign:'center',
-                  boxShadow:'0 4px 8px rgba(0,0,0,0.1)',
-                  transition:'transform 0.2s, box-shadow 0.2s'
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.transform = 'scale(1.05)';
-                  e.currentTarget.style.boxShadow = '0 6px 12px rgba(0,0,0,0.15)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.transform = 'scale(1)';
-                  e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
-                }}
-              >
+              <div key={game.id} onClick={() => onGameSelect(game)} style={styles.card}>
                 {game.iconUrl
-                  ? <img
-                      src={game.iconUrl}
-                      alt={game.name}
-                      style={{ width:80, height:80, marginBottom:12 }}
-                    />
-                  : <div style={{ height:80, marginBottom:12 }} />
-                }
-                <div style={{ fontSize:16, fontWeight:'bold', color:'#33691e' }}>
-                  {game.name}
-                </div>
+                  ? <img src={game.iconUrl} alt={game.name} style={styles.icon} />
+                  : <div style={styles.placeholder} />}
+                <div style={styles.gameName}>{game.name}</div>
               </div>
             ))}
           </div>
+        </>
+      ) : (
+        <>
+          <button onClick={() => setSelectedGame(null)} style={styles.back}>← Trocar Jogo</button>
+          <h2 style={styles.header}>🎯 {selectedGame.name}</h2>
+
+          {selectedGame.has_options && (
+            <div style={styles.options}>
+              <div style={styles.field}>
+                <label>Disciplina</label>
+                <select
+                  value={discipline}
+                  onChange={e => { setDiscipline(e.target.value); setSubarea(''); }}
+                  style={styles.select}
+                >
+                  <option value="">Selecione…</option>
+                  {disciplineOptions.map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </div>
+              <div style={styles.field}>
+                <label>Subárea</label>
+                <select
+                  value={subarea}
+                  onChange={e => setSubarea(e.target.value)}
+                  disabled={!discipline}
+                  style={styles.select}
+                >
+                  <option value="">Selecione…</option>
+                  {subareaOptions.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={onStart}
+            disabled={
+              loadingSession ||
+              (selectedGame.has_options && (!discipline || !subarea))
+            }
+            style={styles.start}
+          >
+            {'▶️ Iniciar'}
+          </button>
         </>
       )}
     </div>
   );
 }
+
+const styles = {
+  container: { padding:20, maxWidth:600, margin:'40px auto', background:'#fffde7', borderRadius:12 },
+  back:      { background:'transparent', border:'none', cursor:'pointer', fontSize:16, marginBottom:20 },
+  header:    { textAlign:'center', color:'#f57f17', marginBottom:20 },
+  grid:      { display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(120px,1fr))', gap:16 },
+  card:      { cursor:'pointer', background:'#fff', border:'2px solid #ffe082', borderRadius:12, padding:12, textAlign:'center' },
+  icon:      { width:80, height:80, marginBottom:8 },
+  placeholder:{ height:80, marginBottom:8, background:'#eee' },
+  gameName:  { fontSize:14, fontWeight:'bold', color:'#33691e' },
+  options:   { display:'flex', gap:24, marginBottom:24 },
+  field:     { display:'flex', flexDirection:'column', flex:1, gap:6 },
+  select:    { padding:8, borderRadius:6, border:'1px solid #ccc' },
+  start:     { width:'100%', padding:12, fontSize:16, background:'#66bb6a', color:'#fff', border:'none', borderRadius:8, cursor:'pointer' },
+  loading:   { padding:20, textAlign:'center' },
+  error:     { padding:20, textAlign:'center', color:'red' }
+};
