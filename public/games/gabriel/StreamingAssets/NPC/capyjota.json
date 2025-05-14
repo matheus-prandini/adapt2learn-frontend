@@ -1,0 +1,124 @@
+{
+  "items": [
+    {
+      "text": "Olá aventureiro! Eu sou Capyjota, dono da melhor loja de itens da região!",
+      "type": "Exclamation"
+    },
+    {
+      "text": "Bem-vindo à Loja do Capyjota, onde você encontra tudo para suas aventuras.",
+      "type": "Normal"
+    },
+    {
+      "text": "Minha loja tem os melhores itens para ajudar na sua jornada. Dê uma olhada!",
+      "type": "Exclamation"
+    },
+    {
+      "text": "Bigornas à venda! Perfeitas para esmagar seus inimigos!",
+      "type": "Exclamation"
+    },
+    {
+      "text": "Uma bigorna pode parecer pesada, mas é muito eficaz contra obstáculos!",
+      "type": "Exclamation"
+    },
+    {
+      "text": "Compre uma bigorna e veja seus inimigos correrem de medo!",
+      "type": "Exclamation"
+    },
+    {
+      "text": "Balões coloridos à venda! Ótimos para alcançar lugares altos.",
+      "type": "Normal"
+    },
+    {
+      "text": "Com um balão, você pode flutuar sobre armadilhas e inimigos!",
+      "type": "Exclamation"
+    },
+    {
+      "text": "Balões são leves e úteis para escapar de situações perigosas!",
+      "type": "Exclamation"
+    },
+    {
+      "text": "Dinamites potentes à venda! Explodem qualquer obstáculo no caminho!",
+      "type": "Exclamation"
+    },
+    {
+      "text": "Nada como uma boa dinamite para abrir passagens secretas!",
+      "type": "Exclamation"
+    },
+    {
+      "text": "Cuidado ao usar dinamites! Elas são poderosas, mas perigosas!",
+      "type": "Exclamation"
+    },
+    {
+      "text": "Caixas misteriosas à venda! Quem sabe o que tem dentro?",
+      "type": "Question"
+    },
+    {
+      "text": "Cada caixa contém uma surpresa diferente! Experimente sua sorte!",
+      "type": "Exclamation"
+    },
+    {
+      "text": "As caixas podem conter itens raros que não vendo normalmente!",
+      "type": "Normal"
+    },
+    {
+      "text": "Na Loja do Capyjota, a qualidade é garantida ou seu dinheiro de volta!",
+      "type": "Exclamation"
+    },
+    {
+      "text": "Sou Capyjota, fornecedor oficial de equipamentos para aventureiros há mais de 20 anos!",
+      "type": "Exclamation"
+    },
+    {
+      "text": "Todos os itens da minha loja são testados e aprovados por aventureiros experientes!",
+      "type": "Exclamation"
+    },
+    {
+      "text": "Promoção especial hoje! Compre dois itens e ganhe um desconto no terceiro!",
+      "type": "Exclamation"
+    },
+    {
+      "text": "Volte sempre à Loja do Capyjota! Novos itens chegam toda semana!",
+      "type": "Exclamation"
+    },
+    {
+      "text": "Temos bigornas de vários tamanhos e pesos para atender suas necessidades.",
+      "type": "Normal"
+    },
+    {
+      "text": "Os balões são feitos com material resistente e duram bastante tempo.",
+      "type": "Normal"
+    },
+    {
+      "text": "Nossas dinamites têm um pavio de queima lenta para sua segurança.",
+      "type": "Normal"
+    },
+    {
+      "text": "As caixas misteriosas são reabastecidas mensalmente com novos itens.",
+      "type": "Normal"
+    },
+    {
+      "text": "Aceitamos moedas mágicas e outros métodos de pagamento.",
+      "type": "Normal"
+    },
+    {
+      "text": "Você já experimentou usar uma bigorna para alcançar lugares altos?",
+      "type": "Question"
+    },
+    {
+      "text": "Sabia que nossos balões podem suportar até três vezes o peso de um aventureiro comum?",
+      "type": "Question"
+    },
+    {
+      "text": "Já tentou combinar dinamites com outros itens para efeitos especiais?",
+      "type": "Question"
+    },
+    {
+      "text": "Está procurando algum item específico para sua aventura?",
+      "type": "Question"
+    },
+    {
+      "text": "Gostaria de conhecer nossa nova linha de itens encantados?",
+      "type": "Question"
+    }
+  ]
+}

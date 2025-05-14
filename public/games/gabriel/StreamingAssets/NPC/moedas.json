@@ -1,0 +1,24 @@
+{
+  "items": [
+    {
+      "text": "Moedas cinzas valem 1 ponto cada uma.",
+      "type": "Exclamation"
+    },
+    {
+      "text": "Moedas verdes equivalem a 2 moedas cinzas.",
+      "type": "Exclamation"
+    },
+    {
+      "text": "Moedas douradas são as mais valiosas, valendo 5 moedas cinzas cada.",
+      "type": "Exclamation"
+    },
+    {
+      "text": "Lembre-se: cinza = 1, verde = 2, dourada = 5.",
+      "type": "Exclamation"
+    },
+    {
+      "text": "Colete moedas douradas para maximizar seus pontos, cada uma vale 5 moedas cinzas!",
+      "type": "Exclamation"
+    }
+  ]
+}

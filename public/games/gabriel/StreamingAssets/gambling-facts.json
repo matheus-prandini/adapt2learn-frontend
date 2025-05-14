@@ -1,0 +1,224 @@
+{
+  "gambling_facts": [
+    {
+      "id": 1,
+      "fact": "No Brasil, 70% dos apostadores perdem dinheiro regularmente em jogos de azar.",
+      "category": "estatística"
+    },
+    {
+      "id": 2,
+      "fact": "A probabilidade de ganhar na loteria é menor que a de ser atingido por um raio.",
+      "category": "probabilidade"
+    },
+    {
+      "id": 3,
+      "fact": "Cassinos são projetados sem janelas e relógios para que os jogadores percam a noção do tempo.",
+      "category": "psicologia"
+    },
+    {
+      "id": 4,
+      "fact": "O vício em jogos de azar afeta cerca de 1% da população mundial.",
+      "category": "saúde"
+    },
+    {
+      "id": 5,
+      "fact": "A 'falácia do jogador' é acreditar que eventos passados afetam probabilidades futuras em jogos de azar.",
+      "category": "psicologia"
+    },
+    {
+      "id": 6,
+      "fact": "Estudos mostram que adolescentes têm maior risco de desenvolver problemas com jogos de azar.",
+      "category": "saúde"
+    },
+    {
+      "id": 7,
+      "fact": "Em jogos de cassino, a casa sempre tem vantagem matemática sobre os jogadores.",
+      "category": "matemática"
+    },
+    {
+      "id": 8,
+      "fact": "Investir em educação tem retorno médio de 10% ao ano, muito maior que apostas.",
+      "category": "educação"
+    },
+    {
+      "id": 9,
+      "fact": "Pessoas que apostam regularmente têm maior probabilidade de enfrentar problemas financeiros.",
+      "category": "finanças"
+    },
+    {
+      "id": 10,
+      "fact": "O dinheiro investido cresce com o tempo, enquanto o dinheiro apostado tende a diminuir.",
+      "category": "investimento"
+    },
+    {
+      "id": 11,
+      "fact": "Em 2024, as transferências via Pix para empresas de apostas online chegaram a R$ 20,8 bilhões em um único mês.",
+      "category": "volume"
+    },
+    {
+      "id": 12,
+      "fact": "Em 2025, o volume mensal de transferências para sites de apostas alcançou R$ 30 bilhões, segundo o Banco Central.",
+      "category": "volume"
+    },
+    {
+      "id": 13,
+      "fact": "Em 2024, 23 milhões de brasileiros (15% da população adulta) fizeram apostas em plataformas de 'bets'.",
+      "category": "estatística"
+    },
+    {
+      "id": 14,
+      "fact": "Quase metade (47%) dos apostadores brasileiros está endividada em função das apostas.",
+      "category": "finanças"
+    },
+    {
+      "id": 15,
+      "fact": "16% dos apostadores brasileiros encaram as apostas como uma forma de investimento.",
+      "category": "psicologia"
+    },
+    {
+      "id": 16,
+      "fact": "Entre os apostadores esportivos no Brasil, 62% são homens e 38% são mulheres.",
+      "category": "demografia"
+    },
+    {
+      "id": 17,
+      "fact": "56% dos apostadores esportivos brasileiros têm entre 16 e 39 anos de idade.",
+      "category": "demografia"
+    },
+    {
+      "id": 18,
+      "fact": "63% dos apostadores online afirmam que já tiveram parte da renda comprometida pelas apostas.",
+      "category": "finanças"
+    },
+    {
+      "id": 19,
+      "fact": "64% dos apostadores utilizam sua renda principal para fazer apostas online.",
+      "category": "finanças"
+    },
+    {
+      "id": 20,
+      "fact": "Os gastos com apostas esportivas equivalem a até 0,5% do consumo total das famílias brasileiras.",
+      "category": "economia"
+    },
+    {
+      "id": 21,
+      "fact": "A 'Lei das Bets' estabelece tributação de 18% sobre a receita das empresas de apostas no Brasil.",
+      "category": "regulamentação"
+    },
+    {
+      "id": 22,
+      "fact": "RTP (Retorno ao Jogador) é a porcentagem do valor apostado que um jogo devolve aos jogadores a longo prazo.",
+      "category": "matemática"
+    },
+    {
+      "id": 23,
+      "fact": "Um jogo com RTP de 95% significa que, em média, para cada R$100 apostados, R$95 retornam aos jogadores.",
+      "category": "matemática"
+    },
+    {
+      "id": 24,
+      "fact": "A diferença entre o RTP e 100% representa a vantagem matemática da casa (house edge).",
+      "category": "matemática"
+    },
+    {
+      "id": 25,
+      "fact": "Mesmo com RTP alto (95-98%), a casa sempre ganha no longo prazo devido à Lei dos Grandes Números.",
+      "category": "probabilidade"
+    },
+    {
+      "id": 26,
+      "fact": "O RTP é calculado sobre milhões de rodadas, não refletindo necessariamente sua experiência individual.",
+      "category": "probabilidade"
+    },
+    {
+      "id": 27,
+      "fact": "Estudos mostram que crianças a partir de 12 anos consideram apostas 'seguras e normais' quando promovidas por celebridades.",
+      "category": "influência"
+    },
+    {
+      "id": 28,
+      "fact": "Influenciadores de apostas foram responsáveis por R$ 23,9 bilhões em perdas dos apostadores brasileiros em 2025.",
+      "category": "marketing"
+    },
+    {
+      "id": 29,
+      "fact": "86% dos apostadores brasileiros apresentam dívidas e 64% têm nome negativado, segundo o Instituto Locomotiva.",
+      "category": "finanças"
+    },
+    {
+      "id": 30,
+      "fact": "51% dos apostadores relatam aumento de sintomas de ansiedade decorrentes das apostas.",
+      "category": "saúde"
+    },
+    {
+      "id": 31,
+      "fact": "Campanhas com influenciadores atingem principalmente jovens e pessoas com menor escolaridade, grupos mais vulneráveis.",
+      "category": "marketing"
+    },
+    {
+      "id": 32,
+      "fact": "Muitos influenciadores usam contas demo especiais fornecidas pelas plataformas de apostas, programadas para sempre mostrar ganhos.",
+      "category": "marketing"
+    },
+    {
+      "id": 33,
+      "fact": "As contas demo usadas por influenciadores não refletem as probabilidades reais que os seguidores enfrentarão ao se cadastrarem.",
+      "category": "marketing"
+    },
+    {
+      "id": 34,
+      "fact": "Quando seguidores clicam nos links de afiliados, são direcionados para plataformas com odds normais e desfavoráveis.",
+      "category": "marketing"
+    },
+    {
+      "id": 35,
+      "fact": "Em 2023, uma investigação revelou que 78% dos influenciadores de apostas usavam contas manipuladas em suas demonstrações.",
+      "category": "marketing"
+    },
+    {
+      "id": 36,
+      "fact": "Os vídeos e prints de 'vitórias seguras' compartilhados por influenciadores são produzidos em ambientes controlados de demonstração.",
+      "category": "marketing"
+    },
+    {
+      "id": 37,
+      "fact": "Apenas 45% dos estudantes brasileiros de 15 anos atingiram o nível mínimo de proficiência em literacia financeira no PISA 2018.",
+      "category": "educação"
+    },
+    {
+      "id": 38,
+      "fact": "Mais da metade dos jovens brasileiros não domina conceitos básicos como juros compostos e risco, segundo o PISA.",
+      "category": "educação"
+    },
+    {
+      "id": 39,
+      "fact": "Apenas 28% dos alunos brasileiros possuem conta em instituição financeira, limitando seu contato prático com conceitos financeiros.",
+      "category": "educação"
+    },
+    {
+      "id": 40,
+      "fact": "Somente 25% dos jovens brasileiros possuem cartão de débito, taxa muito abaixo da encontrada em países com alta proficiência financeira.",
+      "category": "educação"
+    },
+    {
+      "id": 41,
+      "fact": "Existe uma diferença de 78 pontos na escala de literacia financeira entre estudantes de diferentes níveis socioeconômicos no Brasil.",
+      "category": "desigualdade"
+    },
+    {
+      "id": 42,
+      "fact": "Jovens de famílias com menos recursos estão mais expostos à influência de promessas de ganhos fáceis em apostas.",
+      "category": "desigualdade"
+    },
+    {
+      "id": 43,
+      "fact": "Adolescentes brasileiros demonstram dificuldades em resolver problemas financeiros simples, como cálculos de percentuais.",
+      "category": "educação"
+    },
+    {
+      "id": 44,
+      "fact": "A dificuldade em avaliar cenários de risco torna os jovens mais suscetíveis a acreditar em vídeos de 'vitórias garantidas'.",
+      "category": "psicologia"
+    }
+  ]
+}

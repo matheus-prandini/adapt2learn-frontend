@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <title>Labirinto</title>
 
-  <!-- 1) Firebase JS SDK (apenas o Auth) -->
+  <!-- Firebase Auth SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
     import { getAuth }       from "https://www.gstatic.com/firebasejs/11.5.0/firebase-auth.js";
@@ -16,7 +16,6 @@
       storageBucket: "adapt2learn-api.appspot.com",
     };
 
-    // Inicializa e expõe em window
     const app = initializeApp(firebaseConfig);
     window.firebaseAuth = getAuth(app);
   </script>
@@ -25,22 +24,27 @@
   <link rel="stylesheet" href="TemplateData/style.css" />
 
   <style>
-    /* botão “Voltar” */
-    #back-button {
+    #back-button, #results-button {
       position: absolute;
-      top: 10px; left: 10px;
+      top: 10px;
       padding: 6px 12px;
       background: rgba(0,0,0,0.5);
       color: #fff;
-      border: none; border-radius: 4px;
+      border: none;
+      border-radius: 4px;
       cursor: pointer;
       z-index: 100;
+      font-weight: bold;
     }
+    #back-button { left: 10px; }
+    #results-button { right: 10px; }
   </style>
 </head>
 <body>
   <!-- Voltar -->
   <button id="back-button" onclick="window.history.back()">← Voltar</button>
+  <!-- Resultados -->
+  <button id="results-button" onclick="navigateToResults()">📊 Resultados</button>
 
   <div id="unity-container" class="unity-desktop">
     <canvas id="unity-canvas" width="960" height="600" tabindex="-1"></canvas>
@@ -59,41 +63,53 @@
   </div>
 
   <script>
-    // banner helper
+    // Banner helper
     function unityShowBanner(msg, type) {
       const c = document.querySelector("#unity-warning");
       function upd() { c.style.display = c.children.length ? 'block' : 'none'; }
       const e = document.createElement('div');
       e.innerHTML = msg;
       c.appendChild(e);
-      if (type === 'error') e.style = 'background:red;padding:10px;';
-      else {
+      if (type === 'error') {
+        e.style = 'background:red;padding:10px;';
+      } else {
         if (type === 'warning') e.style = 'background:yellow;padding:10px;';
         setTimeout(() => { c.removeChild(e); upd(); }, 5000);
       }
       upd();
     }
 
-    // pega params da URL
+    // Read URL params
     const ps = new URLSearchParams(window.location.search);
     const discipline = ps.get('discipline') || '';
     const subarea    = ps.get('subarea')    || '';
     const schoolId   = ps.get('school_id')  || '';
+    const sessionNumber = ps.get('session_number') || '';
 
-    // caminhos do build (ajuste se o diretório for outro)
+    // Navigate to React report page
+    function navigateToResults() {
+      const params = new URLSearchParams({
+        school_id: schoolId,
+        discipline,
+        subarea
+      });
+      // match your React route "/report"
+      window.location.href = '/report?' + params.toString();
+    }
+
+    // Unity build configuration
     const buildUrl  = "Build";
-    const loaderUrl = buildUrl + "/build_new_2.loader.js";
+    const loaderUrl = buildUrl + "/build_new.loader.js";
     const config = {
-      dataUrl:            buildUrl + "/build_new_2.data",
-      frameworkUrl:       buildUrl + "/build_new_2.framework.js",
-      codeUrl:            buildUrl + "/build_new_2.wasm",
+      dataUrl:            buildUrl + "/build_new.data",
+      frameworkUrl:       buildUrl + "/build_new.framework.js",
+      codeUrl:            buildUrl + "/build_new.wasm",
       streamingAssetsUrl: "StreamingAssets",
       showBanner:         unityShowBanner,
-      // INICIAL: não passamos o token aqui, pois ainda não o temos
-      arguments:          [ discipline, subarea, schoolId ]
+      arguments:          [ discipline, subarea, schoolId, sessionNumber ]
     };
 
-    // adapta canvas mobile/desktop
+    // Canvas setup
     const canvas = document.querySelector("#unity-canvas");
     if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
       const m = document.createElement('meta');
@@ -108,7 +124,7 @@
     }
     document.querySelector("#unity-loading-bar").style.display = "block";
 
-    // carrega loader e instancia Unity
+    // Load Unity
     let unityInstance = null;
     const script = document.createElement("script");
     script.src = loaderUrl;
@@ -119,25 +135,20 @@
       .then(instance => {
         unityInstance = instance;
         document.querySelector("#unity-loading-bar").style.display = "none";
-        document.querySelector("#unity-fullscreen-button")
-                .onclick = () => unityInstance.SetFullscreen(1);
+        document.querySelector("#unity-fullscreen-button").onclick = () => unityInstance.SetFullscreen(1);
 
-        // envia parâmetros iniciais
+        // Send initial params
         unityInstance.SendMessage(
           'GameManager',
           'OnReceiveParams',
-          JSON.stringify({ discipline, subarea, schoolId })
+          JSON.stringify({ discipline, subarea, schoolId, sessionNumber })
         );
 
-        // quando o usuário estiver logado (ou já estiver), envie o ID-token
+        // When Firebase Auth is ready, forward token
         window.firebaseAuth.onAuthStateChanged(user => {
           if (user && unityInstance) {
             user.getIdToken().then(token => {
-              unityInstance.SendMessage(
-                'GameManager',
-                'OnReceiveAuthToken',
-                token
-              );
+              unityInstance.SendMessage('GameManager', 'OnReceiveAuthToken', token);
             });
           }
         });

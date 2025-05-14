@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "text": "Venha apostar com o tigrinho, é sua chance de ganhar!",
+      "type": "Exclamation"
+    },
+    {
+      "text": "Você já experimentou a sorte com o tigrinho hoje?",
+      "type": "Question"
+    },
+    {
+      "text": "O tigrinho tá maluco! Ele tá pagando toda hora!",
+      "type": "Exclamation"
+    },
+    {
+      "text": "Que tal tentar a sorte e ficar rico com o tigrinho?",
+      "type": "Question"
+    },
+    {
+      "text": "Sua chance de ficar rico é agora, não perca essa oportunidade.",
+      "type": "Normal"
+    },
+    {
+      "text": "Aposte agora e veja o tigrinho multiplicar seu dinheiro!",
+      "type": "Exclamation"
+    },
+    {
+      "text": "Você sabia que o tigrinho já fez vários milionários?",
+      "type": "Question"
+    },
+    {
+      "text": "O tigrinho está pagando prêmios incríveis hoje!",
+      "type": "Exclamation"
+    },
+    {
+      "text": "Sua vida pode mudar com apenas uma aposta no tigrinho.",
+      "type": "Normal"
+    },
+    {
+      "text": "Não perca tempo, sua fortuna está esperando no tigrinho!",
+      "type": "Exclamation"
+    }
+  ]
+}
