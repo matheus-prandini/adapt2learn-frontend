@@ -22,13 +22,13 @@ export default function GameSelect() {
       try {
         const token = await auth.currentUser.getIdToken();
         const [prRes, docsRes, gamesRes] = await Promise.all([
-          fetch('http://localhost:8080/api/me', {
+          fetch('https://adapt2learn-895112363610.us-central1.run.app/api/me', {
             headers: { Authorization: 'Bearer ' + token }
           }),
-          fetch('http://localhost:8080/api/documents', {
+          fetch('https://adapt2learn-895112363610.us-central1.run.app/api/documents', {
             headers: { Authorization: 'Bearer ' + token }
           }),
-          fetch('http://localhost:8080/api/games', {
+          fetch('https://adapt2learn-895112363610.us-central1.run.app/api/games', {
             headers: { Authorization: 'Bearer ' + token }
           })
         ]);
@@ -79,7 +79,7 @@ export default function GameSelect() {
   async function createSession(gameId) {
     const token = await auth.currentUser.getIdToken();
     const payload = { game_id: gameId, discipline, subarea };
-    const res = await fetch('http://localhost:8080/api/sessions', {
+    const res = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/sessions', {
       method: 'POST',
       headers: {
         'Content-Type':  'application/json',

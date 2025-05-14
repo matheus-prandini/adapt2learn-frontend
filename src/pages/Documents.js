@@ -22,8 +22,8 @@ export default function Documents() {
       try {
         const token = await auth.currentUser.getIdToken()
         const [profileRes, docsRes] = await Promise.all([
-          fetch('http://localhost:8080/api/me', { headers: { Authorization: 'Bearer ' + token } }),
-          fetch('http://localhost:8080/api/documents', { headers: { Authorization: 'Bearer ' + token } })
+          fetch('https://adapt2learn-895112363610.us-central1.run.app/api/me', { headers: { Authorization: 'Bearer ' + token } }),
+          fetch('https://adapt2learn-895112363610.us-central1.run.app/api/documents', { headers: { Authorization: 'Bearer ' + token } })
         ])
         if (!profileRes.ok || !docsRes.ok) throw new Error('Falha ao carregar dados')
         setProfile(await profileRes.json())
@@ -47,7 +47,7 @@ export default function Documents() {
       form.append('discipline', discipline)
       form.append('subarea', subarea)
 
-      const res = await fetch('http://localhost:8080/api/upload', {
+      const res = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/upload', {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + token },
         body: form
@@ -55,7 +55,7 @@ export default function Documents() {
       const j = await res.json()
       setStatus(j.status || 'Upload completo!')
 
-      const docsRes = await fetch('http://localhost:8080/api/documents', { headers: { Authorization: 'Bearer ' + token } })
+      const docsRes = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/documents', { headers: { Authorization: 'Bearer ' + token } })
       setDocs(await docsRes.json())
       setFile(null)
       setDiscipline('')
@@ -74,7 +74,7 @@ export default function Documents() {
     try {
       const token = await auth.currentUser.getIdToken()
       const res = await fetch(
-        `http://localhost:8080/api/documents/${doc.id}/examples?phase=${phaseType}`,
+        `https://adapt2learn-895112363610.us-central1.run.app/api/documents/${doc.id}/examples?phase=${phaseType}`,
         { headers: { Authorization: 'Bearer ' + token } }
       )
       const data = await res.json()
@@ -99,7 +99,7 @@ export default function Documents() {
     setStatus('Agendando geração de exemplos...')
     try {
       const token = await auth.currentUser.getIdToken()
-      const res = await fetch('http://localhost:8080/api/examples', {
+      const res = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/examples', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

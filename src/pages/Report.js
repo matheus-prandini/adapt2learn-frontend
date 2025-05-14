@@ -30,7 +30,7 @@ export default function Report() {
     ;(async () => {
       try {
         const token = await user.getIdToken()
-        const url = new URL('http://localhost:8080/api/evaluate_responses')
+        const url = new URL('https://adapt2learn-895112363610.us-central1.run.app/api/evaluate_responses')
         url.searchParams.set('school_id', schoolId)
         url.searchParams.set('discipline', discipline)
         url.searchParams.set('subarea', subarea)
