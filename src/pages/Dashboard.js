@@ -7,24 +7,31 @@ import { signOut }               from 'firebase/auth';
 
 export default function Dashboard() {
   const [user, loadingAuth]       = useAuthState(auth);
+  const [username, setUsername]   = useState('');
   const [profile, setProfile]     = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const navigate                  = useNavigate();
 
-  // Carrega perfil para saber o papel
   useEffect(() => {
     if (!user) {
       setLoadingProfile(false);
       return;
     }
+
     (async () => {
       try {
-        const token = await auth.currentUser.getIdToken();
-        const res   = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/me', {
+        const token = await user.getIdToken();
+        const res   = await fetch('http://localhost:8080/api/me', {
           headers: { Authorization: 'Bearer ' + token }
         });
         if (!res.ok) throw new Error('Falha ao carregar perfil');
-        setProfile(await res.json());
+
+        const data = await res.json();
+        setProfile(data);
+
+        const firebaseName = user.displayName;
+        const backendName  = data.name;
+        setUsername(firebaseName || backendName || '');
       } catch (err) {
         console.error(err);
       } finally {
@@ -54,7 +61,7 @@ export default function Dashboard() {
       textAlign: 'center'
     }}>
       <h2 style={{ color: '#1565c0', marginBottom: 12 }}>
-        🎉 Olá, {user.displayName || 'Amigo'}!
+        🎉 Olá, {username || 'Amigo'}!
       </h2>
       <p style={{ marginBottom: 24, fontSize:16, color:'#333' }}>
         Escolha uma opção para começar:

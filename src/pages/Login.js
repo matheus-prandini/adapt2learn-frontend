@@ -9,31 +9,56 @@ import {
 } from 'firebase/auth';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
+  const [method, setMethod]     = useState('google');
+  const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError]       = useState('');
+  const [loading, setLoading]   = useState(false);
   const navigate = useNavigate();
 
   const checkProfile = async (token) => {
-    const res = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/me', {
+    const res = await fetch('http://localhost:8080/api/me', {
       headers: { Authorization: 'Bearer ' + token }
     });
     return res.ok;
   };
 
-  const handleGoogleSignIn = async () => {
+  async function handleGoogleSignIn() {
+    setError(''); setLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const token = await result.user.getIdToken();
       if (!await checkProfile(token)) {
         await signOut(auth);
-        alert('Usuário não cadastrado. Faça o registro primeiro.');
+        setError('Usuário não cadastrado. Faça o registro primeiro.');
         return;
       }
       navigate('/');
     } catch (err) {
-      alert('Erro ao entrar com Google: ' + err.message);
+      setError('Erro ao entrar com Google: ' + err.message);
+    } finally {
+      setLoading(false);
     }
-  };
+  }
+
+  async function handleEmailSignIn(e) {
+    e.preventDefault();
+    setError(''); setLoading(true);
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const token = await cred.user.getIdToken();
+      if (!await checkProfile(token)) {
+        await signOut(auth);
+        setError('Usuário não cadastrado. Faça o registro primeiro.');
+        return;
+      }
+      navigate('/');
+    } catch (err) {
+      setError('Erro ao entrar: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div style={{
@@ -47,30 +72,108 @@ export default function Login() {
     }}>
       <h2 style={{ color: '#d81b60', marginBottom: 16 }}>🎉 Bem-vindo!</h2>
 
-      <button
-        onClick={handleGoogleSignIn}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 8,
-          width: '100%',
-          padding: 12,
-          backgroundColor: '#4285f4',
-          color: '#fff',
-          fontSize: 16,
-          border: 'none',
-          borderRadius: 6,
-          cursor: 'pointer'
-        }}
-      >
-        <img
-          src="/icons/google.png"
-          alt="Google"
-          style={{ width: 24, height: 24 }}
-        />
-        Entrar com Google
-      </button>
+      {/* Toggle entre Google / Email */}
+      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'center', gap: 8 }}>
+        <button
+          onClick={() => setMethod('google')}
+          style={{
+            padding:'8px 16px',
+            backgroundColor: method==='google' ? '#d81b60' : '#f8bbd0',
+            color:'#fff',
+            border:'none',
+            borderRadius:4,
+            cursor:'pointer'
+          }}
+        >
+          Google
+        </button>
+        <button
+          onClick={() => setMethod('email')}
+          style={{
+            padding:'8px 16px',
+            backgroundColor: method==='email' ? '#d81b60' : '#f8bbd0',
+            color:'#fff',
+            border:'none',
+            borderRadius:4,
+            cursor:'pointer'
+          }}
+        >
+          E-mail
+        </button>
+      </div>
+
+      {method === 'google' ? (
+        <>
+          <button
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              width: '100%',
+              padding: 12,
+              backgroundColor: '#4285f4',
+              color: '#fff',
+              fontSize: 16,
+              border: 'none',
+              borderRadius: 6,
+              cursor: loading ? 'not-allowed' : 'pointer'
+            }}
+          >
+            <img
+              src="/icons/google.png"
+              alt="Google"
+              style={{ width: 24, height: 24 }}
+            />
+            {loading ? 'Entrando…' : 'Entrar com Google'}
+          </button>
+        </>
+      ) : (
+        <form onSubmit={handleEmailSignIn} style={{ display:'flex', flexDirection:'column', gap:12, textAlign:'left' }}>
+          <label>📧 E-mail</label>
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            style={{ width:'100%', padding:10, borderRadius:6, border:'1px solid #ccc', fontSize:16 }}
+          />
+
+          <label>🔒 Senha</label>
+          <input
+            type="password"
+            required
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            style={{ width:'100%', padding:10, borderRadius:6, border:'1px solid #ccc', fontSize:16 }}
+          />
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              marginTop:8,
+              padding:12,
+              backgroundColor:'#d81b60',
+              color:'#fff',
+              fontSize:16,
+              border:'none',
+              borderRadius:6,
+              cursor: loading ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {loading ? 'Entrando…' : 'Entrar'}
+          </button>
+        </form>
+      )}
+
+      {error && (
+        <p style={{ color:'red', marginTop:12, fontSize:14 }}>
+          {error}
+        </p>
+      )}
 
       <p style={{ marginTop: 20, fontSize: 14, color: '#555' }}>
         Não tem conta?{' '}

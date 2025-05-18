@@ -2,196 +2,328 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { auth, googleProvider } from '../firebase';
-import { signInWithPopup, signOut } from 'firebase/auth';
+import {
+  signInWithPopup,
+  createUserWithEmailAndPassword,
+  signOut
+} from 'firebase/auth';
 
 export default function Register() {
-  const [birthDate, setBirthDate] = useState('');
-  const [role, setRole] = useState('');
-  const [grade, setGrade] = useState('');
-  const [school, setSchool] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [method,          setMethod]          = useState('google');
+  const [name,            setName]            = useState('');
+  const [email,           setEmail]           = useState('');
+  const [password,        setPassword]        = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [birthDate,       setBirthDate]       = useState('');
+  const [role,            setRole]            = useState('');
+  const [grade,           setGrade]           = useState('');
+  const [school,          setSchool]          = useState('');
+  const [loading,         setLoading]         = useState(false);
+  const [error,           setError]           = useState('');
   const navigate = useNavigate();
 
   const schoolOptions = ['Colégio Objetivo', 'Eseba', 'Associação 21 Down'];
   const roleOptions = [
-    { label: 'Aluno', value: 'student' },
-    { label: 'Professor', value: 'teacher' }
+    { label: 'Aluno',    value: 'student' },
+    { label: 'Professor',value: 'teacher' }
   ];
   const gradeOptions = [
-    'Ensino Fundamental I - 1º ano',
-    'Ensino Fundamental I - 2º ano',
-    'Ensino Fundamental I - 3º ano',
-    'Ensino Fundamental I - 4º ano',
-    'Ensino Fundamental I - 5º ano',
-    'Ensino Fundamental II - 6º ano',
-    'Ensino Fundamental II - 7º ano',
-    'Ensino Fundamental II - 8º ano',
-    'Ensino Fundamental II - 9º ano',
-    'Ensino Médio - 1º ano',
-    'Ensino Médio - 2º ano',
-    'Ensino Médio - 3º ano'
+    '1º ano EF I','2º ano EF I','3º ano EF I','4º ano EF I','5º ano EF I',
+    '6º ano EF II','7º ano EF II','8º ano EF II','9º ano EF II',
+    '1º ano EM','2º ano EM','3º ano EM'
   ];
 
-  const handleGoogleRegister = async () => {
-    setLoading(true);
+  async function handleGoogleRegister() {
+    setError(''); setLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
       const token = await user.getIdToken();
+      const payload = {
+        birth_date:  birthDate,
+        role,
+        school_id:   school
+      };
+      // só envia grade_level se for aluno
+      if (role === 'student') payload.grade_level = grade;
 
-      const res = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/signup-google', {
+      const res = await fetch('http://localhost:8080/api/signup-google', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + token
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          birth_date: birthDate,
-          role: role, // 'student' or 'teacher'
-          grade_level: grade,
-          school_id: school
-        })
+        body: JSON.stringify(payload)
       });
       if (!res.ok) {
         await signOut(auth);
         throw new Error(await res.text());
       }
-
       navigate('/');
     } catch (err) {
-      alert('Erro no cadastro com Google: ' + err.message);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
-  };
+  }
+
+  async function handleEmailRegister(e) {
+    e.preventDefault();
+    if (password !== confirmPassword) {
+      setError('As senhas não conferem.');
+      return;
+    }
+    setError(''); setLoading(true);
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      const token = await cred.user.getIdToken();
+      const payload = {
+        name,
+        mail:         email,
+        password:    password,
+        role,
+        birth_date:   birthDate,
+        school_id:    school
+      };
+      if (role === 'student') payload.grade_level = grade;
+
+      const res = await fetch('http://localhost:8080/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        await cred.user.delete();
+        throw new Error(await res.text());
+      }
+      navigate('/');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
-    <div style={{
-      maxWidth: 400,
-      margin: '60px auto',
-      padding: 24,
-      backgroundColor: '#e8f5e9',
-      borderRadius: 12,
-      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-      textAlign: 'center'
-    }}>
-      <h2 style={{ color: '#388e3c', marginBottom: 16 }}>🎈 Cadastro</h2>
-      <p style={{ fontSize: 14, color: '#555', marginBottom: 16 }}>
-        Preencha seus dados e depois clique em "Cadastrar com Google":
-      </p>
+    <div style={styles.container}>
+      <h2 style={styles.header}>🎈 Cadastro</h2>
 
-      <form onSubmit={e => { e.preventDefault(); handleGoogleRegister(); }} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div style={{ textAlign: 'left' }}>
-          <label htmlFor="birthDate" style={{ fontWeight: 'bold', display: 'block', marginBottom: 4 }}>🎂 Data de Nascimento</label>
+      {/* Toggle de método */}
+      <div style={styles.toggle}>
+        <button
+          onClick={() => setMethod('google')}
+          style={{
+            ...styles.tab,
+            backgroundColor: method==='google' ? '#388e3c' : '#a5d6a7'
+          }}
+        >Google</button>
+        <button
+          onClick={() => setMethod('email')}
+          style={{
+            ...styles.tab,
+            backgroundColor: method==='email' ? '#388e3c' : '#a5d6a7'
+          }}
+        >E-mail</button>
+      </div>
+
+      {method === 'google' ? (
+        <>
+          <p style={styles.sub}>Preencha e clique em "Cadastrar com Google"</p>
+          <div style={styles.form}>
+            <label>🎂 Nascimento</label>
+            <input
+              type="date" required
+              value={birthDate}
+              onChange={e => setBirthDate(e.target.value)}
+              style={styles.input}
+            />
+
+            <label>👩‍🏫 Você é</label>
+            <select
+              required
+              value={role}
+              onChange={e => setRole(e.target.value)}
+              style={styles.input}
+            >
+              <option value="">Selecione…</option>
+              {roleOptions.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+
+            <label>
+              📚 Série / Ano
+              {role === 'teacher' && ' (opcional)'}
+            </label>
+            <select
+              required={role === 'student'}
+              value={grade}
+              onChange={e => setGrade(e.target.value)}
+              style={styles.input}
+            >
+              <option value="">Selecione…</option>
+              {gradeOptions.map(g => (
+                <option key={g} value={g}>{g}</option>
+              ))}
+            </select>
+
+            <label>🏫 Escola</label>
+            <input
+              list="schools" required
+              value={school}
+              onChange={e => setSchool(e.target.value)}
+              style={styles.input}
+            />
+            <datalist id="schools">
+              {schoolOptions.map(s => <option key={s} value={s}/> )}
+            </datalist>
+          </div>
+
+          <button
+            onClick={handleGoogleRegister}
+            disabled={loading}
+            style={styles.submit}
+          >
+            {loading ? 'Cadastrando…' : 'Cadastrar com Google'}
+          </button>
+        </>
+      ) : (
+        <form onSubmit={handleEmailRegister} style={styles.form}>
+          <label>👤 Nome Completo</label>
           <input
-            id="birthDate"
-            required
-            type="date"
+            type="text" required
+            value={name}
+            onChange={e => setName(e.target.value)}
+            style={styles.input}
+          />
+
+          <label>📧 E-mail</label>
+          <input
+            type="email" required
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            style={styles.input}
+          />
+
+          <label>🔒 Senha</label>
+          <input
+            type="password" required
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            style={styles.input}
+          />
+
+          <label>🔒 Confirmar Senha</label>
+          <input
+            type="password" required
+            value={confirmPassword}
+            onChange={e => setConfirmPassword(e.target.value)}
+            style={styles.input}
+          />
+
+          <label>🎂 Nascimento</label>
+          <input
+            type="date" required
             value={birthDate}
             onChange={e => setBirthDate(e.target.value)}
-            style={{
-              width: '100%',
-              padding: 10,
-              borderRadius: 6,
-              border: '1px solid #ccc',
-              fontSize: 16
-            }}
+            style={styles.input}
           />
-        </div>
 
-        <div style={{ textAlign: 'left' }}>
-          <label htmlFor="role" style={{ fontWeight: 'bold', display: 'block', marginBottom: 4 }}>👩‍🏫 Você é</label>
+          <label>👩‍🏫 Você é</label>
           <select
-            id="role"
             required
             value={role}
             onChange={e => setRole(e.target.value)}
-            style={{
-              width: '100%',
-              padding: 10,
-              borderRadius: 6,
-              border: '1px solid #ccc',
-              fontSize: 16
-            }}
+            style={styles.input}
           >
-            <option value="">Selecione...</option>
-            {roleOptions.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            <option value="">Selecione…</option>
+            {roleOptions.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
-        </div>
 
-        <div style={{ textAlign: 'left' }}>
-          <label htmlFor="grade" style={{ fontWeight: 'bold', display: 'block', marginBottom: 4 }}>📚 Série / Ano</label>
+          <label>
+            📚 Série / Ano
+            {role === 'teacher' && ' (opcional)'}
+          </label>
           <select
-            id="grade"
-            required
+            required={role === 'student'}
             value={grade}
             onChange={e => setGrade(e.target.value)}
-            style={{
-              width: '100%',
-              padding: 10,
-              borderRadius: 6,
-              border: '1px solid #ccc',
-              fontSize: 16
-            }}
+            style={styles.input}
           >
-            <option value="">Selecione...</option>
-            {gradeOptions.map(opt => (
-              <option key={opt} value={opt}>{opt}</option>
+            <option value="">Selecione…</option>
+            {gradeOptions.map(g => (
+              <option key={g} value={g}>{g}</option>
             ))}
           </select>
-        </div>
 
-        <div style={{ textAlign: 'left' }}>
-          <label htmlFor="school" style={{ fontWeight: 'bold', display: 'block', marginBottom: 4 }}>🏫 Escola</label>
+          <label>🏫 Escola</label>
           <input
-            id="school"
-            required
-            list="schools"
-            placeholder="Selecione sua escola"
+            list="schools" required
             value={school}
             onChange={e => setSchool(e.target.value)}
-            style={{
-              width: '100%',
-              padding: 10,
-              borderRadius: 6,
-              border: '1px solid #ccc',
-              fontSize: 16
-            }}
+            style={styles.input}
           />
           <datalist id="schools">
-            {schoolOptions.map(s => <option key={s} value={s} />)}
+            {schoolOptions.map(s => <option key={s} value={s}/> )}
           </datalist>
-        </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            padding: 12,
-            backgroundColor: '#388e3c',
-            color: '#fff',
-            fontSize: 16,
-            border: 'none',
-            borderRadius: 6,
-            cursor: loading ? 'not-allowed' : 'pointer'
-          }}
-        >
-          {loading ? 'Cadastrando…' : 'Cadastrar com Google'}
-        </button>
-      </form>
+          <button type="submit" disabled={loading} style={styles.submit}>
+            {loading ? 'Cadastrando…' : 'Cadastrar com E-mail'}
+          </button>
+        </form>
+      )}
 
-      <p style={{ marginTop: 20, fontSize: 14, color: '#555' }}>
+      {error && <p style={styles.error}>{error}</p>}
+
+      <p style={styles.footer}>
         Já tem conta?{' '}
-        <Link to="/login" style={{ color: '#388e3c', fontWeight: 'bold' }}>
+        <Link to="/login" style={styles.link}>
           Entre aqui
         </Link>
       </p>
     </div>
   );
 }
+
+const styles = {
+  container: {
+    maxWidth: 400,
+    margin: '60px auto',
+    padding: 24,
+    backgroundColor: '#e8f5e9',
+    borderRadius: 12,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+    textAlign: 'center'
+  },
+  header: { color:'#388e3c', marginBottom:16, fontSize:24 },
+  toggle: { marginBottom:24 },
+  tab: {
+    padding:'8px 16px',
+    marginRight:8,
+    color:'#fff',
+    border:'none',
+    borderRadius:4,
+    cursor:'pointer'
+  },
+  sub: { fontSize:14, color:'#555', marginBottom:16 },
+  form: { display:'flex', flexDirection:'column', gap:12, textAlign:'left' },
+  input: {
+    width:'100%', padding:10, borderRadius:6,
+    border:'1px solid #ccc', fontSize:16
+  },
+  submit: {
+    marginTop:16,
+    padding:12,
+    backgroundColor:'#388e3c',
+    color:'#fff',
+    fontSize:16,
+    border:'none',
+    borderRadius:6,
+    cursor:'pointer'
+  },
+  error: { color:'red', marginTop:12, fontSize:14 },
+  footer: { marginTop:20, fontSize:14, color:'#555' },
+  link:   { color:'#388e3c', fontWeight:'bold' }
+};
