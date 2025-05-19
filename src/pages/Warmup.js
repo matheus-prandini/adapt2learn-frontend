@@ -19,6 +19,7 @@ export default function Warmup() {
   const discipline     = params.get('discipline')     || ''
   const subarea        = params.get('subarea')        || ''
   const sessionNumber  = params.get('session_number') || ''
+  const gameId         = params.get('game_id')       || ''
   const gamePath       = params.get('game_path')      || ''
 
   // 1) carregar profile e exemplo
@@ -98,6 +99,7 @@ export default function Warmup() {
       const qs = new URLSearchParams({
         user_id:        profile.uid,
         school_id:      profile.school_id,
+        game_id:     gameId,
         discipline,
         subarea,
         session_number: sessionNumber

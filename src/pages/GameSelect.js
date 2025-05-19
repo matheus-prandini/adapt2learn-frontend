@@ -105,6 +105,7 @@ export default function GameSelect() {
         discipline,
         subarea,
         session_number: sessionNumber,
+        game_id:        selectedGame.id,
         game_path:      selectedGame.path
       }).toString();
 

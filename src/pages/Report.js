@@ -22,41 +22,43 @@ export default function Report() {
   const sessionNumber = params.get('session_number') || ''
 
   useEffect(() => {
-    if (loadingAuth) return
+    if (loadingAuth) return;
     if (!user) {
-      navigate('/login')
-      return
+        navigate('/login');
+        return;
     }
 
-    ;(async () => {
-      try {
-        const token = await user.getIdToken()
-        const url = new URL('http://localhost:8080/api/evaluate_responses')
-        url.searchParams.set('school_id', schoolId)
-        url.searchParams.set('discipline', discipline)
-        url.searchParams.set('subarea', subarea)
-        url.searchParams.set('session_number', sessionNumber)
-
-        const res = await fetch(url.toString(), {
-          method: 'POST',
-          headers: {
+    (async () => {
+        try {
+        const token = await user.getIdToken();
+        const res = await fetch('http://localhost:8080/api/evaluate_responses', {
+            method: 'POST',
+            headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          }
-        })
-        if (!res.ok) throw new Error(`Status ${res.status}`)
-        const json = await res.json()
+            Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                school_id: schoolId,
+                discipline,
+                subarea,
+                session_number: sessionNumber,
+            }),
+        });
 
-        setReport(json.report ?? null)
-        setCorrectList(Array.isArray(json.correct_list) ? json.correct_list : [])
-        setWrongList(Array.isArray(json.wrong_list)   ? json.wrong_list   : [])
-      } catch (err) {
-        console.error('Failed to load report', err)
-      } finally {
-        setLoading(false)
-      }
-    })()
-  }, [user, loadingAuth, navigate, schoolId, discipline, subarea, sessionNumber])
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const json = await res.json();
+
+        setReport(json.report ?? null);
+        setCorrectList(Array.isArray(json.correct_list) ? json.correct_list : []);
+        setWrongList(Array.isArray(json.wrong_list) ? json.wrong_list : []);
+        } catch (err) {
+        console.error('Failed to load report', err);
+        } finally {
+        setLoading(false);
+        }
+    })();
+  }, [user, loadingAuth, navigate, schoolId, discipline, subarea, sessionNumber]);
+
 
   if (loadingAuth || loading) {
     return <p style={styles.loading}>🔍 Carregando seus resultados…</p>
