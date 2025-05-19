@@ -31,7 +31,7 @@ export default function Report() {
     (async () => {
         try {
         const token = await user.getIdToken();
-        const res = await fetch('http://localhost:8080/api/evaluate_responses', {
+        const res = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/evaluate_responses', {
             method: 'POST',
             headers: {
             'Content-Type': 'application/json',

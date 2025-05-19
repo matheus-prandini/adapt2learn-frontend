@@ -17,7 +17,7 @@ export default function Login() {
   const navigate = useNavigate();
 
   const checkProfile = async (token) => {
-    const res = await fetch('http://localhost:8080/api/me', {
+    const res = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/me', {
       headers: { Authorization: 'Bearer ' + token }
     });
     return res.ok;

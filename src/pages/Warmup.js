@@ -34,14 +34,14 @@ export default function Warmup() {
         const token = await user.getIdToken()
 
         // busca profile
-        const meRes = await fetch('http://localhost:8080/api/me', {
+        const meRes = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/me', {
           headers: { Authorization: `Bearer ${token}` }
         })
         if (!meRes.ok) throw new Error('Falha ao carregar perfil')
         setProfile(await meRes.json())
 
         // busca exemplo de warmup
-        const url = new URL('http://localhost:8080/api/warmup_example')
+        const url = new URL('https://adapt2learn-895112363610.us-central1.run.app/api/warmup_example')
         url.searchParams.set('discipline', discipline)
         url.searchParams.set('subarea', subarea)
         url.searchParams.set('session_number', sessionNumber)
@@ -83,7 +83,7 @@ export default function Warmup() {
           { role: 'assistant', content: ''                }
         ]
       }]
-      const res = await fetch('http://localhost:8080/api/warmup_responses', {
+      const res = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/warmup_responses', {
         method:  'POST',
         headers: {
           'Content-Type':  'application/json',
