@@ -7,6 +7,7 @@ import {
   signInWithPopup,
   signOut
 } from 'firebase/auth';
+import { FcGoogle } from 'react-icons/fc';
 
 export default function Login() {
   const [method, setMethod]     = useState('google');
@@ -71,8 +72,6 @@ export default function Login() {
       textAlign: 'center'
     }}>
       <h2 style={{ color: '#d81b60', marginBottom: 16 }}>🎉 Bem-vindo!</h2>
-
-      {/* Toggle entre Google / Email */}
       <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'center', gap: 8 }}>
         <button
           onClick={() => setMethod('google')}
@@ -122,11 +121,7 @@ export default function Login() {
               cursor: loading ? 'not-allowed' : 'pointer'
             }}
           >
-            <img
-              src="/icons/google.png"
-              alt="Google"
-              style={{ width: 24, height: 24 }}
-            />
+            <FcGoogle size={24} />
             {loading ? 'Entrando…' : 'Entrar com Google'}
           </button>
         </>
