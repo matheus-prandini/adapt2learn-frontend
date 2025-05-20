@@ -10,11 +10,11 @@ export default function Report() {
   const [report, setReport] = useState(null)
   const [correctList, setCorrectList] = useState([])
   const [wrongList, setWrongList] = useState([])
-  const [expandedIdx, setExpandedIdx] = useState(null) // índice expandido
+  const [expandedIdx, setExpandedIdx] = useState(null)
   const navigate = useNavigate()
   const { search } = useLocation()
 
-  // extrai parâmetros da URL
+  // Extrai parâmetros da URL
   const params = new URLSearchParams(search)
   const schoolId      = params.get('school_id')   || ''
   const discipline    = params.get('discipline')  || ''
@@ -22,56 +22,59 @@ export default function Report() {
   const sessionNumber = params.get('session_number') || ''
 
   useEffect(() => {
-    if (loadingAuth) return;
+    if (loadingAuth) return
     if (!user) {
-        navigate('/login');
-        return;
+      navigate('/login')
+      return
     }
 
-    (async () => {
-        try {
-        const token = await user.getIdToken();
-        const res = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/evaluate_responses', {
+    ;(async () => {
+      try {
+        const token = await user.getIdToken()
+        const res = await fetch(
+          'http://localhost:8080/api/evaluate_responses',
+          {
             method: 'POST',
             headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({
-                school_id: schoolId,
-                discipline,
-                subarea,
-                session_number: sessionNumber,
+              school_id: schoolId,
+              discipline,
+              subarea,
+              session_number: sessionNumber,
             }),
-        });
+          }
+        )
+        if (!res.ok) throw new Error(`Status ${res.status}`)
+        const json = await res.json()
 
-        if (!res.ok) throw new Error(`Status ${res.status}`);
-        const json = await res.json();
-
-        setReport(json.report ?? null);
-        setCorrectList(Array.isArray(json.correct_list) ? json.correct_list : []);
-        setWrongList(Array.isArray(json.wrong_list) ? json.wrong_list : []);
-        } catch (err) {
-        console.error('Failed to load report', err);
-        } finally {
-        setLoading(false);
-        }
-    })();
-  }, [user, loadingAuth, navigate, schoolId, discipline, subarea, sessionNumber]);
-
+        setReport(json.report ?? null)
+        setCorrectList(Array.isArray(json.correct_list) ? json.correct_list : [])
+        setWrongList(Array.isArray(json.wrong_list) ? json.wrong_list : [])
+      } catch (err) {
+        console.error('Failed to load report', err)
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [user, loadingAuth, navigate, schoolId, discipline, subarea, sessionNumber])
 
   if (loadingAuth || loading) {
     return <p style={styles.loading}>🔍 Carregando seus resultados…</p>
   }
 
-  // métricas para o resumo
+  // Métricas para o resumo
   const total    = correctList.length + wrongList.length
   const accuracy = total > 0 ? Math.round((correctList.length / total) * 100) : 0
   const avgTime  = total > 0
-    ? (([...correctList, ...wrongList].reduce((sum, q) => sum + q.time_to_answer, 0) / total) || 0).toFixed(2)
+    ? (([...correctList, ...wrongList]
+        .reduce((sum, q) => sum + q.time_to_answer, 0) / total) || 0
+      ).toFixed(2)
     : '0.00'
 
-  // alterna expansão do card
+  // Alterna expansão de cards
   const toggleExpand = idx => {
     setExpandedIdx(expandedIdx === idx ? null : idx)
   }
@@ -87,11 +90,11 @@ export default function Report() {
 
       <section style={styles.summarySection}>
         {[
-          { emoji: '❓', value: total,  label: 'Questões' },
-          { emoji: '✅', value: correctList.length, label: 'Acertos' },
-          { emoji: '❌', value: wrongList.length,   label: 'Erros' },
-          { emoji: '🎯', value: `${accuracy}%`,     label: 'Precisão' },
-          { emoji: '⏱️', value: `${avgTime}s`,      label: 'Média Tempo' },
+          { emoji: '❓', value: total,               label: 'Questões' },
+          { emoji: '✅', value: correctList.length,  label: 'Acertos' },
+          { emoji: '❌', value: wrongList.length,    label: 'Erros' },
+          { emoji: '🎯', value: `${accuracy}%`,      label: 'Precisão' },
+          { emoji: '⏱️', value: `${avgTime}s`,       label: 'Média Tempo' },
         ].map((item,i) => (
           <div key={i} style={styles.summaryCard}>
             <div style={styles.metricEmoji}>{item.emoji}</div>
@@ -100,6 +103,24 @@ export default function Report() {
           </div>
         ))}
       </section>
+
+      {report?.insights?.length > 0 && (
+        <section style={styles.section}>
+          <h3 style={styles.sectionTitle}>💡 Pontos de Evolução</h3>
+          <div style={styles.insightsGrid}>
+            {report.insights.map((ins, idx) => (
+              <div key={idx} style={styles.insightCard}>
+                <p style={styles.insightPattern}>
+                  <strong>{ins.error_pattern}</strong> 
+                </p>
+                <p style={styles.insightRecommendation}>
+                  <strong>Recomendação:</strong> {ins.recommendation}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Questões Corretas */}
       <section style={styles.section}>
@@ -163,6 +184,19 @@ export default function Report() {
           </div>
         )}
       </section>
+
+      {/* Botão para Questionário de Feedback */}
+      <div style={{ textAlign: 'center', marginTop: 32 }}>
+        <button
+          onClick={() => {
+          const qp = new URLSearchParams(search)
+          qp.set('session_number', sessionNumber)
+          navigate(`/questionnaire?${qp.toString()}`)}}
+        style={styles.feedbackButton}
+        >
+        📝 Avaliar Experiência
+        </button>
+      </div>
     </div>
   )
 }
@@ -248,6 +282,34 @@ const styles = {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
     gap: 16
+  },
+  insightsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+    gap: 16,
+    marginTop: 16
+  },
+  insightCard: {
+    backgroundColor: '#E3F2FD',
+    border: '2px solid #90CAF9',
+    borderRadius: 8,
+    padding: 16,
+    textAlign: 'left',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+  },
+  insightArea: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#1E88E5',
+    marginBottom: 8,
+    textTransform: 'uppercase'
+  },
+  insightPattern: {
+    fontSize: 14,
+    marginBottom: 8
+  },
+  insightRecommendation: {
+    fontSize: 14
   },
   cardAccent: {
     backgroundColor: '#E8F5E9',
