@@ -51,46 +51,24 @@ export default function Dashboard() {
   const isTeacher = profile?.role === 'teacher';
 
   return (
-    <div style={{
-      maxWidth: 500,
-      margin: '40px auto',
-      padding: 24,
-      backgroundColor: '#e3f2fd',
-      borderRadius: 12,
-      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-      textAlign: 'center'
-    }}>
-      <h2 style={{ color: '#1565c0', marginBottom: 12 }}>
-        🎉 Olá, {username || 'Amigo'}!
-      </h2>
-      <p style={{ marginBottom: 24, fontSize:16, color:'#333' }}>
-        Escolha uma opção para começar:
-      </p>
+    <div style={styles.container}>
+      <h2 style={styles.header}>🎉 Olá, {username || 'Amigo'}!</h2>
+      <p style={styles.sub}>Escolha uma opção para começar:</p>
 
-      <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-        {1 == 2 && isTeacher && ( // TODO: habilitar quando o backend estiver pronto
-          <button
-            onClick={() => navigate('/documents')}
-            style={{
-              padding:12,fontSize:16,
-              backgroundColor:'#29b6f6',
-              color:'#fff',border:'none',
-              borderRadius:8,cursor:'pointer'
-            }}
-          >
-            📂 Documentos
+      <div style={styles.buttons}>
+        {isTeacher && (
+          <button onClick={() => navigate('/admin')} style={styles.submit}>
+            ⚙️ Admin
           </button>
         )}
+        {/* futuro botão de documentos */}
+        {/*{isTeacher && (
+          <button onClick={() => navigate('/documents')} style={styles.submit}>
+            📂 Documentos
+          </button>
+        )}*/}
 
-        <button
-          onClick={() => navigate('/select')}
-          style={{
-            padding:12,fontSize:16,
-            backgroundColor:'#66bb6a',
-            color:'#fff',border:'none',
-            borderRadius:8,cursor:'pointer'
-          }}
-        >
+        <button onClick={() => navigate('/select')} style={styles.play}>
           🕹️ Jogar
         </button>
 
@@ -99,12 +77,7 @@ export default function Dashboard() {
             await signOut(auth);
             navigate('/login');
           }}
-          style={{
-            padding:12,fontSize:16,
-            backgroundColor:'#ef5350',
-            color:'#fff',border:'none',
-            borderRadius:8,cursor:'pointer'
-          }}
+          style={styles.logout}
         >
           🚪 Sair
         </button>
@@ -112,3 +85,56 @@ export default function Dashboard() {
     </div>
   );
 }
+
+const styles = {
+  container: {
+    maxWidth: 500,
+    margin: '40px auto',
+    padding: 24,
+    backgroundColor: '#e3f2fd',
+    borderRadius: 12,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+    textAlign: 'center'
+  },
+  header: {
+    color: '#1565c0',
+    marginBottom: 12
+  },
+  sub: {
+    marginBottom: 24,
+    fontSize: 16,
+    color: '#333'
+  },
+  buttons: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12
+  },
+  submit: {
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: '#29b6f6',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 8,
+    cursor: 'pointer'
+  },
+  play: {
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: '#66bb6a',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 8,
+    cursor: 'pointer'
+  },
+  logout: {
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: '#ef5350',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 8,
+    cursor: 'pointer'
+  }
+};

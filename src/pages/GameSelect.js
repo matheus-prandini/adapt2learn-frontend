@@ -1,45 +1,55 @@
+// src/pages/GameSelect.js
 import React, { useState, useEffect } from 'react';
 import { auth } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 
 export default function GameSelect() {
-  const [profile, setProfile]         = useState(null);
-  const [docsList, setDocsList]       = useState([]);
-  const [gamesList, setGamesList]     = useState([]);
+  const [profile, setProfile]           = useState(null);
+  const [docsList, setDocsList]         = useState([]);
+  const [gamesList, setGamesList]       = useState([]);
   const [selectedGame, setSelectedGame] = useState(null);
-  const [discipline, setDiscipline]   = useState('');
-  const [subarea, setSubarea]         = useState('');
-  const [loading, setLoading]         = useState(true);
+  const [discipline, setDiscipline]     = useState('');
+  const [subarea, setSubarea]           = useState('');
+  const [loading, setLoading]           = useState(true);
   const [loadingSession, setLoadingSession] = useState(false);
-  const [error, setError]             = useState('');
-  const navigate                       = useNavigate();
-  const storage                        = getStorage();
+  const [error, setError]               = useState('');
+  const navigate                         = useNavigate();
+  const storage                          = getStorage();
 
   // Carrega perfil, documentos e jogos
   useEffect(() => {
     (async () => {
       try {
         const token = await auth.currentUser.getIdToken();
-        const [prRes, docsRes, gamesRes] = await Promise.all([
-          fetch('http://localhost:8080/api/me', {
-            headers: { Authorization: 'Bearer ' + token }
-          }),
-          fetch('http://localhost:8080/api/documents', {
-            headers: { Authorization: 'Bearer ' + token }
-          }),
-          fetch('http://localhost:8080/api/games', {
-            headers: { Authorization: 'Bearer ' + token }
-          })
-        ]);
-        if (!prRes.ok || !docsRes.ok || !gamesRes.ok) {
-          throw new Error('Erro ao carregar dados iniciais');
-        }
-        const pr    = await prRes.json();
-        const docs  = await docsRes.json();
+
+        // 1) Busca perfil
+        const prRes = await fetch('http://localhost:8080/api/me', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!prRes.ok) throw new Error('Falha ao carregar perfil');
+        const pr = await prRes.json();
+        setProfile(pr);
+
+        // 2) Busca documentos da escola
+        const docsRes = await fetch(
+          `http://localhost:8080/api/documents/school/${pr.school_id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+        if (!docsRes.ok) throw new Error('Falha ao carregar documentos');
+        const docs = await docsRes.json();
+        setDocsList(docs);
+
+        // 3) Busca lista de jogos
+        const gamesRes = await fetch('http://localhost:8080/api/games', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!gamesRes.ok) throw new Error('Falha ao carregar jogos');
         const games = await gamesRes.json();
 
-        // Baixa icons
+        // 4) Baixa ícones
         const withIcons = await Promise.all(
           games.map(async g => {
             let iconUrl = '';
@@ -49,10 +59,8 @@ export default function GameSelect() {
             return { ...g, iconUrl };
           })
         );
-
-        setProfile(pr);
-        setDocsList(docs);
         setGamesList(withIcons);
+
       } catch (err) {
         console.error(err);
         setError(err.message);
@@ -65,25 +73,25 @@ export default function GameSelect() {
   if (loading) return <p style={styles.loading}>🔄 Carregando…</p>;
   if (error)   return <p style={styles.error}>{error}</p>;
 
+  // Cria listas únicas de disciplinas e subáreas
   const disciplineOptions = Array.from(new Set(docsList.map(d => d.discipline)));
-  const subareaOptions    = discipline
-    ? Array.from(
-        new Set(
-          docsList
-            .filter(d => d.discipline === discipline)
-            .map(d => d.subarea)
-        )
-      )
+  const subareaOptions = discipline
+    ? Array.from(new Set(
+        docsList
+          .filter(d => d.discipline === discipline)
+          .map(d => d.subarea)
+      ))
     : [];
 
+  // Cria sessão no backend
   async function createSession(gameId) {
     const token = await auth.currentUser.getIdToken();
     const payload = { game_id: gameId, discipline, subarea };
     const res = await fetch('http://localhost:8080/api/sessions', {
       method: 'POST',
       headers: {
-        'Content-Type':  'application/json',
-        Authorization:   `Bearer ${token}`
+        'Content-Type': 'application/json',
+        Authorization:  `Bearer ${token}`
       },
       body: JSON.stringify(payload)
     });
@@ -94,11 +102,12 @@ export default function GameSelect() {
     return session_number;
   }
 
+  // Inicia jogo ou warmup (dependendo do grupo)
   const onStart = async () => {
     setLoadingSession(true);
     try {
       const sessionNumber = await createSession(selectedGame.id);
-      // monta os params
+      const useWarmup = selectedGame.has_warmup && profile.group !== 'grupo3';
       const params = new URLSearchParams({
         user_id:        profile.uid,
         school_id:      profile.school_id,
@@ -109,11 +118,9 @@ export default function GameSelect() {
         game_path:      selectedGame.path
       }).toString();
 
-      if (selectedGame.has_warmup) {
-        // redireciona para Warmup.js
+      if (useWarmup) {
         navigate(`/warmup?${params}`);
       } else {
-        // inicia o jogo direto
         window.location.href = `/${selectedGame.path}/?${params}`;
       }
     } catch (err) {
@@ -139,7 +146,11 @@ export default function GameSelect() {
           <h2 style={styles.header}>🕹️ Escolha um Jogo</h2>
           <div style={styles.grid}>
             {gamesList.map(game => (
-              <div key={game.id} onClick={() => onGameSelect(game)} style={styles.card}>
+              <div
+                key={game.id}
+                onClick={() => onGameSelect(game)}
+                style={styles.card}
+              >
                 {game.iconUrl
                   ? <img src={game.iconUrl} alt={game.name} style={styles.icon} />
                   : <div style={styles.placeholder} />}
@@ -189,7 +200,7 @@ export default function GameSelect() {
             }
             style={styles.start}
           >
-            {'▶️ Iniciar'}
+            ▶️ Iniciar
           </button>
         </>
       )}
