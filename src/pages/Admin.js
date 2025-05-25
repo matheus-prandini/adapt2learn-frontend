@@ -11,7 +11,6 @@ export default function Admin() {
   const [loadingStudents, setLoadingStudents] = useState(true)
   const navigate                      = useNavigate()
 
-  // 1) Primeiro, buscamos o perfil completo (/api/me) pra saber role e school_id
   useEffect(() => {
     if (loadingAuth) return
     if (!user) {
@@ -27,7 +26,6 @@ export default function Admin() {
         })
         if (!res.ok) throw new Error('Falha ao carregar perfil')
         const data = await res.json()
-        // só professores podem ver essa tela
         if (data.role !== 'teacher') {
           navigate('/')
           return
@@ -42,7 +40,6 @@ export default function Admin() {
     })()
   }, [user, loadingAuth, navigate])
 
-  // 2) Só depois de ter o profile buscamos os alunos desta mesma escola
   useEffect(() => {
     if (loadingProfile) return
     if (!profile) return
@@ -53,7 +50,6 @@ export default function Admin() {
         const url = new URL('http://localhost:8080/api/users')
         url.searchParams.set('role', 'student')
         url.searchParams.set('school_id', profile.school_id)
-        // endpoint vai ordenar por grade_level
         const res = await fetch(url.toString(), {
           headers: { Authorization: `Bearer ${token}` }
         })
@@ -66,7 +62,7 @@ export default function Admin() {
         setLoadingStudents(false)
       }
     })()
-  }, [loadingProfile, profile, user, navigate])
+  }, [loadingProfile, profile, user])
 
   if (loadingAuth || loadingProfile || loadingStudents) {
     return <p style={{ textAlign:'center', padding:20 }}>Carregando…</p>
@@ -80,6 +76,7 @@ export default function Admin() {
           <tr>
             <th style={th}>Nome</th>
             <th style={th}>E-mail</th>
+            <th style={th}>Senha</th>
             <th style={th}>Grade</th>
             <th style={th}>Grupo</th>
           </tr>
@@ -89,6 +86,7 @@ export default function Admin() {
             <tr key={s.uid}>
               <td style={td}>{s.name}</td>
               <td style={td}>{s.mail}</td>
+              <td style={td}>{s.password}</td>
               <td style={td}>{s.grade_level}</td>
               <td style={td}>
                 <select
