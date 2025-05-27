@@ -115,7 +115,8 @@ export default function GameSelect() {
         subarea,
         session_number: sessionNumber,
         game_id:        selectedGame.id,
-        game_path:      selectedGame.path
+        game_path:      selectedGame.path,
+        token:         await auth.currentUser.getIdToken()
       }).toString();
 
       if (useWarmup) {

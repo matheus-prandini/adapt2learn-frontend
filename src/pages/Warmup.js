@@ -102,7 +102,8 @@ export default function Warmup() {
         game_id:     gameId,
         discipline,
         subarea,
-        session_number: sessionNumber
+        session_number: sessionNumber,
+        token:         token,
       }).toString()
       window.location.href = `/${gamePath}/?${qs}`
 
