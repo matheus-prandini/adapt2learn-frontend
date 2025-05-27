@@ -21,7 +21,7 @@ export default function Admin() {
     ;(async () => {
       try {
         const token = await user.getIdToken()
-        const res   = await fetch('http://localhost:8080/api/me', {
+        const res   = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/me', {
           headers: { Authorization: `Bearer ${token}` }
         })
         if (!res.ok) throw new Error('Falha ao carregar perfil')
@@ -47,7 +47,7 @@ export default function Admin() {
     ;(async () => {
       try {
         const token = await user.getIdToken()
-        const url = new URL('http://localhost:8080/api/users')
+        const url = new URL('https://adapt2learn-895112363610.us-central1.run.app/api/users')
         url.searchParams.set('role', 'student')
         url.searchParams.set('school_id', profile.school_id)
         const res = await fetch(url.toString(), {
@@ -108,7 +108,7 @@ export default function Admin() {
 
   async function handleGroupChange(uid, newGroup) {
     const token = await user.getIdToken()
-    const res = await fetch(`http://localhost:8080/api/users/${uid}/group`, {
+    const res = await fetch(`https://adapt2learn-895112363610.us-central1.run.app/api/users/${uid}/group`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',

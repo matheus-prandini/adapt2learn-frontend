@@ -24,7 +24,7 @@ export default function GameSelect() {
         const token = await auth.currentUser.getIdToken();
 
         // 1) Busca perfil
-        const prRes = await fetch('http://localhost:8080/api/me', {
+        const prRes = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/me', {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (!prRes.ok) throw new Error('Falha ao carregar perfil');
@@ -33,7 +33,7 @@ export default function GameSelect() {
 
         // 2) Busca documentos da escola
         const docsRes = await fetch(
-          `http://localhost:8080/api/documents/school/${pr.school_id}`,
+          `https://adapt2learn-895112363610.us-central1.run.app/api/documents/school/${pr.school_id}`,
           {
             headers: { Authorization: `Bearer ${token}` }
           }
@@ -43,7 +43,7 @@ export default function GameSelect() {
         setDocsList(docs);
 
         // 3) Busca lista de jogos
-        const gamesRes = await fetch('http://localhost:8080/api/games', {
+        const gamesRes = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/games', {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (!gamesRes.ok) throw new Error('Falha ao carregar jogos');
@@ -87,7 +87,7 @@ export default function GameSelect() {
   async function createSession(gameId) {
     const token = await auth.currentUser.getIdToken();
     const payload = { game_id: gameId, discipline, subarea };
-    const res = await fetch('http://localhost:8080/api/sessions', {
+    const res = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/sessions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

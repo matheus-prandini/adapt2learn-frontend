@@ -39,7 +39,7 @@ export default function Questionnaire() {
         suggestion
       }
 
-      const res = await fetch('http://localhost:8080/api/questionnaire', {
+      const res = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/questionnaire', {
         method: 'POST',
         headers: {
           'Content-Type':  'application/json',

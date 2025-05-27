@@ -47,7 +47,7 @@ export default function Register() {
       // só envia grade_level se for aluno
       if (role === 'student') payload.grade_level = grade;
 
-      const res = await fetch('http://localhost:8080/api/signup-google', {
+      const res = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/signup-google', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -87,7 +87,7 @@ export default function Register() {
       };
       if (role === 'student') payload.grade_level = grade;
 
-      const res = await fetch('http://localhost:8080/api/signup', {
+      const res = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/signup', {
         method: 'POST',
         headers: { 'Content-Type':'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(payload)

@@ -21,7 +21,7 @@ export default function Dashboard() {
     (async () => {
       try {
         const token = await user.getIdToken();
-        const res   = await fetch('http://localhost:8080/api/me', {
+        const res   = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/me', {
           headers: { Authorization: 'Bearer ' + token }
         });
         if (!res.ok) throw new Error('Falha ao carregar perfil');
