@@ -62,11 +62,11 @@ export default function Dashboard() {
           </button>
         )}
         {/* futuro botão de documentos */}
-        {/*{isTeacher && (
+        {isTeacher && (
           <button onClick={() => navigate('/documents')} style={styles.submit}>
             📂 Documentos
           </button>
-        )}*/}
+        )}
 
         <button onClick={() => navigate('/select')} style={styles.play}>
           🕹️ Jogar
