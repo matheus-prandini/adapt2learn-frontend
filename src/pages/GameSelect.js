@@ -17,13 +17,11 @@ export default function GameSelect() {
   const navigate                         = useNavigate();
   const storage                          = getStorage();
 
-  // Carrega perfil, documentos e jogos
   useEffect(() => {
     (async () => {
       try {
         const token = await auth.currentUser.getIdToken();
 
-        // 1) Busca perfil
         const prRes = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/me', {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -31,7 +29,6 @@ export default function GameSelect() {
         const pr = await prRes.json();
         setProfile(pr);
 
-        // 2) Busca documentos da escola
         const docsRes = await fetch(
           `https://adapt2learn-895112363610.us-central1.run.app/api/documents/school/${pr.school_id}`,
           {
@@ -42,14 +39,12 @@ export default function GameSelect() {
         const docs = await docsRes.json();
         setDocsList(docs);
 
-        // 3) Busca lista de jogos
         const gamesRes = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/games', {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (!gamesRes.ok) throw new Error('Falha ao carregar jogos');
         const games = await gamesRes.json();
 
-        // 4) Baixa ícones
         const withIcons = await Promise.all(
           games.map(async g => {
             let iconUrl = '';
@@ -73,7 +68,6 @@ export default function GameSelect() {
   if (loading) return <p style={styles.loading}>🔄 Carregando…</p>;
   if (error)   return <p style={styles.error}>{error}</p>;
 
-  // Cria listas únicas de disciplinas e subáreas
   const disciplineOptions = Array.from(new Set(docsList.map(d => d.discipline)));
   const subareaOptions = discipline
     ? Array.from(new Set(
@@ -83,7 +77,6 @@ export default function GameSelect() {
       ))
     : [];
 
-  // Cria sessão no backend
   async function createSession(gameId) {
     const token = await auth.currentUser.getIdToken();
     const payload = { game_id: gameId, discipline, subarea };
@@ -102,7 +95,6 @@ export default function GameSelect() {
     return session_number;
   }
 
-  // Inicia jogo ou warmup (dependendo do grupo)
   const onStart = async () => {
     setLoadingSession(true);
     try {
@@ -194,14 +186,19 @@ export default function GameSelect() {
           )}
 
           <button
-            onClick={onStart}
-            disabled={
-              loadingSession ||
-              (selectedGame.has_options && (!discipline || !subarea))
-            }
+            onClick={async () => {
+              if (selectedGame.has_options && (!discipline || !subarea)) {
+                const proceed = window.confirm(
+                  'Você não selecionou disciplina e subárea. Deseja continuar mesmo assim?'
+                );
+                if (!proceed) return;
+              }
+              await onStart();
+            }}
+            disabled={loadingSession}
             style={styles.start}
           >
-            ▶️ Iniciar
+            ▶️ Iniciar Jogo
           </button>
         </>
       )}
@@ -210,18 +207,18 @@ export default function GameSelect() {
 }
 
 const styles = {
-  container: { padding:20, maxWidth:600, margin:'40px auto', background:'#fffde7', borderRadius:12 },
-  back:      { background:'transparent', border:'none', cursor:'pointer', fontSize:16, marginBottom:20 },
-  header:    { textAlign:'center', color:'#f57f17', marginBottom:20 },
-  grid:      { display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(120px,1fr))', gap:16 },
-  card:      { cursor:'pointer', background:'#fff', border:'2px solid #ffe082', borderRadius:12, padding:12, textAlign:'center' },
-  icon:      { width:80, height:80, marginBottom:8 },
-  placeholder:{ height:80, marginBottom:8, background:'#eee' },
-  gameName:  { fontSize:14, fontWeight:'bold', color:'#33691e' },
-  options:   { display:'flex', gap:24, marginBottom:24 },
-  field:     { display:'flex', flexDirection:'column', flex:1, gap:6 },
-  select:    { padding:8, borderRadius:6, border:'1px solid #ccc' },
-  start:     { width:'100%', padding:12, fontSize:16, background:'#66bb6a', color:'#fff', border:'none', borderRadius:8, cursor:'pointer' },
-  loading:   { padding:20, textAlign:'center' },
-  error:     { padding:20, textAlign:'center', color:'red' }
+  container:   { padding:20, maxWidth:600, margin:'40px auto', background:'#fffde7', borderRadius:12 },
+  back:        { background:'transparent', border:'none', cursor:'pointer', fontSize:16, marginBottom:20 },
+  header:      { textAlign:'center', color:'#f57f17', marginBottom:20 },
+  grid:        { display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(120px,1fr))', gap:16 },
+  card:        { cursor:'pointer', background:'#fff', border:'2px solid #ffe082', borderRadius:12, padding:12, textAlign:'center' },
+  icon:        { width:80, height:80, marginBottom:8 },
+  placeholder: { height:80, marginBottom:8, background:'#eee' },
+  gameName:    { fontSize:14, fontWeight:'bold', color:'#33691e' },
+  options:     { display:'flex', gap:24, marginBottom:24 },
+  field:       { display:'flex', flexDirection:'column', flex:1, gap:6 },
+  select:      { padding:8, borderRadius:6, border:'1px solid #ccc' },
+  start:       { width:'100%', padding:12, fontSize:16, background:'#66bb6a', color:'#fff', border:'none', borderRadius:8, cursor:'pointer' },
+  loading:     { padding:20, textAlign:'center' },
+  error:       { padding:20, textAlign:'center', color:'red' }
 };

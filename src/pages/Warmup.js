@@ -19,16 +19,33 @@ export default function Warmup() {
   const discipline     = params.get('discipline')     || ''
   const subarea        = params.get('subarea')        || ''
   const sessionNumber  = params.get('session_number') || ''
-  const gameId         = params.get('game_id')       || ''
+  const gameId         = params.get('game_id')        || ''
   const gamePath       = params.get('game_path')      || ''
 
-  // 1) carregar profile e exemplo
+  // Redireciona para o jogo
+  const redirectToGame = async () => {
+    if (!profile) return
+    const token = await user.getIdToken()
+    const qs = new URLSearchParams({
+      user_id:        profile.uid,
+      school_id:      profile.school_id,
+      game_id:        gameId,
+      discipline,
+      subarea,
+      session_number: sessionNumber,
+      token:          token,
+    }).toString()
+    window.location.href = `/${gamePath}/?${qs}`
+  }
+
+  // Carrega perfil e warmup
   useEffect(() => {
     if (loadingAuth) return
     if (!user) {
       navigate('/login')
       return
     }
+
     ;(async () => {
       try {
         const token = await user.getIdToken()
@@ -38,7 +55,8 @@ export default function Warmup() {
           headers: { Authorization: `Bearer ${token}` }
         })
         if (!meRes.ok) throw new Error('Falha ao carregar perfil')
-        setProfile(await meRes.json())
+        const pr = await meRes.json()
+        setProfile(pr)
 
         // busca exemplo de warmup
         const url = new URL('https://adapt2learn-895112363610.us-central1.run.app/api/warmup_example')
@@ -50,7 +68,8 @@ export default function Warmup() {
           headers: { Authorization: `Bearer ${token}` }
         })
         if (!res.ok) throw new Error(`Status ${res.status}`)
-        setExample(await res.json())
+        const ex = await res.json()
+        setExample(ex)
       } catch (err) {
         console.error(err)
         setError('Não foi possível carregar o aquecimento.')
@@ -63,17 +82,12 @@ export default function Warmup() {
   if (loadingAuth || loading) {
     return <p style={styles.loading}>🔄 Carregando aquecimento…</p>
   }
-  if (error) {
-    return <p style={styles.error}>{error}</p>
-  }
 
-  // 2) ao concluir, salva e redireciona
   const onFinish = async () => {
     if (!example || !profile) return
     setSaving(true)
     try {
       const token = await user.getIdToken()
-      // monta payload esperado pelo endpoint /api/warmup_responses
       const body = [{
         example_id:     example.example_id,
         session_number: Number(sessionNumber),
@@ -91,22 +105,9 @@ export default function Warmup() {
         },
         body: JSON.stringify(body)
       })
-      if (!res.ok) {
-        throw new Error(`Status ${res.status}`)
-      }
+      if (!res.ok) throw new Error(`Status ${res.status}`)
 
-      // redireciona para o jogo
-      const qs = new URLSearchParams({
-        user_id:        profile.uid,
-        school_id:      profile.school_id,
-        game_id:     gameId,
-        discipline,
-        subarea,
-        session_number: sessionNumber,
-        token:         token,
-      }).toString()
-      window.location.href = `/${gamePath}/?${qs}`
-
+      await redirectToGame()
     } catch (err) {
       console.error(err)
       alert('Erro ao salvar aquecimento: ' + err.message)
@@ -120,17 +121,30 @@ export default function Warmup() {
       <button onClick={() => navigate(-1)} style={styles.back}>← Voltar</button>
       <h2 style={styles.title}>📖 Aquecimento</h2>
 
-      <div style={styles.card}>
-        <p style={styles.question}>{example.question}</p>
-      </div>
-
-      <button
-        onClick={onFinish}
-        disabled={saving}
-        style={styles.finish}
-      >
-        Concluir Aquecimento{saving ? '…' : ''}
-      </button>
+      {error ? (
+        <>
+          <p style={styles.error}>{error}</p>
+          <button
+            onClick={redirectToGame}
+            style={{ ...styles.finish, backgroundColor: '#ffa726' }}
+          >
+            Pular Aquecimento
+          </button>
+        </>
+      ) : (
+        <>
+          <div style={styles.card}>
+            <p style={styles.question}>{example.question}</p>
+          </div>
+          <button
+            onClick={onFinish}
+            disabled={saving}
+            style={styles.finish}
+          >
+            Concluir Aquecimento{saving ? '…' : ''}
+          </button>
+        </>
+      )}
     </div>
   )
 }
