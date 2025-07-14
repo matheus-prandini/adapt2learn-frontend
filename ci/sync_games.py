@@ -6,14 +6,14 @@ from google.cloud import storage
 
 def sync_game_assets(game_id: str, version: str, build_dir: str):
     """
-    1) Baixa assets do bucket para build/games/{gameId}/versions/{version}/...
-    2) Copia o index.html dessa versão para build/games/{gameId}/index.html
+    1) Baixa assets do bucket para build_dir/games/{gameId}/versions/{version}/...
+    2) Copia TODO o conteúdo dessa versão para build_dir/games/{gameId}/
     """
     client = storage.Client()
     bucket = client.bucket("adapt2learn-api.firebasestorage.app")
     prefix = f"games/{game_id}/versions/{version}/"
 
-    # 1) Destino completo da versão
+    # 1) coloca dentro de .../versions/{version}/
     version_root = os.path.join(build_dir, "games", game_id, "versions", version)
     if os.path.exists(version_root):
         shutil.rmtree(version_root)
@@ -24,24 +24,24 @@ def sync_game_assets(game_id: str, version: str, build_dir: str):
         rel_path = blob.name[len(prefix):]
         if not rel_path:
             continue
-        dest_path = os.path.join(version_root, rel_path)
-        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-        blob.download_to_filename(dest_path)
+        dst = os.path.join(version_root, rel_path)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        blob.download_to_filename(dst)
         count += 1
-
     print(f"✅ {count} arquivos sincronizados em {version_root}")
 
-    # 2) Agora cuide do "entrypoint" em /games/<gameId>/
+    # 2) agora copie TUDO para public/games/<gameId>/
     game_root = os.path.join(build_dir, "games", game_id)
-    # certifica que a pasta existe
-    os.makedirs(game_root, exist_ok=True)
-    src_index = os.path.join(version_root, "index.html")
-    dst_index = os.path.join(game_root, "index.html")
-
-    if not os.path.exists(src_index):
-        raise RuntimeError(f"index.html não encontrado em {version_root}")
-    shutil.copy2(src_index, dst_index)
-    print(f"✅ index.html copiado para {dst_index}")
+    # limpa a pasta antiga (versões e index juntos)
+    if os.path.exists(game_root):
+        shutil.rmtree(game_root)
+    # recria
+    shutil.copytree(
+        version_root,
+        game_root,
+        dirs_exist_ok=True
+    )
+    print(f"✅ Conteúdo de versions/{version} copiado para {game_root}")
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
