@@ -1,3 +1,4 @@
+// src/pages/Admin.js
 import React, { useState, useEffect } from 'react';
 import { auth } from '../firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -20,10 +21,10 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState('students');
   const navigate = useNavigate();
 
+  // Load profile and guard
   useEffect(() => {
     if (loadingAuth) return;
     if (!user) return navigate('/login');
-
     (async () => {
       try {
         const token = await user.getIdToken();
@@ -42,9 +43,9 @@ export default function Admin() {
     })();
   }, [user, loadingAuth]);
 
+  // Fetch students on school change
   useEffect(() => {
     if (!user || !selectedSchool) return;
-
     setLoadingStudents(true);
     (async () => {
       try {
@@ -52,27 +53,26 @@ export default function Admin() {
         const url = new URL('https://adapt2learn-895112363610.us-central1.run.app/api/users');
         url.searchParams.set('role', 'student');
         url.searchParams.set('school_id', selectedSchool);
-
         const res = await fetch(url.toString(), {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (!res.ok) throw new Error('Falha ao carregar alunos');
-        const list = await res.json();
-        setStudents(list);
+        setStudents(await res.json());
       } catch (err) {
         console.error(err);
       } finally {
         setLoadingStudents(false);
       }
     })();
-
     if (activeTab === 'sessions') fetchSessions();
   }, [user, selectedSchool]);
 
+  // Fetch sessions when tab or game filter changes
   useEffect(() => {
     if (activeTab === 'sessions') fetchSessions();
   }, [activeTab, selectedGame]);
 
+  // Load games list once
   useEffect(() => {
     if (!user) return;
     (async () => {
@@ -81,30 +81,28 @@ export default function Admin() {
         const res = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/games', {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const list = await res.json();
-        setGamesList(list);
+        if (!res.ok) throw new Error('Erro ao carregar jogos');
+        setGamesList(await res.json());
       } catch (err) {
         console.error('Erro ao carregar jogos:', err);
       }
     })();
   }, [user]);
 
+  // Session fetch helper
   async function fetchSessions() {
     setLoadingSessions(true);
     try {
       const token = await user.getIdToken();
       const params = new URLSearchParams();
       params.set('school_id', selectedSchool);
-      if (selectedGame.length > 0) {
-        params.set('game_names', selectedGame.join(','));
-      }
-
-      const res = await fetch(`https://adapt2learn-895112363610.us-central1.run.app/api/sessions?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      if (selectedGame.length > 0) params.set('game_names', selectedGame.join(','));
+      const res = await fetch(
+        `https://adapt2learn-895112363610.us-central1.run.app/api/sessions?${params}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       if (!res.ok) throw new Error('Erro ao buscar sessões');
-      const data = await res.json();
-      setSessions(data);
+      setSessions(await res.json());
     } catch (err) {
       console.error(err);
     } finally {
@@ -112,21 +110,22 @@ export default function Admin() {
     }
   }
 
+  // Update student group (optional)
   async function handleGroupChange(uid, newGroup) {
     const token = await user.getIdToken();
-    const res = await fetch(`https://adapt2learn-895112363610.us-central1.run.app/api/users/${uid}/group`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ group: newGroup })
-    });
-    if (!res.ok) {
-      alert('Erro ao atualizar grupo');
-    } else {
-      setStudents(students.map(s => s.uid === uid ? { ...s, group: newGroup } : s));
-    }
+    const res = await fetch(
+      `https://adapt2learn-895112363610.us-central1.run.app/api/users/${uid}/group`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ group: newGroup })
+      }
+    );
+    if (!res.ok) alert('Erro ao atualizar grupo');
+    else setStudents(students.map(s => s.uid === uid ? { ...s, group: newGroup } : s));
   }
 
   if (loadingAuth || loadingProfile) {
@@ -138,25 +137,35 @@ export default function Admin() {
       <button onClick={() => navigate(-1)} style={styles.backButton}>← Voltar</button>
       <h2 style={styles.heading}>🛠️ Painel de Administração</h2>
 
+      {/* Tabs */}
       <div style={styles.tabs}>
-        <button onClick={() => setActiveTab('students')} style={activeTab === 'students' ? styles.tabSelected : styles.tab}>
-          👧 Lista de Crianças
-        </button>
-        <button onClick={() => setActiveTab('sessions')} style={activeTab === 'sessions' ? styles.tabSelected : styles.tab}>
-          🕹️ Sessões Jogadas
-        </button>
+        <button
+          onClick={() => setActiveTab('students')}
+          style={activeTab === 'students' ? styles.tabSelected : styles.tab}
+        >👧 Lista de Crianças</button>
+        <button
+          onClick={() => setActiveTab('sessions')}
+          style={activeTab === 'sessions' ? styles.tabSelected : styles.tab}
+        >🕹️ Sessões Jogadas</button>
+        <button
+          onClick={() => setActiveTab('games')}
+          style={activeTab === 'games' ? styles.tabSelected : styles.tab}
+        >🎮 Lista de Jogos</button>
       </div>
 
+      {/* School Filter */}
       <div style={styles.filterRow}>
         <label>Escola:</label>
-        <select value={selectedSchool} onChange={e => {
-          setSelectedSchool(e.target.value);
-          if (activeTab === 'sessions') fetchSessions();
-        }} style={styles.select}>
+        <select
+          value={selectedSchool}
+          onChange={e => setSelectedSchool(e.target.value)}
+          style={styles.select}
+        >
           {SCHOOLS.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
       </div>
 
+      {/* Students Tab */}
       {activeTab === 'students' && (
         loadingStudents ? (
           <p>🔄 Carregando alunos…</p>
@@ -166,8 +175,8 @@ export default function Admin() {
               <tr>
                 <th style={styles.th}>Nome</th>
                 <th style={styles.th}>E-mail</th>
-                <th style={styles.th}>Senha</th>
                 <th style={styles.th}>Série</th>
+                <th style={styles.th}>Grupo</th>
               </tr>
             </thead>
             <tbody>
@@ -175,8 +184,17 @@ export default function Admin() {
                 <tr key={s.uid}>
                   <td style={styles.td}>{s.name}</td>
                   <td style={styles.td}>{s.mail}</td>
-                  <td style={styles.td}>{s.password}</td>
                   <td style={styles.td}>{s.grade_level}</td>
+                  <td style={styles.td}>
+                    <select
+                      value={s.group}
+                      onChange={e => handleGroupChange(s.uid, e.target.value)}
+                    >
+                      <option value="grupo1">grupo1</option>
+                      <option value="grupo2">grupo2</option>
+                      <option value="grupo3">grupo3</option>
+                    </select>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -184,6 +202,7 @@ export default function Admin() {
         )
       )}
 
+      {/* Sessions Tab */}
       {activeTab === 'sessions' && (
         <>
           <div style={styles.filterRow}>
@@ -193,20 +212,12 @@ export default function Admin() {
                 isMulti
                 options={gamesList.map(g => ({ value: g.name, label: g.name }))}
                 value={selectedGame.map(name => ({ value: name, label: name }))}
-                onChange={(selected) => {
-                  const names = selected.map(s => s.value);
-                  setSelectedGame(names);
-                }}
+                onChange={sel => setSelectedGame(sel.map(s => s.value))}
                 placeholder="Selecione jogos..."
-                isClearable
                 closeMenuOnSelect={false}
-                styles={{
-                  control: (base) => ({ ...base, minHeight: 38 }),
-                }}
               />
             </div>
           </div>
-
           {loadingSessions ? (
             <p>🔄 Carregando sessões…</p>
           ) : (
@@ -225,7 +236,43 @@ export default function Admin() {
                     <td style={styles.td}>{s.user_name}</td>
                     <td style={styles.td}>{s.game_name}</td>
                     <td style={styles.td}>{s.session_number}</td>
-                    <td style={styles.td}>{s.created_at ? new Date(s.created_at).toLocaleString() : '—'}</td>
+                    <td style={styles.td}>{
+                      s.created_at ? new Date(s.created_at).toLocaleString() : '—'
+                    }</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
+      )}
+
+      {/* Games Tab */}
+      {activeTab === 'games' && (
+        <>
+          {gamesList.length === 0 ? (
+            <p>🔄 Carregando jogos…</p>
+          ) : (
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>ID</th>
+                  <th style={styles.th}>Nome</th>
+                  <th style={styles.th}>Warmup?</th>
+                  <th style={styles.th}>Opções?</th>
+                </tr>
+              </thead>
+              <tbody>
+                {gamesList.map(g => (
+                  <tr
+                    key={g.id}
+                    onClick={() => navigate(`/admin/games/${g.id}`)}
+                    style={{ ...styles.td, cursor: 'pointer' }}
+                  >
+                    <td style={styles.td}>{g.id}</td>
+                    <td style={styles.td}>{g.name}</td>
+                    <td style={styles.td}>{g.has_warmup ? 'Sim' : 'Não'}</td>
+                    <td style={styles.td}>{g.has_options ? 'Sim' : 'Não'}</td>
                   </tr>
                 ))}
               </tbody>

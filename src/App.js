@@ -9,6 +9,7 @@ import Report from './pages/Report'
 import Warmup from './pages/Warmup'
 import Questionnaire from './pages/Questionnaire'
 import Admin from './pages/Admin'
+import GameDetails from './pages/GameDetails'
 import PrivateRoute from './components/PrivateRoute'
 
 export default function App() {
@@ -38,6 +39,8 @@ export default function App() {
       <Route path="/questionnaire" element={<Questionnaire />} />
 
       <Route path="/admin" element={<Admin />} />
+
+      <Route path="/admin/games/:id" element={<GameDetails />} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
