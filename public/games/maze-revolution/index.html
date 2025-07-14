@@ -84,6 +84,7 @@
     const discipline = ps.get('discipline') || '';
     const subarea    = ps.get('subarea')    || '';
     const schoolId   = ps.get('school_id')  || '';
+    const gameId   = ps.get('game_id')  || '';
     const sessionNumber = ps.get('session_number') || '';
 
     // Navigate to React report page
@@ -92,6 +93,7 @@
         school_id: schoolId,
         discipline,
         subarea,
+        gameId: gameId,
         session_number: sessionNumber
       });
       // match your React route "/report"
@@ -107,7 +109,7 @@
       codeUrl:            buildUrl + "/build_new.wasm",
       streamingAssetsUrl: "StreamingAssets",
       showBanner:         unityShowBanner,
-      arguments:          [ discipline, subarea, schoolId, sessionNumber ]
+      arguments:          [ discipline, subarea, schoolId, gameId, sessionNumber ]
     };
 
     // Canvas setup
@@ -142,7 +144,7 @@
         unityInstance.SendMessage(
           'GameManager',
           'OnReceiveParams',
-          JSON.stringify({ discipline, subarea, schoolId, sessionNumber })
+          JSON.stringify({ discipline, subarea, schoolId, gameId, sessionNumber })
         );
 
         // When Firebase Auth is ready, forward token
