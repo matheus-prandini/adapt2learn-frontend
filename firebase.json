@@ -1,31 +1,11 @@
 {
   "hosting": {
     "public": "build",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
+    "ignore": ["firebase.json","**/.*","**/node_modules/**"],
     "rewrites": [
-      {
-        "source": "/api/**",
-        "run": {
-          "serviceId": "adapt2learn",
-          "region": "us-central1"
-        }
-      },
-      {
-        "source": "/games/maze-revolution/**",
-        "destination": "/games/maze-revolution/index.html"
-      },
-      {
-        "source": "/games/new-maze-revolution/**",
-        "destination": "/games/new-maze-revolution/index.html"
-      },
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
+      { "source": "/api/**",  "run": { "serviceId":"adapt2learn","region":"us-central1" } },
+      { "source": "/games/**","function":"serveGame" },
+      { "source": "**",       "destination":"/index.html" }
     ]
   }
 }
