@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       game_id:
-        description: 'ID do jogo'
+        description: 'ID do jogo (ex: fx3YwKli0BtfsG2OBZwv)'
         required: true
       version:
-        description: 'Versão do jogo'
+        description: 'Versão do jogo (ex: 20250713153206)'
         required: true
 
 jobs:
@@ -15,32 +15,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      - name: Install Python deps
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: 3.11
-      - run: |
+
+      - name: Install Python deps
+        run: |
           python -m pip install --upgrade pip
           pip install google-cloud-storage
 
       - name: Sync game assets from GCS
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_SERVICE_ACCOUNT_JSON }}
+          GCP_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_JSON }}
         run: |
+          echo "$GCP_KEY" > /tmp/gcp-key.json
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
           python ci/sync_games.py "${{ github.event.inputs.game_id }}" "${{ github.event.inputs.version }}"
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
       - name: Build frontend
-        run: npm ci && npm run build
+        run: |
+          npm ci
+          npm run build
 
       - name: Deploy to Firebase Hosting
         env:
