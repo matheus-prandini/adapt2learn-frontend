@@ -32,16 +32,10 @@ def sync_game_assets(game_id: str, version: str, build_dir: str):
 
     # 2) agora copie TUDO para public/games/<gameId>/
     game_root = os.path.join(build_dir, "games", game_id)
-    # limpa a pasta antiga (versões e index juntos)
     if os.path.exists(game_root):
         shutil.rmtree(game_root)
-    # recria
-    shutil.copytree(
-        version_root,
-        game_root,
-        dirs_exist_ok=True
-    )
-    print(f"✅ Conteúdo de versions/{version} copiado para {game_root}")
+    shutil.copytree(version_root, game_root)
+    print(f"✓ Assets copiados para public/games/{game_id}/")
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
