@@ -13,7 +13,7 @@ def sync_game_assets(game_id: str, version: str, build_dir: str):
     bucket = client.bucket("adapt2learn-api.firebasestorage.app")
     prefix = f"games/{game_id}/versions/{version}/"
 
-    dest_root = os.path.join(build_dir, "games", game_id, "versions", version)
+    dest_root = os.path.join(build_dir, "games", game_id)
     if os.path.exists(dest_root):
         shutil.rmtree(dest_root)
     os.makedirs(dest_root, exist_ok=True)
