@@ -48,4 +48,4 @@ if __name__ == "__main__":
         print("Uso: sync_games.py <gameId> <version>")
         sys.exit(1)
     game_id, version = sys.argv[1], sys.argv[2]
-    sync_game_assets(game_id, version, build_dir="build")
+    sync_game_assets(game_id, version, build_dir="public")
