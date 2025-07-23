@@ -21,6 +21,7 @@ def sync_game_assets(game_id: str, version: str, base_dir: str):
         shutil.rmtree(game_root)
     os.makedirs(game_root, exist_ok=True)
 
+    print(f"Sincronizando assets de {prefix}...")
     count = 0
     for blob in bucket.list_blobs(prefix=prefix):
         rel = blob.name[len(prefix):]
