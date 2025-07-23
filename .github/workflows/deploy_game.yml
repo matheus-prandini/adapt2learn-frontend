@@ -13,19 +13,25 @@ on:
 jobs:
   deploy-game:
     runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'       # if you use Workload Identity Federation instead
 
     steps:
-      # 1) Checkout do código
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # 2) Configura gcloud e gsutil
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_JSON }}
 
-      # 3) Baixa todo o public/ do bucket para ./public
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: adapt2learn-api
+          # (the action will pick up the same credentials you just loaded)
+
       - name: Download current public/ from Bucket
         run: |
           mkdir -p public
