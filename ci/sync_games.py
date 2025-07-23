@@ -10,7 +10,7 @@ def sync_game_assets(game_id: str, version: str, base_dir: str):
     e planta tudo em base_dir/games/<gameId>/...
     """
     client = storage.Client()
-    bucket = client.bucket("adapt2learn-api.appspot.com")
+    bucket = client.bucket("adapt2learn-api.firebasestorage.app")
     prefix = f"games/{game_id}/versions/{version}/"
 
     # pasta onde o jogo “viverá”
