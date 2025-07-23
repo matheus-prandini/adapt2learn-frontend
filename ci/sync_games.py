@@ -2,40 +2,42 @@
 import os
 import sys
 import shutil
-import subprocess
 from google.cloud import storage
 
-def sync_game_assets(game_id: str, version: str, build_dir: str):
+def sync_game_assets(game_id: str, version: str, base_dir: str):
     """
-    Baixa assets do bucket e planta em build/games/{game_id}/versions/{version}/
+    Baixa assets do bucket games/<gameId>/versions/<version>/...
+    e planta tudo em base_dir/games/<gameId>/...
     """
     client = storage.Client()
-    bucket = client.bucket("adapt2learn-api.firebasestorage.app")
+    bucket = client.bucket("adapt2learn-api.appspot.com")
     prefix = f"games/{game_id}/versions/{version}/"
 
-    dest_root = os.path.join(build_dir, "games", game_id, "versions", version)
-    if os.path.exists(dest_root):
-        shutil.rmtree(dest_root)
-    os.makedirs(dest_root, exist_ok=True)
+    # pasta onde o jogo “viverá”
+    game_root = os.path.join(base_dir, "games", game_id)
 
-    blobs = bucket.list_blobs(prefix=prefix)
+    # limpa o que já tiver
+    if os.path.exists(game_root):
+        shutil.rmtree(game_root)
+    os.makedirs(game_root, exist_ok=True)
+
     count = 0
-    for blob in blobs:
+    for blob in bucket.list_blobs(prefix=prefix):
         rel = blob.name[len(prefix):]
         if not rel:
             continue
-        dest_path = os.path.join(dest_root, rel)
-        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-        blob.download_to_filename(dest_path)
+        dst = os.path.join(game_root, rel)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        blob.download_to_filename(dst)
         count += 1
         print(f"Baixando {rel} para {dest_path}")
 
-    print(f"✅ {count} arquivos de {game_id}/{version} sincronizados em {dest_root}")
+    print(f"✅ {count} arquivos sincronizados em {game_root}")
 
 if __name__ == "__main__":
-    # Recebe via CLI: python sync_games.py <gameId> <version>
     if len(sys.argv) != 3:
         print("Uso: sync_games.py <gameId> <version>")
         sys.exit(1)
     game_id, version = sys.argv[1], sys.argv[2]
-    sync_game_assets(game_id, version, build_dir="build")
+    # grava em public/, antes do npm run build
+    sync_game_assets(game_id, version, base_dir="public")
