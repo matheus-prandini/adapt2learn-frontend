@@ -28,6 +28,7 @@ def sync_game_assets(game_id: str, version: str, build_dir: str):
         os.makedirs(os.path.dirname(dest_path), exist_ok=True)
         blob.download_to_filename(dest_path)
         count += 1
+        print(f"Baixando {rel} para {dest_path}")
 
     print(f"✅ {count} arquivos de {game_id}/{version} sincronizados em {dest_root}")
 
