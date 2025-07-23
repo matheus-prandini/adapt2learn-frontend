@@ -20,11 +20,10 @@ jobs:
         uses: actions/checkout@v4
 
       # 2) Configura gcloud e gsutil
-      - name: Setup GCP SDK
-        uses: google-github-actions/setup-gcloud@v1
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v1
         with:
-          project_id: adapt2learn-api
-          service_account_key: ${{ secrets.GCP_SERVICE_ACCOUNT_JSON }}
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_JSON }}
 
       # 3) Baixa todo o public/ do bucket para ./public
       - name: Download current public/ from Bucket
