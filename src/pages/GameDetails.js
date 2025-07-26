@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { auth } from '../firebase';
+import { storage } from '../firebase';
+import { getDownloadURL, ref as storageRef } from 'firebase/storage';
 import axios from 'axios';
 import { useDropzone } from 'react-dropzone';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-// Custom confirmation modal
+// Modal de confirmação para ativar versão
 function ConfirmModal({ isOpen, title, message, onConfirm, onCancel }) {
   if (!isOpen) return null;
   return (
@@ -24,63 +26,83 @@ function ConfirmModal({ isOpen, title, message, onConfirm, onCancel }) {
 }
 
 const modalStyles = {
-  overlay: { position: 'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 },
-  modal: { background:'#fff', padding:24, borderRadius:8, maxWidth:400, width:'90%' },
-  buttons: { display:'flex', justifyContent:'flex-end', gap:8, marginTop:16 },
-  cancelBtn: { background:'#ccc', border:'none', padding:'8px 16px', borderRadius:4, cursor:'pointer' },
-  confirmBtn: { background:'#28a745', color:'#fff', border:'none', padding:'8px 16px', borderRadius:4, cursor:'pointer' }
+  overlay: {
+    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+    background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+  },
+  modal: { background: '#fff', padding: 24, borderRadius: 8, maxWidth: 400, width: '90%' },
+  buttons: { display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 },
+  cancelBtn: { background: '#ccc', border: 'none', padding: '8px 16px', borderRadius: 4, cursor: 'pointer' },
+  confirmBtn: { background: '#28a745', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 4, cursor: 'pointer' },
 };
 
 export default function GameDetails() {
   const { id: gameId } = useParams();
   const navigate = useNavigate();
 
+  // Estado principal
   const [gameInfo, setGameInfo] = useState(null);
+  const [iconUrl, setIconUrl] = useState(null);
   const [deploys, setDeploys] = useState([]);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+
+  // Modo de edição
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editHasOptions, setEditHasOptions] = useState(false);
+  const [editHasWarmup, setEditHasWarmup] = useState(false);
+
+  // Polling
   const [confirmingVersion, setConfirmingVersion] = useState(null);
   const [buildOp, setBuildOp] = useState(null);
   const [buildStatus, setBuildStatus] = useState('');
-
-  // Polling states
   const [listPollVersion, setListPollVersion] = useState(null);
   const listPollRef = useRef(null);
   const [gamePollVersion, setGamePollVersion] = useState(null);
   const gamePollRef = useRef(null);
 
-  // Dropzone: accept only .zip
+  // Dropzone para .zip
   const { getRootProps, getInputProps, isDragActive, acceptedFiles } = useDropzone({
     accept: { 'application/zip': ['.zip'] },
     multiple: false,
     maxSize: 50 * 1024 * 1024,
-    onDropRejected: rejections => rejections.forEach(r => toast.error(`Erro: ${r.errors[0].message}`))
+    onDropRejected: errs => errs.forEach(e => toast.error(e.errors[0].message))
   });
   const file = acceptedFiles[0] || null;
 
-  // Fetch game metadata
+  // Buscar meta do jogo
   const fetchGame = async () => {
     try {
       const token = await auth.currentUser.getIdToken();
-      const res = await fetch('/api/games', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Erro ao carregar jogos');
+      const res = await fetch('/api/games', { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error('Erro ao carregar jogo');
       const list = await res.json();
-      setGameInfo(list.find(g => g.id === gameId));
+      const g = list.find(x => x.id === gameId);
+      setGameInfo(g);
+      setEditName(g.name);
+      setEditHasOptions(g.has_options);
+      setEditHasWarmup(g.has_warmup);
     } catch (err) {
       toast.error(err.message);
     }
   };
 
-  // Fetch deploy history
+  // Buscar ícone
+  useEffect(() => {
+    if (gameInfo?.icon_url) {
+      getDownloadURL(storageRef(storage, gameInfo.icon_url))
+        .then(url => setIconUrl(url))
+        .catch(() => {});
+    }
+  }, [gameInfo]);
+
+  // Buscar histórico de deploys
   const fetchDeploys = async () => {
     try {
       const token = await auth.currentUser.getIdToken();
-      const res = await fetch(`/api/games/${gameId}/deploys`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetch(`/api/games/${gameId}/deploys`, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw new Error('Erro ao buscar deploys');
       const data = await res.json();
       setDeploys(data);
@@ -91,24 +113,22 @@ export default function GameDetails() {
     }
   };
 
+  // Inicialização
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(user => {
-      if (user) {
-        fetchGame();
-        fetchDeploys();
-      }
+    const unsub = auth.onAuthStateChanged(u => {
+      if (u) { fetchGame(); fetchDeploys(); }
     });
-    return unsubscribe;
+    return () => unsub();
   }, [gameId]);
 
-  // Poll for new deploy in list
+  // Poll: novo deploy adicionado
   useEffect(() => {
     if (!listPollVersion) return;
     clearInterval(listPollRef.current);
     listPollRef.current = setInterval(async () => {
       const data = await fetchDeploys();
       if (data.some(d => d.version === listPollVersion)) {
-        toast.success(`Deploy ${listPollVersion} adicionado à lista!`);
+        toast.success(`Deploy ${listPollVersion} adicionado!`);
         clearInterval(listPollRef.current);
         setListPollVersion(null);
         setGamePollVersion(listPollVersion);
@@ -117,14 +137,14 @@ export default function GameDetails() {
     return () => clearInterval(listPollRef.current);
   }, [listPollVersion]);
 
-  // Poll for activation in game meta
+  // Poll: ativação
   useEffect(() => {
     if (!gamePollVersion) return;
     clearInterval(gamePollRef.current);
     gamePollRef.current = setInterval(async () => {
       await fetchGame();
       if (gameInfo?.active_version === gamePollVersion) {
-        toast.success(`Versão ${gamePollVersion} agora está ativa!`);
+        toast.success(`Versão ${gamePollVersion} ativa!`);
         clearInterval(gamePollRef.current);
         setGamePollVersion(null);
       }
@@ -132,36 +152,28 @@ export default function GameDetails() {
     return () => clearInterval(gamePollRef.current);
   }, [gamePollVersion, gameInfo]);
 
-  // Handle deploy: upload + register
+  // Novo deploy
   const handleDeploy = async () => {
-    if (!file) return toast.warn('Selecione um arquivo .zip válido.');
-    setLoading(true);
-    setUploadProgress(0);
+    if (!file) return toast.warn('Selecione um .zip válido.');
+    setLoading(true); setUploadProgress(0);
     try {
       const token = await auth.currentUser.getIdToken();
-      // 1) Signed URL
       const urlRes = await fetch(
         `/api/games/${gameId}/deploys/upload-url?filename=${encodeURIComponent(file.name)}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      if (!urlRes.ok) throw new Error('Não foi possível obter URL de upload');
+      if (!urlRes.ok) throw new Error('Não foi possível obter URL');
       const { upload_url, version } = await urlRes.json();
-      // 2) Upload
       await axios.put(upload_url, file, {
         headers: { 'Content-Type': 'application/zip' },
         onUploadProgress: evt => setUploadProgress(Math.round((evt.loaded * 100) / evt.total))
       });
-      // 3) Register
       const regRes = await fetch(`/api/games/${gameId}/deploys/register`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
+        method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type':'application/json' },
         body: JSON.stringify({ version, download_url: upload_url, notes })
       });
       if (!regRes.ok) throw new Error('Falha ao registrar deploy');
-      toast.info('Deploy registrado! Aguardando listagem...');
+      toast.info('Deploy registrado!');
       setListPollVersion(version);
       setNotes('');
     } catch (err) {
@@ -172,23 +184,20 @@ export default function GameDetails() {
     }
   };
 
-  // Manual activation
-  const confirmActivate = version => setConfirmingVersion(version);
+  // Ativar manual
+  const confirmActivate = v => setConfirmingVersion(v);
   const onConfirmActivate = async () => {
     const version = confirmingVersion;
     setConfirmingVersion(null);
     try {
       const token = await auth.currentUser.getIdToken();
-      const res = await fetch(`/api/games/${gameId}/activate/${version}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Falha ao ativar versão');
+      const res = await fetch(`/api/games/${gameId}/activate/${version}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error('Falha ao ativar');
       const { operation_name } = await res.json();
       setGameInfo(p => ({ ...p, active_version: version }));
       setBuildOp(operation_name);
       setBuildStatus('IN_PROGRESS');
-      toast.info(`Versão ${version} ativada. Deploy em progresso…`);
+      toast.info(`Versão ${version} ativada.`);
     } catch (err) {
       toast.error(err.message);
     }
@@ -200,10 +209,8 @@ export default function GameDetails() {
     const iv = setInterval(async () => {
       try {
         const token = await auth.currentUser.getIdToken();
-        const res = await fetch(`/api/builds/${buildOp}/status`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (!res.ok) throw new Error('Erro ao consultar build');
+        const res = await fetch(`/api/builds/${buildOp}/status`, { headers:{ Authorization:`Bearer ${token}` } });
+        if (!res.ok) throw new Error('Erro na build');
         const data = await res.json();
         if (data.status !== 'IN_PROGRESS') {
           setBuildStatus(data.build_status);
@@ -221,84 +228,122 @@ export default function GameDetails() {
     return () => clearInterval(iv);
   }, [buildOp]);
 
+  // Edição de infos
+  const handleEditToggle = () => setIsEditing(!isEditing);
+  const handleSaveInfo = async () => {
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const res = await fetch(`/api/games/${gameId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type':'application/json', Authorization:`Bearer ${token}` },
+        body: JSON.stringify({ name: editName, has_options: editHasOptions, has_warmup: editHasWarmup })
+      });
+      if (!res.ok) throw new Error('Falha ao salvar');
+      toast.success('Informações atualizadas');
+      setIsEditing(false);
+      await fetchGame();
+    } catch (e) {
+      toast.error(e.message);
+    }
+  };
+
   return (
     <div style={styles.container}>
-      <ToastContainer position="top-right" autoClose={5000} hideProgressBar />
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
       <ConfirmModal
         isOpen={!!confirmingVersion}
         title="Confirmar ativação"
-        message={`Você deseja ativar a versão ${confirmingVersion}?`}
+        message={`Deseja ativar a versão ${confirmingVersion}?`}
         onConfirm={onConfirmActivate}
         onCancel={() => setConfirmingVersion(null)}
       />
 
       <button onClick={() => navigate(-1)} style={styles.back}>← Voltar</button>
-      <h2 style={styles.title}>
-        Deploys de <strong>{gameInfo?.name || gameId}</strong>
-      </h2>
-      <p>
-        Versão ativa: <strong>{gameInfo?.active_version || 'nenhuma'}</strong>
-        {buildStatus === 'IN_PROGRESS' && (
-          <em style={styles.buildStatus}> 🔄 Em progresso…</em>
-        )}
-      </p>
+      <h2 style={styles.title}>Detalhes do Jogo</h2>
 
+      {/* Informações do Jogo */}
+      <section style={styles.section}>
+        <h3 style={styles.sectionTitle}>Informações do Jogo</h3>
+        {gameInfo ? (
+          <div style={styles.infoCard}>
+            {iconUrl ? <img src={iconUrl} alt="ícone" style={styles.icon} /> : <div style={styles.iconPlaceholder}>No Icon</div>}
+            <div style={{ flex: 1 }}>
+              {!isEditing ? (
+                <ul style={styles.infoList}>
+                  <li><strong>Nome:</strong> {gameInfo.name}</li>
+                  <li><strong>ID:</strong> {gameId}</li>
+                  <li><strong>Possui Opções:</strong> {gameInfo.has_options ? 'Sim' : 'Não'}</li>
+                  <li><strong>Possui Warmup:</strong> {gameInfo.has_warmup ? 'Sim' : 'Não'}</li>
+                  <li><strong>Versão Ativa:</strong> {gameInfo.active_version || 'Nenhuma'}</li>
+                </ul>
+              ) : (
+                <div style={styles.formInline}>
+                  <label>
+                    Nome:
+                    <input style={styles.inputInline} value={editName} onChange={e => setEditName(e.target.value)} />
+                  </label>
+                  <label><input type="checkbox" checked={editHasOptions} onChange={e => setEditHasOptions(e.target.checked)} /> Precisa de Opções</label>
+                  <label><input type="checkbox" checked={editHasWarmup} onChange={e => setEditHasWarmup(e.target.checked)} /> Possui Warmup</label>
+                </div>
+              )}
+              <button onClick={isEditing ? handleSaveInfo : handleEditToggle} style={styles.editButton}>
+                {isEditing ? 'Salvar' : 'Editar'}
+              </button>
+              {isEditing && <button onClick={handleEditToggle} style={styles.cancelButton}>Cancelar</button>}
+            </div>
+          </div>
+        ) : <p>Carregando informações...</p>}
+      </section>
+
+      {/* Histórico de Deploys */}
       <section style={styles.section}>
         <h3 style={styles.sectionTitle}>Histórico de Deploys</h3>
         <div style={styles.tableWrapper}>
           <table style={styles.table}>
             <thead>
               <tr>
-                <th>Versão</th><th>Data</th><th>Quem</th><th>Notas</th><th>Ação</th>
+                <th style={styles.th}>Versão</th>
+                <th style={styles.th}>Data</th>
+                <th style={styles.th}>Quem</th>
+                <th style={styles.th}>Notas</th>
+                <th style={styles.th}>Ação</th>
               </tr>
             </thead>
             <tbody>
               {deploys.map(d => (
                 <tr key={d.id}>
-                  <td>{d.version}</td>
-                  <td>{new Date(d.deployed_at).toLocaleString()}</td>
-                  <td>{d.deployed_by_name || d.deployed_by}</td>
-                  <td>{d.notes || '–'}</td>
-                  <td>
-                    {gameInfo?.active_version === d.version ? (
+                  <td style={styles.td}>{d.version}</td>
+                  <td style={styles.td}>{new Date(d.deployed_at).toLocaleString()}</td>
+                  <td style={styles.td}>{d.deployed_by_name || d.deployed_by}</td>
+                  <td style={styles.td}>{d.notes || '–'}</td>
+                  <td style={styles.td}>
+                    {gameInfo.active_version === d.version ? (
                       <span style={styles.activeLabel}>Ativa</span>
                     ) : (
-                      <button onClick={() => confirmActivate(d.version)} style={styles.activateButton}>
-                        Ativar
-                      </button>
+                      <button onClick={() => confirmActivate(d.version)} style={styles.activateButton}>Ativar</button>
                     )}
                   </td>
                 </tr>
               ))}
               {!deploys.length && (
-                <tr><td colSpan={5} style={styles.empty}>Nenhum deploy.</td></tr>
+                <tr><td colSpan={5} style={styles.empty}>Nenhum deploy encontrado.</td></tr>
               )}
             </tbody>
           </table>
         </div>
       </section>
 
+      {/* Novo Deploy */}
       <section style={styles.section}>
         <h3 style={styles.sectionTitle}>Novo Deploy</h3>
         <div
           {...getRootProps()}
-          style={{
-            ...styles.uploadCard,
-            border: isDragActive ? '2px dashed #007bff' : '2px dashed #ccc'
-          }}
+          style={{ ...styles.uploadCard, border: isDragActive ? '2px dashed #1976d2' : '2px dashed #ccc' }}
         >
           <input {...getInputProps()} />
-          {file ? (
-            <p>{file.name} ({(file.size/1024/1024).toFixed(2)} MB)</p>
-          ) : (
-            <p>Arraste e solte seu .zip aqui, ou clique para selecionar</p>
-          )}
+          {file ? <p>{file.name} ({(file.size/1024/1024).toFixed(2)} MB)</p> : <p>Arraste e solte seu .zip aqui, ou clique para selecionar</p>}
         </div>
-        {uploadProgress > 0 && (
-          <progress value={uploadProgress} max="100" style={styles.progress}>
-            {uploadProgress}%
-          </progress>
-        )}
+        {uploadProgress > 0 && <progress value={uploadProgress} max="100" style={styles.progress}>{uploadProgress}%</progress>}
         <textarea
           placeholder="Notas sobre esta versão"
           disabled={loading}
@@ -310,9 +355,7 @@ export default function GameDetails() {
           onClick={handleDeploy}
           disabled={loading || !file}
           style={styles.uploadButton}
-        >
-          {loading ? 'Enviando…' : 'Fazer Deploy'}
-        </button>
+        >{loading ? 'Enviando…' : 'Fazer Deploy'}</button>
       </section>
     </div>
   );
@@ -321,12 +364,21 @@ export default function GameDetails() {
 const styles = {
   container: { padding:24, maxWidth:900, margin:'40px auto', background:'#fafafa', borderRadius:8, boxShadow:'0 4px 12px rgba(0,0,0,0.1)' },
   back: { background:'transparent', border:'none', cursor:'pointer', fontSize:16, color:'#555', marginBottom:16 },
-  title: { margin:'0 0 8px', fontSize:28, color:'#333' },
-  buildStatus: { marginLeft:8, fontStyle:'italic', color:'#666' },
+  title: { margin:'0 0 16px', fontSize:28, color:'#333' },
   section: { marginBottom:32 },
   sectionTitle: { fontSize:20, marginBottom:12, color:'#444', borderBottom:'2px solid #ddd', paddingBottom:4 },
+  infoCard: { display:'flex', gap:16, alignItems:'center', background:'#fff', padding:16, borderRadius:6, boxShadow:'0 2px 6px rgba(0,0,0,0.05)' },
+  icon: { width:64, height:64, borderRadius:8, objectFit:'cover' },
+  iconPlaceholder: { width:64, height:64, borderRadius:8, background:'#e0e0e0', display:'flex', alignItems:'center', justifyContent:'center', color:'#999' },
+  infoList: { listStyle:'none', padding:0, margin:0, display:'flex', flexDirection:'column', gap:4 },
+  formInline: { display:'flex', flexDirection:'column', gap:8 },
+  inputInline: { marginLeft:8, padding:4, borderRadius:4, border:'1px solid #ccc' },
+  editButton: { marginTop:12, padding:'6px 12px', background:'#1976d2', color:'#fff', border:'none', borderRadius:4, cursor:'pointer' },
+  cancelButton: { marginTop:12, marginLeft:8, padding:'6px 12px', background:'#ccc', color:'#333', border:'none', borderRadius:4, cursor:'pointer' },
   tableWrapper: { overflowX:'auto' },
   table: { width:'100%', borderCollapse:'collapse' },
+  th: { textAlign:'left', borderBottom:'2px solid #999', padding:10, background:'#e0e0e0', color:'#333' },
+  td: { padding:10, borderBottom:'1px solid #ddd' },
   activateButton: { padding:'4px 12px', background:'#28a745', color:'#fff', border:'none', borderRadius:4, cursor:'pointer' },
   activeLabel: { padding:'4px 12px', background:'#ccc', color:'#333', borderRadius:4, fontSize:'0.9em' },
   empty: { padding:16, textAlign:'center', color:'#999' },
