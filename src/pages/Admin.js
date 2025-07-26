@@ -3,6 +3,10 @@ import { auth } from '../firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useNavigate } from 'react-router-dom';
 import Select from 'react-select';
+import { getDownloadURL, ref } from 'firebase/storage';
+import { storage } from '../firebase';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const SCHOOLS = ['ColégioObjetivo', 'Eseba', 'Associação21Down'];
 
@@ -17,6 +21,7 @@ export default function Admin() {
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [loadingSessions, setLoadingSessions] = useState(false);
+  const [loadingGames, setLoadingGames] = useState(false);
   const [activeTab, setActiveTab] = useState('students');
   const navigate = useNavigate();
 
@@ -71,9 +76,10 @@ export default function Admin() {
     if (activeTab === 'sessions') fetchSessions();
   }, [activeTab, selectedGame]);
 
-  // Load games list once
+  // Load games list once, download icons
   useEffect(() => {
     if (!user) return;
+    setLoadingGames(true);
     (async () => {
       try {
         const token = await user.getIdToken();
@@ -81,8 +87,24 @@ export default function Admin() {
           'https://adapt2learn-895112363610.us-central1.run.app/api/games',
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        setGamesList(await res.json());
-      } catch {
+        if (!res.ok) throw new Error('Erro ao carregar jogos');
+        const raw = await res.json();
+        const withIcons = await Promise.all(
+          raw.map(async g => {
+            let iconUrl = '';
+            try {
+              iconUrl = await getDownloadURL(ref(storage, g.icon_url));
+            } catch (e) {
+              console.error('Erro ao baixar ícone', e);
+            }
+            return { ...g, iconUrl };
+          })
+        );
+        setGamesList(withIcons);
+      } catch (err) {
+        console.error('Erro ao carregar jogos:', err);
+      } finally {
+        setLoadingGames(false);
       }
     })();
   }, [user]);
@@ -128,12 +150,31 @@ export default function Admin() {
     }
   }
 
+  // View and delete handlers
+  const handleView = id => navigate(`/admin/games/${id}`);
+  const handleDelete = async id => {
+    if (!window.confirm('Deseja realmente excluir este jogo?')) return;
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(
+        `https://adapt2learn-895112363610.us-central1.run.app/api/games/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!res.ok) throw new Error('Falha ao excluir');
+      setGamesList(gamesList.filter(g => g.id !== id));
+      toast.success('Jogo excluído');
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
   if (loadingAuth || loadingProfile) {
     return <p style={{ textAlign: 'center', padding: 20 }}>Carregando…</p>;
   }
 
   return (
     <div style={styles.container}>
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
       <button
         onClick={() => navigate(-1)}
         style={styles.backButton}
@@ -168,128 +209,51 @@ export default function Admin() {
         >🎮 Lista de Jogos</button>
       </div>
 
-      {/* School Filter */}
-      <div style={styles.filterRow}>
-        <label>Escola:</label>
-        <select
-          value={selectedSchool}
-          onChange={e => setSelectedSchool(e.target.value)}
-          style={styles.select}
-        >
-          {SCHOOLS.map(s => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Students Tab */}
-      {activeTab === 'students' && (
-        loadingStudents ? (
-          <p>🔄 Carregando alunos…</p>
-        ) : (
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Nome</th>
-                <th style={styles.th}>E-mail</th>
-                <th style={styles.th}>Série</th>
-                <th style={styles.th}>Grupo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {students.map(s => (
-                <tr key={s.uid}>
-                  <td style={styles.td}>{s.name}</td>
-                  <td style={styles.td}>{s.mail}</td>
-                  <td style={styles.td}>{s.grade_level}</td>
-                  <td style={styles.td}>
-                    <select
-                      value={s.group}
-                      onChange={e => handleGroupChange(s.uid, e.target.value)}
-                    >
-                      <option value="grupo1">grupo1</option>
-                      <option value="grupo2">grupo2</option>
-                      <option value="grupo3">grupo3</option>
-                    </select>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )
-      )}
-
-      {/* Sessions Tab */}
-      {activeTab === 'sessions' && (
-        <>
-          <div style={styles.filterRow}>
-            <label>Filtrar por jogo:</label>
-            <div style={{ minWidth: 280, flex: 1 }}>
-              <Select
-                isMulti
-                options={gamesList.map(g => ({ value: g.name, label: g.name }))}
-                value={selectedGame.map(name => ({ value: name, label: name }))}
-                onChange={sel => setSelectedGame(sel.map(s => s.value))}
-                placeholder="Selecione jogos..."
-                closeMenuOnSelect={false}
-              />
-            </div>
-          </div>
-          {loadingSessions ? (
-            <p>🔄 Carregando sessões…</p>
-          ) : (
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  <th style={styles.th}>Usuário</th>
-                  <th style={styles.th}>Jogo</th>
-                  <th style={styles.th}>Sessão #</th>
-                  <th style={styles.th}>Data</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sessions.map(s => (
-                  <tr key={s.session_id}>
-                    <td style={styles.td}>{s.user_name}</td>
-                    <td style={styles.td}>{s.game_name}</td>
-                    <td style={styles.td}>{s.session_number}</td>
-                    <td style={styles.td}>{new Date(s.created_at).toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </>
-      )}
-
-      {/* Games Tab with Create button */}
+      {/* Games Tab with Actions */}
       {activeTab === 'games' && (
         <>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div style={styles.headerRow}>
             <h3 style={styles.sectionTitle}>Lista de Jogos</h3>
             <button style={styles.createButton} onClick={() => navigate('/admin/games/new')}>
               + Novo Jogo
             </button>
           </div>
-          {gamesList.length === 0 ? (
+          {loadingGames ? (
             <p>🔄 Carregando jogos…</p>
           ) : (
             <table style={styles.table}>
               <thead>
                 <tr>
+                  <th style={styles.th}>Ícone</th>
                   <th style={styles.th}>ID</th>
                   <th style={styles.th}>Nome</th>
                   <th style={styles.th}>Warmup?</th>
                   <th style={styles.th}>Opções?</th>
+                  <th style={styles.th}>Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {gamesList.map(g => (
-                  <tr key={g.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/admin/games/${g.id}`)}>
+                  <tr key={g.id} style={styles.tr}>
+                    <td style={styles.td}>
+                      {g.iconUrl && <img src={g.iconUrl} alt="ícone" style={styles.icon} />}
+                    </td>
                     <td style={styles.td}>{g.id}</td>
                     <td style={styles.td}>{g.name}</td>
                     <td style={styles.td}>{g.has_warmup ? 'Sim' : 'Não'}</td>
                     <td style={styles.td}>{g.has_options ? 'Sim' : 'Não'}</td>
+                    <td style={{ ...styles.td, display: 'flex', gap: 12 }}>
+                      <button
+                        onClick={() => handleView(g.id)}
+                        title="Visualizar"
+                        style={styles.actionBtn}
+                      >🔍</button>
+                      <button
+                        onClick={() => handleDelete(g.id)}
+                        title="Excluir"
+                        style={styles.actionBtn}
+                      >🗑️</button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -303,16 +267,18 @@ export default function Admin() {
 
 const styles = {
   container: { maxWidth: 960, margin: '40px auto', padding: 32, backgroundColor: '#fff8f0', borderRadius: 12, boxShadow: '0 0 10px rgba(0,0,0,0.1)' },
-  heading: { textAlign: 'center', marginBottom: 24, color: '#6a1b9a' },
   backButton: { background: 'transparent', border: 'none', fontSize: 16, color: '#333', marginBottom: 16, cursor: 'pointer' },
+  heading: { textAlign: 'center', marginBottom: 24, color: '#6a1b9a' },
   tabs: { display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 20 },
   tab: { padding: '8px 16px', backgroundColor: '#eee', border: '1px solid #ccc', cursor: 'pointer', borderRadius: 6 },
   tabSelected: { padding: '8px 16px', backgroundColor: '#d1c4e9', border: '2px solid #6a1b9a', cursor: 'pointer', borderRadius: 6, fontWeight: 'bold', color: '#4a148c' },
-  filterRow: { marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 },
-  select: { padding: 6, fontSize: 14, borderRadius: 6, border: '1px solid #aaa' },
+  headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  sectionTitle: { margin: 0, fontSize: 18, color: '#444' },
+  createButton: { padding: '8px 16px', background: '#28a745', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' },
   table: { width: '100%', borderCollapse: 'collapse', marginTop: 16 },
   th: { textAlign: 'left', borderBottom: '2px solid #999', padding: 10, background: '#ede7f6', color: '#4a148c' },
-  td: { padding: 10, borderBottom: '1px solid #ddd' },
-  createButton: { padding: '8px 16px', background: '#28a745', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' },
-  sectionTitle: { margin: 0, fontSize: 18, color: '#444' }
+  tr: { borderBottom: '1px solid #ddd' },
+  td: { padding: 10, color: '#333' },
+  icon: { width: 32, height: 32 },
+  actionBtn: { background: 'transparent', border: 'none', fontSize: 18, cursor: 'pointer' }
 };
