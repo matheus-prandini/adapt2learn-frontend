@@ -73,7 +73,6 @@ export default function GameDetails() {
       toast.error(err.message);
     }
   };
-  useEffect(() => { fetchGame(); }, [gameId]);
 
   // Fetch deploy history
   const fetchDeploys = async () => {
@@ -91,7 +90,16 @@ export default function GameDetails() {
       return [];
     }
   };
-  useEffect(() => { fetchDeploys(); }, [gameId]);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      if (user) {
+        fetchGame();
+        fetchDeploys();
+      }
+    });
+    return unsubscribe;
+  }, [gameId]);
 
   // Poll for new deploy in list
   useEffect(() => {
