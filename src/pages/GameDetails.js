@@ -1,6 +1,35 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { auth } from '../firebase';
+import axios from 'axios';
+import { useDropzone } from 'react-dropzone';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+// Custom confirmation modal
+function ConfirmModal({ isOpen, title, message, onConfirm, onCancel }) {
+  if (!isOpen) return null;
+  return (
+    <div style={modalStyles.overlay} role="dialog" aria-modal="true">
+      <div style={modalStyles.modal}>
+        <h2>{title}</h2>
+        <p>{message}</p>
+        <div style={modalStyles.buttons}>
+          <button onClick={onCancel} style={modalStyles.cancelBtn}>Cancelar</button>
+          <button onClick={onConfirm} style={modalStyles.confirmBtn}>Confirmar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const modalStyles = {
+  overlay: { position: 'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 },
+  modal: { background:'#fff', padding:24, borderRadius:8, maxWidth:400, width:'90%' },
+  buttons: { display:'flex', justifyContent:'flex-end', gap:8, marginTop:16 },
+  cancelBtn: { background:'#ccc', border:'none', padding:'8px 16px', borderRadius:4, cursor:'pointer' },
+  confirmBtn: { background:'#28a745', color:'#fff', border:'none', padding:'8px 16px', borderRadius:4, cursor:'pointer' }
+};
 
 export default function GameDetails() {
   const { id: gameId } = useParams();
@@ -8,31 +37,45 @@ export default function GameDetails() {
 
   const [gameInfo, setGameInfo] = useState(null);
   const [deploys, setDeploys] = useState([]);
-  const [file, setFile] = useState(null);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
-  const [activating, setActivating] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [confirmingVersion, setConfirmingVersion] = useState(null);
   const [buildOp, setBuildOp] = useState(null);
   const [buildStatus, setBuildStatus] = useState('');
 
-  // 1) Carrega meta do jogo
-  useEffect(() => {
-    (async () => {
-      try {
-        const token = await auth.currentUser.getIdToken();
-        const res = await fetch('/api/games', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (!res.ok) throw new Error('Erro ao carregar jogos');
-        const list = await res.json();
-        setGameInfo(list.find(g => g.id === gameId));
-      } catch (err) {
-        console.error(err);
-      }
-    })();
-  }, [gameId]);
+  // Polling states
+  const [listPollVersion, setListPollVersion] = useState(null);
+  const listPollRef = useRef(null);
+  const [gamePollVersion, setGamePollVersion] = useState(null);
+  const gamePollRef = useRef(null);
 
-  // 2) Busca histórico de deploys
+  // Dropzone: accept only .zip
+  const { getRootProps, getInputProps, isDragActive, acceptedFiles } = useDropzone({
+    accept: { 'application/zip': ['.zip'] },
+    multiple: false,
+    maxSize: 50 * 1024 * 1024,
+    onDropRejected: rejections => rejections.forEach(r => toast.error(`Erro: ${r.errors[0].message}`))
+  });
+  const file = acceptedFiles[0] || null;
+
+  // Fetch game metadata
+  const fetchGame = async () => {
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const res = await fetch('/api/games', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Erro ao carregar jogos');
+      const list = await res.json();
+      setGameInfo(list.find(g => g.id === gameId));
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+  useEffect(() => { fetchGame(); }, [gameId]);
+
+  // Fetch deploy history
   const fetchDeploys = async () => {
     try {
       const token = await auth.currentUser.getIdToken();
@@ -40,36 +83,67 @@ export default function GameDetails() {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!res.ok) throw new Error('Erro ao buscar deploys');
-      setDeploys(await res.json());
+      const data = await res.json();
+      setDeploys(data);
+      return data;
     } catch (err) {
-      console.error(err);
+      toast.error(err.message);
+      return [];
     }
   };
-  useEffect(fetchDeploys, [gameId]);
+  useEffect(() => { fetchDeploys(); }, [gameId]);
 
-  // 3) Upload de novo deploy
+  // Poll for new deploy in list
+  useEffect(() => {
+    if (!listPollVersion) return;
+    clearInterval(listPollRef.current);
+    listPollRef.current = setInterval(async () => {
+      const data = await fetchDeploys();
+      if (data.some(d => d.version === listPollVersion)) {
+        toast.success(`Deploy ${listPollVersion} adicionado à lista!`);
+        clearInterval(listPollRef.current);
+        setListPollVersion(null);
+        setGamePollVersion(listPollVersion);
+      }
+    }, 5000);
+    return () => clearInterval(listPollRef.current);
+  }, [listPollVersion]);
+
+  // Poll for activation in game meta
+  useEffect(() => {
+    if (!gamePollVersion) return;
+    clearInterval(gamePollRef.current);
+    gamePollRef.current = setInterval(async () => {
+      await fetchGame();
+      if (gameInfo?.active_version === gamePollVersion) {
+        toast.success(`Versão ${gamePollVersion} agora está ativa!`);
+        clearInterval(gamePollRef.current);
+        setGamePollVersion(null);
+      }
+    }, 5000);
+    return () => clearInterval(gamePollRef.current);
+  }, [gamePollVersion, gameInfo]);
+
+  // Handle deploy: upload + register
   const handleDeploy = async () => {
-    if (!file || !file.name.toLowerCase().endsWith('.zip')) {
-      return alert('Selecione um arquivo .zip válido.');
-    }
+    if (!file) return toast.warn('Selecione um arquivo .zip válido.');
     setLoading(true);
+    setUploadProgress(0);
     try {
       const token = await auth.currentUser.getIdToken();
-      // upload-url
+      // 1) Signed URL
       const urlRes = await fetch(
         `/api/games/${gameId}/deploys/upload-url?filename=${encodeURIComponent(file.name)}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!urlRes.ok) throw new Error('Não foi possível obter URL de upload');
       const { upload_url, version } = await urlRes.json();
-      // PUT no bucket
-      const putRes = await fetch(upload_url, {
-        method: 'PUT',
+      // 2) Upload
+      await axios.put(upload_url, file, {
         headers: { 'Content-Type': 'application/zip' },
-        body: file
+        onUploadProgress: evt => setUploadProgress(Math.round((evt.loaded * 100) / evt.total))
       });
-      if (!putRes.ok) throw new Error('Erro ao enviar ZIP para o bucket');
-      // registra o deploy
+      // 3) Register
       const regRes = await fetch(`/api/games/${gameId}/deploys/register`, {
         method: 'POST',
         headers: {
@@ -79,44 +153,43 @@ export default function GameDetails() {
         body: JSON.stringify({ version, download_url: upload_url, notes })
       });
       if (!regRes.ok) throw new Error('Falha ao registrar deploy');
-      await fetchDeploys();
-      setFile(null);
+      toast.info('Deploy registrado! Aguardando listagem...');
+      setListPollVersion(version);
       setNotes('');
     } catch (err) {
-      console.error(err);
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
+      setUploadProgress(0);
     }
   };
 
-  // 4) Ativar versão + disparar Cloud Build
-  const handleActivate = async version => {
-    if (!window.confirm(`Definir a versão ${version} como ativa?`)) return;
-    setActivating(version);
+  // Manual activation
+  const confirmActivate = version => setConfirmingVersion(version);
+  const onConfirmActivate = async () => {
+    const version = confirmingVersion;
+    setConfirmingVersion(null);
     try {
       const token = await auth.currentUser.getIdToken();
-      const res = await fetch(
-        `/api/games/${gameId}/activate/${version}`,
-        { method: 'POST', headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await fetch(`/api/games/${gameId}/activate/${version}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (!res.ok) throw new Error('Falha ao ativar versão');
       const { operation_name } = await res.json();
-      setGameInfo(prev => ({ ...prev, active_version: version }));
+      setGameInfo(p => ({ ...p, active_version: version }));
       setBuildOp(operation_name);
       setBuildStatus('IN_PROGRESS');
+      toast.info(`Versão ${version} ativada. Deploy em progresso…`);
     } catch (err) {
-      console.error(err);
-      alert(err.message);
-    } finally {
-      setActivating(null);
+      toast.error(err.message);
     }
   };
 
-  // 5) Polling do status do build
+  // Poll build status
   useEffect(() => {
     if (!buildOp) return;
-    const interval = setInterval(async () => {
+    const iv = setInterval(async () => {
       try {
         const token = await auth.currentUser.getIdToken();
         const res = await fetch(`/api/builds/${buildOp}/status`, {
@@ -124,38 +197,41 @@ export default function GameDetails() {
         });
         if (!res.ok) throw new Error('Erro ao consultar build');
         const data = await res.json();
-        if (data.status === 'IN_PROGRESS') {
-          setBuildStatus('IN_PROGRESS');
-        } else {
+        if (data.status !== 'IN_PROGRESS') {
           setBuildStatus(data.build_status);
-          clearInterval(interval);
+          clearInterval(iv);
           setBuildOp(null);
-          // refresh data
-          fetchDeploys();
-          const newToken = await auth.currentUser.getIdToken();
-          const infoRes = await fetch('/api/games', { headers: { Authorization: `Bearer ${newToken}` } });
-          const list = await infoRes.json();
-          setGameInfo(list.find(g => g.id === gameId));
+          await fetchDeploys();
+          await fetchGame();
+          toast.success(`Build ${data.build_status}`);
         }
       } catch {
-        clearInterval(interval);
+        clearInterval(iv);
         setBuildOp(null);
       }
     }, 5000);
-    return () => clearInterval(interval);
-  }, [buildOp, gameId]);
+    return () => clearInterval(iv);
+  }, [buildOp]);
 
   return (
     <div style={styles.container}>
+      <ToastContainer position="top-right" autoClose={5000} hideProgressBar />
+      <ConfirmModal
+        isOpen={!!confirmingVersion}
+        title="Confirmar ativação"
+        message={`Você deseja ativar a versão ${confirmingVersion}?`}
+        onConfirm={onConfirmActivate}
+        onCancel={() => setConfirmingVersion(null)}
+      />
+
       <button onClick={() => navigate(-1)} style={styles.back}>← Voltar</button>
       <h2 style={styles.title}>
-        Deploys de <strong>{gameInfo?.name || gameId}</strong>{' '}
-        <small style={styles.small}>(ID: {gameId})</small>
+        Deploys de <strong>{gameInfo?.name || gameId}</strong>
       </h2>
       <p>
         Versão ativa: <strong>{gameInfo?.active_version || 'nenhuma'}</strong>
         {buildStatus === 'IN_PROGRESS' && (
-          <span style={styles.buildStatus}> 🔄 Deploy em progresso…</span>
+          <em style={styles.buildStatus}> 🔄 Em progresso…</em>
         )}
       </p>
 
@@ -165,39 +241,29 @@ export default function GameDetails() {
           <table style={styles.table}>
             <thead>
               <tr>
-                <th style={styles.th}>Versão</th>
-                <th style={styles.th}>Data</th>
-                <th style={styles.th}>Quem</th>
-                <th style={styles.th}>Notas</th>
-                <th style={styles.th}>Ação</th>
+                <th>Versão</th><th>Data</th><th>Quem</th><th>Notas</th><th>Ação</th>
               </tr>
             </thead>
             <tbody>
               {deploys.map(d => (
-                <tr key={d.id} style={styles.tr}>
-                  <td style={styles.td}>{d.version}</td>
-                  <td style={styles.td}>{new Date(d.deployed_at).toLocaleString()}</td>
-                  <td style={styles.td}>{d.deployed_by_name || d.deployed_by}</td>
-                  <td style={styles.td}>{d.notes || '–'}</td>
-                  <td style={styles.td}>
+                <tr key={d.id}>
+                  <td>{d.version}</td>
+                  <td>{new Date(d.deployed_at).toLocaleString()}</td>
+                  <td>{d.deployed_by_name || d.deployed_by}</td>
+                  <td>{d.notes || '–'}</td>
+                  <td>
                     {gameInfo?.active_version === d.version ? (
                       <span style={styles.activeLabel}>Ativa</span>
                     ) : (
-                      <button
-                        onClick={() => handleActivate(d.version)}
-                        disabled={activating === d.version}
-                        style={styles.activateButton}
-                      >
-                        {activating === d.version ? '…' : 'Ativar'}
+                      <button onClick={() => confirmActivate(d.version)} style={styles.activateButton}>
+                        Ativar
                       </button>
                     )}
                   </td>
                 </tr>
               ))}
               {!deploys.length && (
-                <tr>
-                  <td colSpan={5} style={styles.empty}>Nenhum deploy encontrado.</td>
-                </tr>
+                <tr><td colSpan={5} style={styles.empty}>Nenhum deploy.</td></tr>
               )}
             </tbody>
           </table>
@@ -206,52 +272,58 @@ export default function GameDetails() {
 
       <section style={styles.section}>
         <h3 style={styles.sectionTitle}>Novo Deploy</h3>
-        <div style={styles.uploadCard}>
-          <input
-            type="file"
-            accept=".zip"
-            disabled={loading}
-            onChange={e => setFile(e.target.files[0])}
-            style={styles.fileInput}
-          />
-          <textarea
-            placeholder="Notas sobre esta versão"
-            disabled={loading}
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-            style={styles.textarea}
-          />
-          <button
-            onClick={handleDeploy}
-            disabled={loading || !file}
-            style={styles.uploadButton}
-          >
-            {loading ? 'Enviando…' : 'Fazer Deploy'}
-          </button>
+        <div
+          {...getRootProps()}
+          style={{
+            ...styles.uploadCard,
+            border: isDragActive ? '2px dashed #007bff' : '2px dashed #ccc'
+          }}
+        >
+          <input {...getInputProps()} />
+          {file ? (
+            <p>{file.name} ({(file.size/1024/1024).toFixed(2)} MB)</p>
+          ) : (
+            <p>Arraste e solte seu .zip aqui, ou clique para selecionar</p>
+          )}
         </div>
+        {uploadProgress > 0 && (
+          <progress value={uploadProgress} max="100" style={styles.progress}>
+            {uploadProgress}%
+          </progress>
+        )}
+        <textarea
+          placeholder="Notas sobre esta versão"
+          disabled={loading}
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+          style={styles.textarea}
+        />
+        <button
+          onClick={handleDeploy}
+          disabled={loading || !file}
+          style={styles.uploadButton}
+        >
+          {loading ? 'Enviando…' : 'Fazer Deploy'}
+        </button>
       </section>
     </div>
   );
 }
 
 const styles = {
-  container: { padding: 24, maxWidth: 900, margin: '40px auto', background: '#fafafa', borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' },
-  back: { background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 16, color: '#555', marginBottom: 16 },
-  title: { margin: '0 0 8px', fontSize: 28, color: '#333' },
-  small: { fontSize: '0.6em', color: '#888' },
-  buildStatus: { marginLeft: 8, fontStyle: 'italic', color: '#666' },
-  section: { marginBottom: 32 },
-  sectionTitle: { fontSize: 20, marginBottom: 12, color: '#444', borderBottom: '2px solid #ddd', paddingBottom: 4 },
-  tableWrapper: { overflowX: 'auto' },
-  table: { width: '100%', borderCollapse: 'collapse' },
-  th: { textAlign: 'left', padding: '12px 8px', background: '#e0e0e0', fontWeight: 'bold' },
-  tr: { borderBottom: '1px solid #ddd' },
-  td: { padding: '12px 8px', color: '#555' },
-  activateButton: { padding: '4px 12px', background: '#28a745', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' },
-  activeLabel: { padding: '4px 12px', background: '#ccc', color: '#333', borderRadius: 4, fontSize: '0.9em' },
-  empty: { padding: '16px', textAlign: 'center', color: '#999' },
-  uploadCard: { display: 'flex', flexDirection: 'column', gap: 12, padding: 16, background: '#fff', borderRadius: 6, border: '1px solid #ddd' },
-  fileInput: { padding: 6 },
-  textarea: { minHeight: 80, padding: 8, borderRadius: 4, border: '1px solid #ccc', resize: 'vertical' },
-  uploadButton: { alignSelf: 'flex-start', padding: '10px 24px', background: '#007bff', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 16 }
+  container: { padding:24, maxWidth:900, margin:'40px auto', background:'#fafafa', borderRadius:8, boxShadow:'0 4px 12px rgba(0,0,0,0.1)' },
+  back: { background:'transparent', border:'none', cursor:'pointer', fontSize:16, color:'#555', marginBottom:16 },
+  title: { margin:'0 0 8px', fontSize:28, color:'#333' },
+  buildStatus: { marginLeft:8, fontStyle:'italic', color:'#666' },
+  section: { marginBottom:32 },
+  sectionTitle: { fontSize:20, marginBottom:12, color:'#444', borderBottom:'2px solid #ddd', paddingBottom:4 },
+  tableWrapper: { overflowX:'auto' },
+  table: { width:'100%', borderCollapse:'collapse' },
+  activateButton: { padding:'4px 12px', background:'#28a745', color:'#fff', border:'none', borderRadius:4, cursor:'pointer' },
+  activeLabel: { padding:'4px 12px', background:'#ccc', color:'#333', borderRadius:4, fontSize:'0.9em' },
+  empty: { padding:16, textAlign:'center', color:'#999' },
+  uploadCard: { display:'flex', flexDirection:'column', gap:12, padding:16, background:'#fff', borderRadius:6, border:'1px solid #ddd', alignItems:'center', textAlign:'center', cursor:'pointer' },
+  progress: { width:'100%', marginTop:8 },
+  textarea: { width:'100%', minHeight:80, padding:8, borderRadius:4, border:'1px solid #ccc', resize:'vertical', marginTop:12 },
+  uploadButton: { marginTop:12, padding:'10px 24px', background:'#007bff', color:'#fff', border:'none', borderRadius:4, cursor:'pointer', fontSize:16 }
 };
