@@ -10,6 +10,7 @@ import Warmup from './pages/Warmup'
 import Questionnaire from './pages/Questionnaire'
 import Admin from './pages/Admin'
 import GameDetails from './pages/GameDetails'
+import NewGameForm from './pages/NewGameForm'
 import PrivateRoute from './components/PrivateRoute'
 
 export default function App() {
@@ -41,6 +42,8 @@ export default function App() {
       <Route path="/admin" element={<Admin />} />
 
       <Route path="/admin/games/:id" element={<GameDetails />} />
+
+      <Route path="/admin/games/new" element={<NewGameForm />} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

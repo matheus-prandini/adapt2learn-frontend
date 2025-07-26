@@ -1,4 +1,3 @@
-// src/pages/Admin.js
 import React, { useState, useEffect } from 'react';
 import { auth } from '../firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -28,14 +27,14 @@ export default function Admin() {
     (async () => {
       try {
         const token = await user.getIdToken();
-        const res = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/me', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await fetch(
+          'https://adapt2learn-895112363610.us-central1.run.app/api/me',
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
         const data = await res.json();
         if (!['teacher', 'admin'].includes(data.role)) navigate('/');
         setProfile(data);
-      } catch (err) {
-        console.error(err);
+      } catch {
         navigate('/');
       } finally {
         setLoadingProfile(false);
@@ -50,16 +49,16 @@ export default function Admin() {
     (async () => {
       try {
         const token = await user.getIdToken();
-        const url = new URL('https://adapt2learn-895112363610.us-central1.run.app/api/users');
+        const url = new URL(
+          'https://adapt2learn-895112363610.us-central1.run.app/api/users'
+        );
         url.searchParams.set('role', 'student');
         url.searchParams.set('school_id', selectedSchool);
         const res = await fetch(url.toString(), {
           headers: { Authorization: `Bearer ${token}` }
         });
-        if (!res.ok) throw new Error('Falha ao carregar alunos');
         setStudents(await res.json());
-      } catch (err) {
-        console.error(err);
+      } catch {
       } finally {
         setLoadingStudents(false);
       }
@@ -78,13 +77,12 @@ export default function Admin() {
     (async () => {
       try {
         const token = await user.getIdToken();
-        const res = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/games', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error('Erro ao carregar jogos');
+        const res = await fetch(
+          'https://adapt2learn-895112363610.us-central1.run.app/api/games',
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
         setGamesList(await res.json());
-      } catch (err) {
-        console.error('Erro ao carregar jogos:', err);
+      } catch {
       }
     })();
   }, [user]);
@@ -96,21 +94,20 @@ export default function Admin() {
       const token = await user.getIdToken();
       const params = new URLSearchParams();
       params.set('school_id', selectedSchool);
-      if (selectedGame.length > 0) params.set('game_names', selectedGame.join(','));
+      if (selectedGame.length)
+        params.set('game_names', selectedGame.join(','));
       const res = await fetch(
         `https://adapt2learn-895112363610.us-central1.run.app/api/sessions?${params}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      if (!res.ok) throw new Error('Erro ao buscar sessões');
       setSessions(await res.json());
-    } catch (err) {
-      console.error(err);
+    } catch {
     } finally {
       setLoadingSessions(false);
     }
   }
 
-  // Update student group (optional)
+  // Update student group
   async function handleGroupChange(uid, newGroup) {
     const token = await user.getIdToken();
     const res = await fetch(
@@ -124,8 +121,11 @@ export default function Admin() {
         body: JSON.stringify({ group: newGroup })
       }
     );
-    if (!res.ok) alert('Erro ao atualizar grupo');
-    else setStudents(students.map(s => s.uid === uid ? { ...s, group: newGroup } : s));
+    if (res.ok) {
+      setStudents(students.map(s =>
+        s.uid === uid ? { ...s, group: newGroup } : s
+      ));
+    }
   }
 
   if (loadingAuth || loadingProfile) {
@@ -134,22 +134,37 @@ export default function Admin() {
 
   return (
     <div style={styles.container}>
-      <button onClick={() => navigate(-1)} style={styles.backButton}>← Voltar</button>
+      <button
+        onClick={() => navigate(-1)}
+        style={styles.backButton}
+      >← Voltar</button>
       <h2 style={styles.heading}>🛠️ Painel de Administração</h2>
 
       {/* Tabs */}
       <div style={styles.tabs}>
         <button
           onClick={() => setActiveTab('students')}
-          style={activeTab === 'students' ? styles.tabSelected : styles.tab}
+          style={
+            activeTab === 'students'
+              ? styles.tabSelected
+              : styles.tab
+          }
         >👧 Lista de Crianças</button>
         <button
           onClick={() => setActiveTab('sessions')}
-          style={activeTab === 'sessions' ? styles.tabSelected : styles.tab}
+          style={
+            activeTab === 'sessions'
+              ? styles.tabSelected
+              : styles.tab
+          }
         >🕹️ Sessões Jogadas</button>
         <button
           onClick={() => setActiveTab('games')}
-          style={activeTab === 'games' ? styles.tabSelected : styles.tab}
+          style={
+            activeTab === 'games'
+              ? styles.tabSelected
+              : styles.tab
+          }
         >🎮 Lista de Jogos</button>
       </div>
 
@@ -161,7 +176,9 @@ export default function Admin() {
           onChange={e => setSelectedSchool(e.target.value)}
           style={styles.select}
         >
-          {SCHOOLS.map(s => <option key={s} value={s}>{s}</option>)}
+          {SCHOOLS.map(s => (
+            <option key={s} value={s}>{s}</option>
+          ))}
         </select>
       </div>
 
@@ -236,9 +253,7 @@ export default function Admin() {
                     <td style={styles.td}>{s.user_name}</td>
                     <td style={styles.td}>{s.game_name}</td>
                     <td style={styles.td}>{s.session_number}</td>
-                    <td style={styles.td}>{
-                      s.created_at ? new Date(s.created_at).toLocaleString() : '—'
-                    }</td>
+                    <td style={styles.td}>{new Date(s.created_at).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -247,9 +262,15 @@ export default function Admin() {
         </>
       )}
 
-      {/* Games Tab */}
+      {/* Games Tab with Create button */}
       {activeTab === 'games' && (
         <>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h3 style={styles.sectionTitle}>Lista de Jogos</h3>
+            <button style={styles.createButton} onClick={() => navigate('/admin/games/new')}>
+              + Novo Jogo
+            </button>
+          </div>
           {gamesList.length === 0 ? (
             <p>🔄 Carregando jogos…</p>
           ) : (
@@ -264,11 +285,7 @@ export default function Admin() {
               </thead>
               <tbody>
                 {gamesList.map(g => (
-                  <tr
-                    key={g.id}
-                    onClick={() => navigate(`/admin/games/${g.id}`)}
-                    style={{ ...styles.td, cursor: 'pointer' }}
-                  >
+                  <tr key={g.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/admin/games/${g.id}`)}>
                     <td style={styles.td}>{g.id}</td>
                     <td style={styles.td}>{g.name}</td>
                     <td style={styles.td}>{g.has_warmup ? 'Sim' : 'Não'}</td>
@@ -292,8 +309,10 @@ const styles = {
   tab: { padding: '8px 16px', backgroundColor: '#eee', border: '1px solid #ccc', cursor: 'pointer', borderRadius: 6 },
   tabSelected: { padding: '8px 16px', backgroundColor: '#d1c4e9', border: '2px solid #6a1b9a', cursor: 'pointer', borderRadius: 6, fontWeight: 'bold', color: '#4a148c' },
   filterRow: { marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 },
-  select: { padding: '6px', fontSize: 14, borderRadius: 6, border: '1px solid #aaa' },
+  select: { padding: 6, fontSize: 14, borderRadius: 6, border: '1px solid #aaa' },
   table: { width: '100%', borderCollapse: 'collapse', marginTop: 16 },
   th: { textAlign: 'left', borderBottom: '2px solid #999', padding: 10, background: '#ede7f6', color: '#4a148c' },
   td: { padding: 10, borderBottom: '1px solid #ddd' },
+  createButton: { padding: '8px 16px', background: '#28a745', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' },
+  sectionTitle: { margin: 0, fontSize: 18, color: '#444' }
 };
