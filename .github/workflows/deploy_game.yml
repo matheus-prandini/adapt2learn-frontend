@@ -42,20 +42,35 @@ jobs:
             gs://adapt2learn-api.firebasestorage.app/games/${{ github.event.inputs.game_id }}/deploys/${{ github.event.inputs.version }}.zip \
             public/games/${{ github.event.inputs.game_id }}/deploy.zip
 
-      # 5) Descompacta o ZIP em public/games/{game_id}
-      - name: Unzip deploy into public/games/
+      # 5) Descompacta e “achata” o conteúdo em public/games/{game_id}
+      - name: Unzip and flatten deploy into public/games/
         run: |
-          unzip -o public/games/${{ github.event.inputs.game_id }}/deploy.zip \
-            -d public/games/${{ github.event.inputs.game_id }}
-          rm public/games/${{ github.event.inputs.game_id }}/deploy.zip
+          cd public/games/${{ github.event.inputs.game_id }}
+          # Extrai todo o ZIP em uma pasta temporária
+          mkdir tmp
+          unzip -o deploy.zip -d tmp
+          # Move o conteúdo de dentro de tmp/<root>/ para o diretório atual
+          shopt -s nullglob
+          for d in tmp/*; do
+            mv "$d"/* .
+          done
+          # Limpa temporários
+          rm -rf tmp deploy.zip
 
-      # 6) Setup Node.js para build local
+      # 6) Sincroniza o conteúdo extraído de volta para o bucket
+      - name: Sync extracted game to GCS
+        run: |
+          gsutil -m rsync -d -r \
+            public/games/${{ github.event.inputs.game_id }} \
+            gs://adapt2learn-api.firebasestorage.app/public/games/${{ github.event.inputs.game_id }}
+
+      # 7) Setup Node.js para build
       - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: '22.x'
 
-      # 7) Build do frontend (CRA copia tudo de public/ para build/)
+      # 8) Build do frontend (CRA copia tudo de public/ para build/)
       - name: Install & Build frontend
         env:
           CI: false
@@ -64,11 +79,11 @@ jobs:
           npm ci
           npm run build
 
-      # 8) Deploy no Firebase Hosting
+      # 9) Deploy no Firebase Hosting
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          repoToken:              ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.GCP_SERVICE_ACCOUNT_JSON }}
-          channelId: live
-          projectId: adapt2learn-api
+          channelId:              live
+          projectId:              adapt2learn-api
