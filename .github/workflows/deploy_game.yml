@@ -50,6 +50,10 @@ jobs:
           unzip -o deploy.zip -d tmp
           shopt -s nullglob
           for d in tmp/*/; do
+            base=$(basename "$d")
+            if [ "$base" = "__MACOSX" ]; then
+              continue
+            fi
             mv "$d"* .
           done
           rm -rf tmp deploy.zip
