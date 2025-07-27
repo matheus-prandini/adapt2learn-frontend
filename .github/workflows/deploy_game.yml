@@ -15,17 +15,20 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
-      id-token: 'write'       # if you use Workload Identity Federation instead
+      id-token: 'write'
 
     steps:
+      # 1) Checkout do código
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      # 2) Autentica no GCP
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_JSON }}
 
+      # 3) Prepara o SDK do Google Cloud
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
         with:
@@ -39,7 +42,7 @@ jobs:
             gs://adapt2learn-api.firebasestorage.app/games/${{ github.event.inputs.game_id }}/deploys/${{ github.event.inputs.version }}.zip \
             public/games/${{ github.event.inputs.game_id }}/deploy.zip
 
-      # 5) Extrai o ZIP em public/games/{game_id}
+      # 5) Descompacta o ZIP em public/games/{game_id}
       - name: Unzip deploy into public/games/
         run: |
           unzip -o public/games/${{ github.event.inputs.game_id }}/deploy.zip \
@@ -61,11 +64,11 @@ jobs:
           npm ci
           npm run build
 
-      # 8) Deploy no Firebase Hosting com a Action oficial
+      # 8) Deploy no Firebase Hosting
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          repoToken:              ${{ secrets.GITHUB_TOKEN }}
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.GCP_SERVICE_ACCOUNT_JSON }}
-          channelId:              live
-          projectId:              adapt2learn-api
+          channelId: live
+          projectId: adapt2learn-api
