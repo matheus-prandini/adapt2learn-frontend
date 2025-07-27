@@ -3,7 +3,7 @@ import { auth } from '../firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useNavigate } from 'react-router-dom';
 import Select from 'react-select';
-import { getDownloadURL, ref } from 'firebase/storage';
+import { getDownloadURL, ref as storageRef } from 'firebase/storage';
 import { storage } from '../firebase';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -11,19 +11,37 @@ import 'react-toastify/dist/ReactToastify.css';
 const SCHOOLS = ['ColégioObjetivo', 'Eseba', 'Associação21Down'];
 
 export default function Admin() {
+  const navigate = useNavigate();
   const [user, loadingAuth] = useAuthState(auth);
   const [profile, setProfile] = useState(null);
   const [students, setStudents] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [gamesList, setGamesList] = useState([]);
-  const [selectedSchool, setSelectedSchool] = useState('Eseba');
+  const [selectedSchool, setSelectedSchool] = useState(SCHOOLS[1]);
   const [selectedGame, setSelectedGame] = useState([]);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [loadingGames, setLoadingGames] = useState(false);
   const [activeTab, setActiveTab] = useState('students');
-  const navigate = useNavigate();
+
+  // Handlers
+  const handleView = id => navigate(`/admin/games/${id}`);
+  const handleDelete = async id => {
+    if (!window.confirm('Deseja realmente excluir este jogo?')) return;
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`/api/games/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Falha ao excluir');
+      setGamesList(prev => prev.filter(g => g.id !== id));
+      toast.success('Jogo excluído');
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
 
   // Load profile and guard
   useEffect(() => {
@@ -32,10 +50,7 @@ export default function Admin() {
     (async () => {
       try {
         const token = await user.getIdToken();
-        const res = await fetch(
-          'https://adapt2learn-895112363610.us-central1.run.app/api/me',
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const res = await fetch('/api/me', { headers: { Authorization: `Bearer ${token}` } });
         const data = await res.json();
         if (!['teacher', 'admin'].includes(data.role)) navigate('/');
         setProfile(data);
@@ -47,174 +62,181 @@ export default function Admin() {
     })();
   }, [user, loadingAuth]);
 
-  // Fetch students on school change
+  // Fetch students
   useEffect(() => {
     if (!user || !selectedSchool) return;
     setLoadingStudents(true);
     (async () => {
       try {
         const token = await user.getIdToken();
-        const url = new URL(
-          'https://adapt2learn-895112363610.us-central1.run.app/api/users'
-        );
+        const url = new URL('/api/users', window.location.origin);
         url.searchParams.set('role', 'student');
         url.searchParams.set('school_id', selectedSchool);
-        const res = await fetch(url.toString(), {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setStudents(await res.json());
+        const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+        const data = await res.json();
+        setStudents(data);
       } catch {
+        toast.error('Erro ao carregar lista de crianças');
       } finally {
         setLoadingStudents(false);
       }
     })();
-    if (activeTab === 'sessions') fetchSessions();
   }, [user, selectedSchool]);
 
-  // Fetch sessions when tab or game filter changes
+  // Fetch sessions
+  const fetchSessions = async () => {
+    setLoadingSessions(true);
+    try {
+      const token = await user.getIdToken();
+      const params = new URLSearchParams({ school_id: selectedSchool });
+      if (selectedGame.length) params.set('game_names', selectedGame.join(','));
+      const res = await fetch(`/api/sessions?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      setSessions(data);
+    } catch {
+      toast.error('Erro ao carregar sessões');
+    } finally {
+      setLoadingSessions(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'sessions') fetchSessions();
-  }, [activeTab, selectedGame]);
+  }, [activeTab, selectedSchool, selectedGame]);
 
-  // Load games list once, download icons
+  // Load games
   useEffect(() => {
     if (!user) return;
     setLoadingGames(true);
     (async () => {
       try {
         const token = await user.getIdToken();
-        const res = await fetch(
-          'https://adapt2learn-895112363610.us-central1.run.app/api/games',
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        if (!res.ok) throw new Error('Erro ao carregar jogos');
+        const res = await fetch('/api/games', { headers: { Authorization: `Bearer ${token}` } });
         const raw = await res.json();
         const withIcons = await Promise.all(
           raw.map(async g => {
             let iconUrl = '';
-            try {
-              iconUrl = await getDownloadURL(ref(storage, g.icon_url));
-            } catch (e) {
-              console.error('Erro ao baixar ícone', e);
-            }
+            try { iconUrl = await getDownloadURL(storageRef(storage, g.icon_url)); } catch {}
             return { ...g, iconUrl };
           })
         );
         setGamesList(withIcons);
-      } catch (err) {
-        console.error('Erro ao carregar jogos:', err);
+      } catch {
+        toast.error('Erro ao carregar jogos');
       } finally {
         setLoadingGames(false);
       }
     })();
   }, [user]);
 
-  // Session fetch helper
-  async function fetchSessions() {
-    setLoadingSessions(true);
-    try {
-      const token = await user.getIdToken();
-      const params = new URLSearchParams();
-      params.set('school_id', selectedSchool);
-      if (selectedGame.length)
-        params.set('game_names', selectedGame.join(','));
-      const res = await fetch(
-        `https://adapt2learn-895112363610.us-central1.run.app/api/sessions?${params}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setSessions(await res.json());
-    } catch {
-    } finally {
-      setLoadingSessions(false);
-    }
-  }
-
-  // Update student group
-  async function handleGroupChange(uid, newGroup) {
-    const token = await user.getIdToken();
-    const res = await fetch(
-      `https://adapt2learn-895112363610.us-central1.run.app/api/users/${uid}/group`,
-      {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ group: newGroup })
-      }
-    );
-    if (res.ok) {
-      setStudents(students.map(s =>
-        s.uid === uid ? { ...s, group: newGroup } : s
-      ));
-    }
-  }
-
-  // View and delete handlers
-  const handleView = id => navigate(`/admin/games/${id}`);
-  const handleDelete = async id => {
-    if (!window.confirm('Deseja realmente excluir este jogo?')) return;
-    try {
-      const token = await user.getIdToken();
-      const res = await fetch(
-        `https://adapt2learn-895112363610.us-central1.run.app/api/games/${id}`,
-        { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }
-      );
-      if (!res.ok) throw new Error('Falha ao excluir');
-      setGamesList(gamesList.filter(g => g.id !== id));
-      toast.success('Jogo excluído');
-    } catch (err) {
-      toast.error(err.message);
-    }
-  };
-
-  if (loadingAuth || loadingProfile) {
-    return <p style={{ textAlign: 'center', padding: 20 }}>Carregando…</p>;
-  }
+  if (loadingAuth || loadingProfile) return <p style={{ textAlign: 'center', padding: 20 }}>Carregando…</p>;
 
   return (
     <div style={styles.container}>
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
-      <button
-        onClick={() => navigate(-1)}
-        style={styles.backButton}
-      >← Voltar</button>
+      <button onClick={() => navigate(-1)} style={styles.backButton}>← Voltar</button>
       <h2 style={styles.heading}>🛠️ Painel de Administração</h2>
-
-      {/* Tabs */}
       <div style={styles.tabs}>
-        <button
-          onClick={() => setActiveTab('students')}
-          style={
-            activeTab === 'students'
-              ? styles.tabSelected
-              : styles.tab
-          }
-        >👧 Lista de Crianças</button>
-        <button
-          onClick={() => setActiveTab('sessions')}
-          style={
-            activeTab === 'sessions'
-              ? styles.tabSelected
-              : styles.tab
-          }
-        >🕹️ Sessões Jogadas</button>
-        <button
-          onClick={() => setActiveTab('games')}
-          style={
-            activeTab === 'games'
-              ? styles.tabSelected
-              : styles.tab
-          }
-        >🎮 Lista de Jogos</button>
+        {['students', 'sessions', 'games'].map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            style={activeTab === tab ? styles.tabSelected : styles.tab}
+          >
+            {tab === 'students'
+              ? '👧 Lista de Crianças'
+              : tab === 'sessions'
+              ? '🕹️ Sessões Jogadas'
+              : '🎮 Lista de Jogos'}
+          </button>
+        ))}
       </div>
 
-      {/* Games Tab with Actions */}
+      {activeTab === 'students' && (
+        <>
+          <h3 style={styles.sectionTitle}>Filtro de Escola</h3>
+          <Select
+            options={SCHOOLS.map(s => ({ value: s, label: s }))}
+            value={{ value: selectedSchool, label: selectedSchool }}
+            onChange={opt => setSelectedSchool(opt.value)}
+          />
+          {loadingStudents ? (
+            <p>🔄 Carregando crianças…</p>
+          ) : (
+            <table style={styles.table}>
+              <thead>
+                <tr><th style={styles.th}>Nome</th><th style={styles.th}>Email</th><th style={styles.th}>Grupo</th></tr>
+              </thead>
+              <tbody>
+                {students.map(s => (
+                  <tr key={s.uid} style={styles.tr}>
+                    <td style={styles.td}>{s.name}</td>
+                    <td style={styles.td}>{s.mail}</td>
+                    <td style={styles.td}>{s.group || s.grade_level}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
+      )}
+
+      {activeTab === 'sessions' && (
+        <>
+          <div style={styles.filterRow}>
+            <Select
+              options={SCHOOLS.map(s => ({ value: s, label: s }))}
+              value={{ value: selectedSchool, label: selectedSchool }}
+              onChange={opt => setSelectedSchool(opt.value)}
+            />
+            <Select
+              isMulti
+              options={gamesList.map(g => ({ value: g.name, label: g.name }))}
+              value={gamesList
+                .filter(g => selectedGame.includes(g.name))
+                .map(g => ({ value: g.name, label: g.name }))}
+              onChange={opts => setSelectedGame(opts.map(o => o.value))}
+              placeholder="Filtrar por jogo"
+              styles={{ container: base => ({ ...base, width: 200 }) }}
+            />
+          </div>
+          {loadingSessions ? (
+            <p>🔄 Carregando sessões…</p>
+          ) : (
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>Sessão</th>
+                  <th style={styles.th}>Jogo</th>
+                  <th style={styles.th}>Aluno</th>
+                  <th style={styles.th}>Criada em</th>
+                  <th style={styles.th}># Sessão</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sessions.map(s => (
+                  <tr key={s.session_id} style={styles.tr}>
+                    <td style={styles.td}>{s.session_id}</td>
+                    <td style={styles.td}>{s.game_name}</td>
+                    <td style={styles.td}>{s.user_name}</td>
+                    <td style={styles.td}>{new Date(s.created_at).toLocaleString()}</td>
+                    <td style={styles.td}>{s.session_number}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
+      )}
+
       {activeTab === 'games' && (
         <>
           <div style={styles.headerRow}>
             <h3 style={styles.sectionTitle}>Lista de Jogos</h3>
-            <button style={styles.createButton} onClick={() => navigate('/admin/games/new')}>
+            <button
+              style={styles.createButton}
+              onClick={() => navigate('/admin/games/new')}
+            >
               + Novo Jogo
             </button>
           </div>
@@ -224,35 +246,20 @@ export default function Admin() {
             <table style={styles.table}>
               <thead>
                 <tr>
-                  <th style={styles.th}>Ícone</th>
-                  <th style={styles.th}>ID</th>
-                  <th style={styles.th}>Nome</th>
-                  <th style={styles.th}>Warmup?</th>
-                  <th style={styles.th}>Opções?</th>
-                  <th style={styles.th}>Ações</th>
+                  <th style={styles.th}>Ícone</th><th>ID</th><th>Nome</th><th style={styles.th}>Warmup?</th><th style={styles.th}>Opções?</th><th style={styles.th}>Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {gamesList.map(g => (
                   <tr key={g.id} style={styles.tr}>
-                    <td style={styles.td}>
-                      {g.iconUrl && <img src={g.iconUrl} alt="ícone" style={styles.icon} />}
-                    </td>
+                    <td style={styles.td}>{g.iconUrl && <img src={g.iconUrl} alt="ícone" style={styles.icon} />}</td>
                     <td style={styles.td}>{g.id}</td>
                     <td style={styles.td}>{g.name}</td>
                     <td style={styles.td}>{g.has_warmup ? 'Sim' : 'Não'}</td>
                     <td style={styles.td}>{g.has_options ? 'Sim' : 'Não'}</td>
                     <td style={{ ...styles.td, display: 'flex', gap: 12 }}>
-                      <button
-                        onClick={() => handleView(g.id)}
-                        title="Visualizar"
-                        style={styles.actionBtn}
-                      >🔍</button>
-                      <button
-                        onClick={() => handleDelete(g.id)}
-                        title="Excluir"
-                        style={styles.actionBtn}
-                      >🗑️</button>
+                      <button onClick={() => handleView(g.id)} style={styles.actionBtn}>🔍</button>
+                      <button onClick={() => handleDelete(g.id)} style={styles.actionBtn}>🗑️</button>
                     </td>
                   </tr>
                 ))}
@@ -272,10 +279,11 @@ const styles = {
   tabs: { display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 20 },
   tab: { padding: '8px 16px', backgroundColor: '#eee', border: '1px solid #ccc', cursor: 'pointer', borderRadius: 6 },
   tabSelected: { padding: '8px 16px', backgroundColor: '#d1c4e9', border: '2px solid #6a1b9a', cursor: 'pointer', borderRadius: 6, fontWeight: 'bold', color: '#4a148c' },
+  sectionTitle: { fontSize: 18, color: '#444', margin: '16px 0 8px' },
+  filterRow: { display: 'flex', gap: 16, marginBottom: 16 },
   headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  sectionTitle: { margin: 0, fontSize: 18, color: '#444' },
   createButton: { padding: '8px 16px', background: '#28a745', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' },
-  table: { width: '100%', borderCollapse: 'collapse', marginTop: 16 },
+  table: { width: '100%', borderCollapse: 'collapse', tableLayout: 'auto' },
   th: { textAlign: 'left', borderBottom: '2px solid #999', padding: 10, background: '#ede7f6', color: '#4a148c' },
   tr: { borderBottom: '1px solid #ddd' },
   td: { padding: 10, color: '#333' },
