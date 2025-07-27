@@ -246,7 +246,12 @@ export default function Admin() {
             <table style={styles.table}>
               <thead>
                 <tr>
-                  <th style={styles.th}>Ícone</th><th>ID</th><th>Nome</th><th style={styles.th}>Warmup?</th><th style={styles.th}>Opções?</th><th style={styles.th}>Ações</th>
+                  <th style={styles.th}>Ícone</th>
+                  <th style={styles.th}>ID</th>
+                  <th style={styles.th}>Nome</th>
+                  <th style={styles.th}>Warmup?</th>
+                  <th style={styles.th}>Opções?</th>
+                  <th style={styles.th}>Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -283,6 +288,7 @@ const styles = {
   filterRow: { display: 'flex', gap: 16, marginBottom: 16 },
   headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   createButton: { padding: '8px 16px', background: '#28a745', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' },
+  tabs: { display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 20 },
   table: { width: '100%', borderCollapse: 'collapse', tableLayout: 'auto' },
   th: { textAlign: 'left', borderBottom: '2px solid #999', padding: 10, background: '#ede7f6', color: '#4a148c' },
   tr: { borderBottom: '1px solid #ddd' },
