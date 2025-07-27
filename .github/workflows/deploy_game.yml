@@ -30,42 +30,21 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: adapt2learn-api
-          # (the action will pick up the same credentials you just loaded)
 
-      - name: Download current public/ from Bucket
+      # 4) Baixa apenas o ZIP de deploy
+      - name: Download deploy ZIP
         run: |
-          mkdir -p public
-          gsutil -m rsync -r \
-            gs://adapt2learn-api.firebasestorage.app/public \
-            public
+          mkdir -p public/games/${{ github.event.inputs.game_id }}
+          gsutil cp \
+            gs://adapt2learn-api.firebasestorage.app/games/${{ github.event.inputs.game_id }}/deploys/${{ github.event.inputs.version }}.zip \
+            public/games/${{ github.event.inputs.game_id }}/deploy.zip
 
-      # 4) Atualiza apenas o jogo ativado em public/games/{game_id}
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.11
-
-      - name: Install Python deps
+      # 5) Extrai o ZIP em public/games/{game_id}
+      - name: Unzip deploy into public/games/
         run: |
-          python -m pip install --upgrade pip
-          pip install google-cloud-storage
-
-      - name: Sync new version into public/games/
-        run: |
-          # garante que temos credencial no ambiente
-          python - <<EOF
-          import os
-          os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/tmp/gcp-key.json'
-          EOF
-          # executa seu script (ajuste o caminho se necessário)
-          python ci/sync_games.py "${{ github.event.inputs.game_id }}" "${{ github.event.inputs.version }}"
-
-      # 5) Envia de volta public/games/{game_id} para o bucket público
-      - name: Upload updated public/games/{game_id}
-        run: |
-          gsutil -m rsync -d -r \
-            public/games/${{ github.event.inputs.game_id }} \
-            gs://adapt2learn-api.firebasestorage.app/public/games/${{ github.event.inputs.game_id }}
+          unzip -o public/games/${{ github.event.inputs.game_id }}/deploy.zip \
+            -d public/games/${{ github.event.inputs.game_id }}
+          rm public/games/${{ github.event.inputs.game_id }}/deploy.zip
 
       # 6) Setup Node.js para build local
       - name: Setup Node.js 22
