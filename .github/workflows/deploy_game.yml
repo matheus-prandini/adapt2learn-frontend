@@ -49,8 +49,8 @@ jobs:
           mkdir tmp
           unzip -o deploy.zip -d tmp
           shopt -s nullglob
-          for d in tmp/*; do
-            mv "$d"/* .
+          for d in tmp/*/; do
+            mv "$d"* .
           done
           rm -rf tmp deploy.zip
 
