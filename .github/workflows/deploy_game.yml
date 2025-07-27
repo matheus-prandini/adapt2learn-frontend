@@ -46,15 +46,12 @@ jobs:
       - name: Unzip and flatten deploy into public/games/
         run: |
           cd public/games/${{ github.event.inputs.game_id }}
-          # Extrai todo o ZIP em uma pasta temporária
           mkdir tmp
           unzip -o deploy.zip -d tmp
-          # Move o conteúdo de dentro de tmp/<root>/ para o diretório atual
           shopt -s nullglob
           for d in tmp/*; do
             mv "$d"/* .
           done
-          # Limpa temporários
           rm -rf tmp deploy.zip
 
       # 6) Sincroniza o conteúdo extraído de volta para o bucket
@@ -70,7 +67,14 @@ jobs:
         with:
           node-version: '22.x'
 
-      # 8) Build do frontend (CRA copia tudo de public/ para build/)
+      # 8) Sincroniza a pasta public/games completa antes do build
+      - name: Sync all public/games from GCS
+        run: |
+          gsutil -m rsync -r \
+            gs://adapt2learn-api.firebasestorage.app/public/games \
+            public/games
+
+      # 9) Build do frontend (CRA copia tudo de public/ para build/)
       - name: Install & Build frontend
         env:
           CI: false
@@ -79,7 +83,7 @@ jobs:
           npm ci
           npm run build
 
-      # 9) Deploy no Firebase Hosting
+      # 10) Deploy no Firebase Hosting
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
