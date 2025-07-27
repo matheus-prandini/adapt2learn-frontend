@@ -34,7 +34,7 @@ jobs:
         with:
           project_id: adapt2learn-api
 
-      # 4) Baixa apenas o ZIP de deploy
+      # 4) Baixa apenas o ZIP de deploy (sem backslashes para evitar erros de citação)
       - name: Download deploy ZIP
         run: |
           mkdir -p public/games/${{ github.event.inputs.game_id }}
@@ -67,7 +67,7 @@ jobs:
         with:
           node-version: '22.x'
 
-      # 8) Sincroniza a pasta public/games completa antes do build
+      # 8) Sincroniza todas as pastas public/games antes do build
       - name: Sync all public/games from GCS
         run: |
           gsutil -m rsync -r \
