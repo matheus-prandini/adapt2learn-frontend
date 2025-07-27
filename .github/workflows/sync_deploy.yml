@@ -1,0 +1,62 @@
+name: Build & Deploy on Main
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      # 1) Checkout do código
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # 2) Autentica no GCP
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_JSON }}
+
+      # 3) Prepara o SDK do Google Cloud
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: adapt2learn-api
+
+      # 4) Sincroniza todos os jogos de public/games do bucket para local
+      - name: Sync all public/games from GCS
+        run: |
+          mkdir -p public/games
+          gsutil -m rsync -r \
+            gs://adapt2learn-api.firebasestorage.app/public/games \
+            public/games
+
+      # 5) Setup Node.js para build
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      # 6) Build do frontend
+      - name: Install & Build frontend
+        env:
+          CI: false
+          NODE_OPTIONS: --openssl-legacy-provider
+        run: |
+          npm ci
+          npm run build
+
+      # 7) Deploy no Firebase Hosting
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.GCP_SERVICE_ACCOUNT_JSON }}
+          channelId: live
+          projectId: adapt2learn-api
