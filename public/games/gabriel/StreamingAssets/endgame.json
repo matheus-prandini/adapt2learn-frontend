@@ -1,6 +1,0 @@
-
-{
-  "end_game_analysis": true,
-  "end_game_agent": "openai",
-  "max_tokens": 1000
-}
