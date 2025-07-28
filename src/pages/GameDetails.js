@@ -247,6 +247,10 @@ export default function GameDetails() {
     }
   };
 
+  if (gameInfo === null) {
+    return <p style={{ textAlign:'center', padding:20 }}>Carregando…</p>;
+  }
+
   return (
     <div style={styles.container}>
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
