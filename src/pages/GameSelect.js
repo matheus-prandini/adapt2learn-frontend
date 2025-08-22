@@ -99,6 +99,25 @@ export default function GameSelect() {
     setLoadingSession(true);
     try {
       const sessionNumber = await createSession(selectedGame.id);
+      const token = await auth.currentUser.getIdToken();
+
+      await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/events/platform', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          event_type: 'game_start',
+          game_id: selectedGame.id,
+          payload: {
+            discipline,
+            subarea,
+            session_number: sessionNumber
+          }
+        })
+      });
+
       const useWarmup = selectedGame.has_warmup && profile.group !== 'grupo3';
       const params = new URLSearchParams({
         user_id:        profile.uid,
@@ -108,7 +127,7 @@ export default function GameSelect() {
         session_number: sessionNumber,
         game_id:        selectedGame.id,
         game_path:      selectedGame.path,
-        token:         await auth.currentUser.getIdToken()
+        token
       }).toString();
 
       if (useWarmup) {
