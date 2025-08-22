@@ -24,6 +24,25 @@ export default function Login() {
     return res.ok;
   };
 
+  // função utilitária para logar eventos de login
+  async function logLoginEvent(token, status, method, message = null) {
+    try {
+      await fetch("https://adapt2learn-895112363610.us-central1.run.app/api/events/platform", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token
+        },
+        body: JSON.stringify({
+          event_type: status === "success" ? "login_success" : "login_failed",
+          payload: { method, message }
+        })
+      });
+    } catch (err) {
+      console.error("Erro ao logar evento de login:", err);
+    }
+  }
+
   async function handleGoogleSignIn() {
     setError(''); setLoading(true);
     try {
@@ -32,11 +51,15 @@ export default function Login() {
       if (!await checkProfile(token)) {
         await signOut(auth);
         setError('Usuário não cadastrado. Faça o registro primeiro.');
+        await logLoginEvent(token, "failed", "google", "Usuário não cadastrado");
         return;
       }
+      await logLoginEvent(token, "success", "google");
       navigate('/');
     } catch (err) {
       setError('Erro ao entrar com Google: ' + err.message);
+      // sem token válido ainda, não dá pra enviar no header → envia sem token
+      await logLoginEvent("", "failed", "google", err.message);
     } finally {
       setLoading(false);
     }
@@ -51,11 +74,14 @@ export default function Login() {
       if (!await checkProfile(token)) {
         await signOut(auth);
         setError('Usuário não cadastrado. Faça o registro primeiro.');
+        await logLoginEvent(token, "failed", "email", "Usuário não cadastrado");
         return;
       }
+      await logLoginEvent(token, "success", "email");
       navigate('/');
     } catch (err) {
       setError('Erro ao entrar: ' + err.message);
+      await logLoginEvent("", "failed", "email", err.message);
     } finally {
       setLoading(false);
     }
