@@ -42,20 +42,23 @@ jobs:
             gs://adapt2learn-api.firebasestorage.app/games/${{ github.event.inputs.game_id }}/deploys/${{ github.event.inputs.version }}.zip \
             public/games/${{ github.event.inputs.game_id }}/deploy.zip
 
-      # 5) Descompacta e “achata” o conteúdo em public/games/{game_id}
+      # 5) Descompacta até chegar no nível que contém index.html
       - name: Unzip and flatten deploy into public/games/
         run: |
           cd public/games/${{ github.event.inputs.game_id }}
           mkdir tmp
           unzip -o deploy.zip -d tmp
-          shopt -s nullglob
-          for d in tmp/*/; do
-            base=$(basename "$d")
-            if [ "$base" = "__MACOSX" ]; then
-              continue
-            fi
-            mv "$d"* .
-          done
+
+          target_dir=$(find tmp -type f -name "index.html" -printf '%h\n' | head -n 1)
+
+          if [ -z "$target_dir" ]; then
+            echo "ERRO: index.html não encontrado dentro do ZIP!"
+            exit 1
+          fi
+
+          echo "📂 Encontrado index.html em: $target_dir"
+          mv "$target_dir"/* .
+
           rm -rf tmp deploy.zip
 
       # 6) Sincroniza o conteúdo extraído de volta para o bucket
