@@ -115,6 +115,7 @@ export default function Admin() {
 
   useEffect(() => {
     if (activeTab === 'sessions') fetchSessions();
+    if (activeTab === 'metrics') fetchMetrics();
   }, [activeTab, selectedSchool, selectedGame]);
 
   // Load games
@@ -185,11 +186,24 @@ export default function Admin() {
         ))}
       </div>
 
-            {/* ABA DE MÉTRICAS */}
+      {/* ABA DE MÉTRICAS */}
       {activeTab === 'metrics' && (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <div>
+            {/* Filtros */}
             <div style={styles.filterRow}>
+              <input
+                placeholder="User ID"
+                value={filterUser}
+                onChange={e => setFilterUser(e.target.value)}
+                style={styles.input}
+              />
+              <input
+                placeholder="Tipo de Evento"
+                value={filterEvent}
+                onChange={e => setFilterEvent(e.target.value)}
+                style={styles.input}
+              />
               <DatePicker
                 value={filterDateFrom}
                 onChange={setFilterDateFrom}
@@ -203,81 +217,143 @@ export default function Admin() {
               <button onClick={fetchMetrics} style={styles.actionBtn}>🔍 Aplicar</button>
             </div>
 
-            {/* CARDS DE RESUMO */}
-            {metricsData && (
-              <div style={styles.cardsGrid}>
-                {/* Usuários */}
-                <div style={styles.card}>
-                  <h4>👥 Usuários Ativos</h4>
-                  <p>{metricsData.users?.active_unique || 0}</p>
-                </div>
-                <div style={styles.card}>
-                  <h4>🆕 Novos Usuários</h4>
-                  <p>{metricsData.users?.new_users || 0}</p>
-                </div>
-                <div style={styles.card}>
-                  <h4>📈 Retenção</h4>
-                  <p>{(metricsData.users?.retention_rate * 100).toFixed(1)}%</p>
-                </div>
-
-                {/* Logins */}
-                <div style={styles.card}>
-                  <h4>🔑 Logins Totais</h4>
-                  <p>{metricsData.logins?.total_logins || 0}</p>
-                </div>
-                <div style={styles.card}>
-                  <h4>✅ Sucesso</h4>
-                  <p>{(metricsData.logins?.success_rate * 100).toFixed(1)}%</p>
-                </div>
-                <div style={styles.card}>
-                  <h4>❌ Falhas</h4>
-                  <p>{metricsData.logins?.failed_logins || 0}</p>
-                </div>
-
-                {/* Eventos */}
-                <div style={styles.card}>
-                  <h4>🎯 Total Eventos</h4>
-                  <p>{metricsData.events?.total || 0}</p>
-                </div>
+            {/* Cards de resumo */}
+            <div style={styles.cardGrid}>
+              <div style={styles.card}>
+                <h4>👥 Usuários Ativos</h4>
+                <p>{metricsData.users?.active_unique ?? 0}</p>
               </div>
-            )}
+              <div style={styles.card}>
+                <h4>🆕 Novos Usuários</h4>
+                <p>{metricsData.users?.new_users ?? 0}</p>
+              </div>
+              <div style={styles.card}>
+                <h4>📈 Retenção</h4>
+                <p>{((metricsData.users?.retention_rate ?? 0) * 100).toFixed(1)}%</p>
+              </div>
+              <div style={styles.card}>
+                <h4>🔑 Logins</h4>
+                <p>{metricsData.logins?.total_logins ?? 0}</p>
+              </div>
+              <div style={styles.card}>
+                <h4>✅ Sucesso</h4>
+                <p>{((metricsData.logins?.success_rate ?? 0) * 100).toFixed(1)}%</p>
+              </div>
+              <div style={styles.card}>
+                <h4>❌ Falhas</h4>
+                <p>{metricsData.logins?.failed_logins ?? 0}</p>
+              </div>
+              <div style={styles.card}>
+                <h4>📊 Eventos Totais</h4>
+                <p>{metricsData.events?.total ?? 0}</p>
+              </div>
+            </div>
 
-            {/* Gráfico de eventos por dia */}
-            <div style={{ marginTop: 24 }}>
-              <h3 style={styles.sectionTitle}>Eventos por Dia</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                 <LineChart data={metricsData?.events?.trend || []}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="events" stroke="#d81b60" />
-                </LineChart>
-              </ResponsiveContainer>
+            {/* Tendência de eventos por dia */}
+            <div style={{ marginTop: 32 }}>
+              <h3 style={styles.sectionTitle}>📅 Eventos por Dia</h3>
+              {metricsData.events?.trend?.length ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={metricsData.events.trend}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="events" stroke="#6a1b9a" />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : <p>Sem dados de tendência.</p>}
+            </div>
+
+            {/* Distribuição por tipo */}
+            <div style={{ marginTop: 32 }}>
+              <h3 style={styles.sectionTitle}>🗂️ Eventos por Tipo</h3>
+              {metricsData.events?.by_type && Object.keys(metricsData.events.by_type).length ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={Object.entries(metricsData.events.by_type).map(([type, count]) => ({ type, count }))}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="type" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="count" fill="#388e3c" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : <p>Sem dados de eventos por tipo.</p>}
             </div>
 
             {/* Jogos mais jogados */}
-            <div style={{ marginTop: 24 }}>
+            <div style={{ marginTop: 32 }}>
               <h3 style={styles.sectionTitle}>🎮 Jogos mais jogados</h3>
-              <table style={styles.table}>
-                <thead>
-                  <tr>
-                    <th style={styles.th}>Game ID</th>
-                    <th style={styles.th}>Eventos</th>
-                    <th style={styles.th}>Usuários Únicos</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {metricsData.games?.most_played?.map(g => (
-                    <tr key={g.game_id} style={styles.tr}>
-                      <td style={styles.td}>{g.game_id}</td>
-                      <td style={styles.td}>{g.events}</td>
-                      <td style={styles.td}>{g.unique_users}</td>
+              {metricsData.games?.most_played?.length ? (
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>Game ID</th>
+                      <th style={styles.th}>Eventos</th>
+                      <th style={styles.th}>Usuários Únicos</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {metricsData.games.most_played.map(g => (
+                      <tr key={g.game_id} style={styles.tr}>
+                        <td style={styles.td}>{g.game_id}</td>
+                        <td style={styles.td}>{g.events}</td>
+                        <td style={styles.td}>{g.unique_users}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : <p>Sem dados de jogos.</p>}
+            </div>
+
+            {/* Usuários mais ativos */}
+            <div style={{ marginTop: 32 }}>
+              <h3 style={styles.sectionTitle}>👤 Usuários mais ativos</h3>
+              {metricsData.users_activity?.top_active_users?.length ? (
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>User ID</th>
+                      <th style={styles.th}>Eventos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {metricsData.users_activity.top_active_users.map(u => (
+                      <tr key={u.user_id} style={styles.tr}>
+                        <td style={styles.td}>{u.user_id}</td>
+                        <td style={styles.td}>{u.events}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : <p>Sem dados de usuários.</p>}
+            </div>
+
+            {/* Usuários com falha de login */}
+            <div style={{ marginTop: 32 }}>
+              <h3 style={styles.sectionTitle}>⚠️ Usuários com mais falhas de login</h3>
+              {metricsData.logins?.top_failed_users?.length ? (
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>User ID</th>
+                      <th style={styles.th}>Falhas</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {metricsData.logins.top_failed_users.map(u => (
+                      <tr key={u.user_id} style={styles.tr}>
+                        <td style={styles.td}>{u.user_id}</td>
+                        <td style={styles.td}>{u.failures}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : <p>Nenhum usuário com falhas.</p>}
             </div>
           </div>
         </LocalizationProvider>
@@ -425,5 +501,18 @@ const styles = {
   th: { textAlign: 'left', borderBottom: '2px solid #999', padding: 10, background: '#ede7f6', color: '#4a148c' },
   tr: { borderBottom: '1px solid #ddd' },
   td: { padding: 10, color: '#333' },
-  icon: { width: 32, height: 32 }
+  icon: { width: 32, height: 32 },
+  cardGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+    gap: 16,
+    marginTop: 20,
+  },
+  card: {
+    background: '#f3e5f5',
+    padding: 16,
+    borderRadius: 8,
+    textAlign: 'center',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+  }
 };
