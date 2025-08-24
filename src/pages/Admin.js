@@ -292,7 +292,7 @@ export default function Admin() {
                 <table style={styles.table}>
                   <thead>
                     <tr>
-                      <th style={styles.th}>Game ID</th>
+                      <th style={styles.th}>Nome do Jogo</th>
                       <th style={styles.th}>Eventos</th>
                       <th style={styles.th}>Usuários Únicos</th>
                     </tr>
@@ -300,7 +300,7 @@ export default function Admin() {
                   <tbody>
                     {metricsData.games.most_played.map(g => (
                       <tr key={g.game_id} style={styles.tr}>
-                        <td style={styles.td}>{g.game_id}</td>
+                        <td style={styles.td}>{g.game_name}</td>
                         <td style={styles.td}>{g.events}</td>
                         <td style={styles.td}>{g.unique_users}</td>
                       </tr>
@@ -317,14 +317,16 @@ export default function Admin() {
                 <table style={styles.table}>
                   <thead>
                     <tr>
-                      <th style={styles.th}>User ID</th>
+                      <th style={styles.th}>Nome do Usuário</th>
+                      <th style={styles.th}>ID da Escola</th>
                       <th style={styles.th}>Eventos</th>
                     </tr>
                   </thead>
                   <tbody>
                     {metricsData.users_activity.top_active_users.map(u => (
                       <tr key={u.user_id} style={styles.tr}>
-                        <td style={styles.td}>{u.user_id}</td>
+                        <td style={styles.td}>{u.user_name}</td>
+                        <td style={styles.td}>{u.school_id}</td>
                         <td style={styles.td}>{u.events}</td>
                       </tr>
                     ))}
