@@ -8,6 +8,10 @@ import { storage } from '../firebase';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
+
 const SCHOOLS = ['ColégioObjetivo', 'Eseba', 'Associação21Down'];
 
 export default function Admin() {
@@ -25,7 +29,14 @@ export default function Admin() {
   const [loadingGames, setLoadingGames] = useState(false);
   const [activeTab, setActiveTab] = useState('students');
 
-  // Handlers
+  // NOVOS ESTADOS DE FILTRO DE METRICS
+  const [filterUser, setFilterUser] = useState('');
+  const [filterEvent, setFilterEvent] = useState('');
+  const [filterDateFrom, setFilterDateFrom] = useState(dayjs().subtract(7,'day'));
+  const [filterDateTo, setFilterDateTo] = useState(dayjs());
+  const [metricsData, setMetricsData] = useState([]);
+
+  // Handlers originais
   const handleView = id => navigate(`/admin/games/${id}`);
   const handleDelete = async id => {
     if (!window.confirm('Deseja realmente excluir este jogo?')) return;
@@ -129,6 +140,25 @@ export default function Admin() {
     })();
   }, [user]);
 
+  // NOVA FUNÇÃO PARA BUSCAR MÉTRICAS
+  const fetchMetrics = async () => {
+    try {
+      const params = new URLSearchParams({
+        ...(filterUser ? { user_id: filterUser } : {}),
+        ...(filterEvent ? { event_type: filterEvent } : {}),
+        ...(filterDateFrom ? { date_from: filterDateFrom.toISOString() } : {}),
+        ...(filterDateTo ? { date_to: filterDateTo.toISOString() } : {})
+      });
+
+      const token = await user.getIdToken();
+      const res = await fetch(`/api/metrics?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      setMetricsData(data);
+    } catch(err) {
+      toast.error('Erro ao carregar métricas');
+    }
+  };
+
   if (loadingAuth || loadingProfile) return <p style={{ textAlign: 'center', padding: 20 }}>Carregando…</p>;
 
   return (
@@ -137,7 +167,7 @@ export default function Admin() {
       <button onClick={() => navigate(-1)} style={styles.backButton}>← Voltar</button>
       <h2 style={styles.heading}>🛠️ Painel de Administração</h2>
       <div style={styles.tabs}>
-        {['students', 'sessions', 'games'].map(tab => (
+        {['students', 'sessions', 'games', 'metrics'].map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -147,10 +177,58 @@ export default function Admin() {
               ? '👧 Lista de Crianças'
               : tab === 'sessions'
               ? '🕹️ Sessões Jogadas'
-              : '🎮 Lista de Jogos'}
+              : tab === 'games'
+              ? '🎮 Lista de Jogos'
+              : '📊 Métricas'}
           </button>
         ))}
       </div>
+
+      {/* ABA DE MÉTRICAS */}
+      {activeTab === 'metrics' && (
+        <div>
+          <div style={styles.filterRow}>
+            <input
+              placeholder="User ID"
+              value={filterUser}
+              onChange={e => setFilterUser(e.target.value)}
+              style={styles.input}
+            />
+            <input
+              placeholder="Tipo de Evento"
+              value={filterEvent}
+              onChange={e => setFilterEvent(e.target.value)}
+              style={styles.input}
+            />
+            <DatePicker
+              value={filterDateFrom}
+              onChange={setFilterDateFrom}
+              style={styles.input}
+            />
+            <DatePicker
+              value={filterDateTo}
+              onChange={setFilterDateTo}
+              style={styles.input}
+            />
+            <button onClick={fetchMetrics} style={styles.actionBtn}>🔍 Aplicar</button>
+          </div>
+
+          {/* Exemplo gráfico de linha */}
+          <div style={{ marginTop: 24 }}>
+            <h3 style={styles.sectionTitle}>Eventos por Dia</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={metricsData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="day" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="count" stroke="#d81b60" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {activeTab === 'students' && (
         <>
@@ -285,14 +363,14 @@ const styles = {
   tab: { padding: '8px 16px', backgroundColor: '#eee', border: '1px solid #ccc', cursor: 'pointer', borderRadius: 6 },
   tabSelected: { padding: '8px 16px', backgroundColor: '#d1c4e9', border: '2px solid #6a1b9a', cursor: 'pointer', borderRadius: 6, fontWeight: 'bold', color: '#4a148c' },
   sectionTitle: { fontSize: 18, color: '#444', margin: '16px 0 8px' },
-  filterRow: { display: 'flex', gap: 16, marginBottom: 16 },
+  filterRow: { display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' },
+  input: { padding: 8, borderRadius: 6, border: '1px solid #ccc', minWidth: 160 },
   headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   createButton: { padding: '8px 16px', background: '#28a745', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' },
-  tabs: { display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 20 },
+  actionBtn: { background: '#6a1b9a', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 12px', cursor: 'pointer' },
   table: { width: '100%', borderCollapse: 'collapse', tableLayout: 'auto' },
   th: { textAlign: 'left', borderBottom: '2px solid #999', padding: 10, background: '#ede7f6', color: '#4a148c' },
   tr: { borderBottom: '1px solid #ddd' },
   td: { padding: 10, color: '#333' },
-  icon: { width: 32, height: 32 },
-  actionBtn: { background: 'transparent', border: 'none', fontSize: 18, cursor: 'pointer' }
+  icon: { width: 32, height: 32 }
 };
