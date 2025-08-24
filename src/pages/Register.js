@@ -33,6 +33,28 @@ export default function Register() {
     '1º ano EM','2º ano EM','3º ano EM'
   ];
 
+  async function logEvent(user, type, extra = {}) {
+    try {
+      const token = await user.getIdToken();
+      await fetch('/api/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          origin: 'platform',
+          event_type: type,
+          user_id: user.uid,
+          created_at: new Date().toISOString(),
+          ...extra
+        })
+      });
+    } catch (err) {
+      console.error('Falha ao logar evento', err);
+    }
+  }
+
   async function handleGoogleRegister() {
     setError(''); setLoading(true);
     try {
@@ -59,6 +81,7 @@ export default function Register() {
         await signOut(auth);
         throw new Error(await res.text());
       }
+      await logEvent(user, 'user_signup', { method: 'google' });
       navigate('/');
     } catch (err) {
       setError(err.message);
@@ -96,6 +119,7 @@ export default function Register() {
         await cred.user.delete();
         throw new Error(await res.text());
       }
+      await logEvent(cred.user, 'user_signup', { method: 'email' });
       navigate('/');
     } catch (err) {
       setError(err.message);

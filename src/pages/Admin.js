@@ -29,7 +29,7 @@ export default function Admin() {
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [loadingGames, setLoadingGames] = useState(false);
-  const [activeTab, setActiveTab] = useState('students');
+  const [activeTab, setActiveTab] = useState('metrics');
 
   // NOVOS ESTADOS DE FILTRO DE METRICS
   const [filterUser, setFilterUser] = useState('');
