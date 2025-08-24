@@ -142,18 +142,17 @@ export default function Admin() {
     })();
   }, [user]);
 
-  // NOVA FUNÇÃO PARA BUSCAR MÉTRICAS
+    // NOVA FUNÇÃO PARA BUSCAR MÉTRICAS
   const fetchMetrics = async () => {
     try {
-      const params = new URLSearchParams({
-        ...(filterUser ? { user_id: filterUser } : {}),
-        ...(filterEvent ? { event_type: filterEvent } : {}),
-        ...(filterDateFrom ? { date_from: filterDateFrom.toISOString() } : {}),
-        ...(filterDateTo ? { date_to: filterDateTo.toISOString() } : {})
-      });
-
       const token = await user.getIdToken();
-      const res = await fetch(`/api/metrics?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      const url = new URL('/api/metrics/overview', window.location.origin);
+      if (filterDateFrom) url.searchParams.set('date_from', filterDateFrom.toISOString());
+      if (filterDateTo) url.searchParams.set('date_to', filterDateTo.toISOString());
+
+      const res = await fetch(url.toString(), {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       const data = await res.json();
       setMetricsData(data);
     } catch(err) {
@@ -220,13 +219,13 @@ export default function Admin() {
             <div style={{ marginTop: 24 }}>
               <h3 style={styles.sectionTitle}>Eventos por Dia</h3>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={metricsData}>
+                <LineChart data={metricsData?.events?.trend || []}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="day" />
+                  <XAxis dataKey="date" />
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="count" stroke="#d81b60" />
+                  <Line type="monotone" dataKey="events" stroke="#d81b60" />
                 </LineChart>
               </ResponsiveContainer>
             </div>
