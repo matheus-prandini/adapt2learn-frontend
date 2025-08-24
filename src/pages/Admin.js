@@ -185,23 +185,11 @@ export default function Admin() {
         ))}
       </div>
 
-      {/* ABA DE MÉTRICAS */}
+            {/* ABA DE MÉTRICAS */}
       {activeTab === 'metrics' && (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <div>
             <div style={styles.filterRow}>
-              <input
-                placeholder="User ID"
-                value={filterUser}
-                onChange={e => setFilterUser(e.target.value)}
-                style={styles.input}
-              />
-              <input
-                placeholder="Tipo de Evento"
-                value={filterEvent}
-                onChange={e => setFilterEvent(e.target.value)}
-                style={styles.input}
-              />
               <DatePicker
                 value={filterDateFrom}
                 onChange={setFilterDateFrom}
@@ -215,11 +203,50 @@ export default function Admin() {
               <button onClick={fetchMetrics} style={styles.actionBtn}>🔍 Aplicar</button>
             </div>
 
-            {/* Exemplo gráfico de linha */}
+            {/* CARDS DE RESUMO */}
+            {metricsData && (
+              <div style={styles.cardsGrid}>
+                {/* Usuários */}
+                <div style={styles.card}>
+                  <h4>👥 Usuários Ativos</h4>
+                  <p>{metricsData.users?.active_unique || 0}</p>
+                </div>
+                <div style={styles.card}>
+                  <h4>🆕 Novos Usuários</h4>
+                  <p>{metricsData.users?.new_users || 0}</p>
+                </div>
+                <div style={styles.card}>
+                  <h4>📈 Retenção</h4>
+                  <p>{(metricsData.users?.retention_rate * 100).toFixed(1)}%</p>
+                </div>
+
+                {/* Logins */}
+                <div style={styles.card}>
+                  <h4>🔑 Logins Totais</h4>
+                  <p>{metricsData.logins?.total_logins || 0}</p>
+                </div>
+                <div style={styles.card}>
+                  <h4>✅ Sucesso</h4>
+                  <p>{(metricsData.logins?.success_rate * 100).toFixed(1)}%</p>
+                </div>
+                <div style={styles.card}>
+                  <h4>❌ Falhas</h4>
+                  <p>{metricsData.logins?.failed_logins || 0}</p>
+                </div>
+
+                {/* Eventos */}
+                <div style={styles.card}>
+                  <h4>🎯 Total Eventos</h4>
+                  <p>{metricsData.events?.total || 0}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Gráfico de eventos por dia */}
             <div style={{ marginTop: 24 }}>
               <h3 style={styles.sectionTitle}>Eventos por Dia</h3>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={metricsData?.events?.trend || []}>
+                 <LineChart data={metricsData?.events?.trend || []}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis />
@@ -228,6 +255,29 @@ export default function Admin() {
                   <Line type="monotone" dataKey="events" stroke="#d81b60" />
                 </LineChart>
               </ResponsiveContainer>
+            </div>
+
+            {/* Jogos mais jogados */}
+            <div style={{ marginTop: 24 }}>
+              <h3 style={styles.sectionTitle}>🎮 Jogos mais jogados</h3>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Game ID</th>
+                    <th style={styles.th}>Eventos</th>
+                    <th style={styles.th}>Usuários Únicos</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {metricsData.games?.most_played?.map(g => (
+                    <tr key={g.game_id} style={styles.tr}>
+                      <td style={styles.td}>{g.game_id}</td>
+                      <td style={styles.td}>{g.events}</td>
+                      <td style={styles.td}>{g.unique_users}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </LocalizationProvider>
