@@ -10,6 +10,8 @@ import 'react-toastify/dist/ReactToastify.css';
 
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 
 const SCHOOLS = ['ColégioObjetivo', 'Eseba', 'Associação21Down'];
@@ -167,7 +169,7 @@ export default function Admin() {
       <button onClick={() => navigate(-1)} style={styles.backButton}>← Voltar</button>
       <h2 style={styles.heading}>🛠️ Painel de Administração</h2>
       <div style={styles.tabs}>
-        {['students', 'sessions', 'games', 'metrics'].map(tab => (
+        {['metrics', 'students', 'sessions', 'games'].map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -186,48 +188,50 @@ export default function Admin() {
 
       {/* ABA DE MÉTRICAS */}
       {activeTab === 'metrics' && (
-        <div>
-          <div style={styles.filterRow}>
-            <input
-              placeholder="User ID"
-              value={filterUser}
-              onChange={e => setFilterUser(e.target.value)}
-              style={styles.input}
-            />
-            <input
-              placeholder="Tipo de Evento"
-              value={filterEvent}
-              onChange={e => setFilterEvent(e.target.value)}
-              style={styles.input}
-            />
-            <DatePicker
-              value={filterDateFrom}
-              onChange={setFilterDateFrom}
-              style={styles.input}
-            />
-            <DatePicker
-              value={filterDateTo}
-              onChange={setFilterDateTo}
-              style={styles.input}
-            />
-            <button onClick={fetchMetrics} style={styles.actionBtn}>🔍 Aplicar</button>
-          </div>
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <div>
+            <div style={styles.filterRow}>
+              <input
+                placeholder="User ID"
+                value={filterUser}
+                onChange={e => setFilterUser(e.target.value)}
+                style={styles.input}
+              />
+              <input
+                placeholder="Tipo de Evento"
+                value={filterEvent}
+                onChange={e => setFilterEvent(e.target.value)}
+                style={styles.input}
+              />
+              <DatePicker
+                value={filterDateFrom}
+                onChange={setFilterDateFrom}
+                slotProps={{ textField: { style: styles.input } }}
+              />
+              <DatePicker
+                value={filterDateTo}
+                onChange={setFilterDateTo}
+                slotProps={{ textField: { style: styles.input } }}
+              />
+              <button onClick={fetchMetrics} style={styles.actionBtn}>🔍 Aplicar</button>
+            </div>
 
-          {/* Exemplo gráfico de linha */}
-          <div style={{ marginTop: 24 }}>
-            <h3 style={styles.sectionTitle}>Eventos por Dia</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={metricsData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="count" stroke="#d81b60" />
-              </LineChart>
-            </ResponsiveContainer>
+            {/* Exemplo gráfico de linha */}
+            <div style={{ marginTop: 24 }}>
+              <h3 style={styles.sectionTitle}>Eventos por Dia</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={metricsData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="day" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="count" stroke="#d81b60" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
+        </LocalizationProvider>
       )}
 
       {activeTab === 'students' && (
