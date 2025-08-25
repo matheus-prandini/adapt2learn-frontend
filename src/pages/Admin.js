@@ -38,6 +38,62 @@ export default function Admin() {
   const [filterDateTo, setFilterDateTo] = useState(dayjs());
   const [metricsData, setMetricsData] = useState([]);
 
+  // NOVOS ESTADOS DE METRICS VIEW E CUSTOM FIELDS
+  const [metricsView, setMetricsView] = useState('platform'); // 'platform' ou 'game'
+  const [customFields, setCustomFields] = useState([]);
+  const [customMetrics, setCustomMetrics] = useState(null);
+
+  // Handlers para custom fields
+  const addCustomField = () => {
+    setCustomFields(prev => [...prev, { field: '', operation: 'count', condition: null }]);
+  };
+
+  const updateCustomField = (idx, updates) => {
+    setCustomFields(prev => prev.map((f, i) => i === idx ? { ...f, ...updates } : f));
+  };
+
+  const removeCustomField = (idx) => {
+    setCustomFields(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  // Fetch custom metrics
+  const fetchCustomMetrics = async () => {
+    if (!selectedGame) {
+      toast.error('Selecione um jogo primeiro');
+      return;
+    }
+    try {
+      const token = await user.getIdToken();
+      const payload = {
+        game_id: selectedGame,
+        fields: customFields.map(f => ({
+          field: f.field,
+          operation: f.operation,
+          condition: f.condition || null
+        })),
+        user_id: filterUser || null, // opcional
+        date_from: filterDateFrom?.toISOString(),
+        date_to: filterDateTo?.toISOString(),
+        event_type: filterEvent || null
+      };
+
+      const res = await fetch('/api/metrics/custom', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error('Erro ao buscar métricas custom');
+      const data = await res.json();
+      setCustomMetrics(data);
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
   // Handlers originais
   const handleView = id => navigate(`/admin/games/${id}`);
   const handleDelete = async id => {
