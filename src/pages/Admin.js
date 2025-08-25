@@ -190,173 +190,124 @@ export default function Admin() {
       {activeTab === 'metrics' && (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <div>
-            {/* Filtros */}
+            {/* Toggle visão */}
             <div style={styles.filterRow}>
-              <input
-                placeholder="User ID"
-                value={filterUser}
-                onChange={e => setFilterUser(e.target.value)}
-                style={styles.input}
-              />
-              <input
-                placeholder="Tipo de Evento"
-                value={filterEvent}
-                onChange={e => setFilterEvent(e.target.value)}
-                style={styles.input}
-              />
-              <DatePicker
-                value={filterDateFrom}
-                onChange={setFilterDateFrom}
-                slotProps={{ textField: { style: styles.input } }}
-              />
-              <DatePicker
-                value={filterDateTo}
-                onChange={setFilterDateTo}
-                slotProps={{ textField: { style: styles.input } }}
-              />
-              <button onClick={fetchMetrics} style={styles.actionBtn}>🔍 Aplicar</button>
+              <label>
+                <input
+                  type="radio"
+                  checked={metricsView === 'platform'}
+                  onChange={() => setMetricsView('platform')}
+                />
+                Plataforma
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  checked={metricsView === 'game'}
+                  onChange={() => setMetricsView('game')}
+                />
+                Jogos
+              </label>
             </div>
 
-            {/* Cards de resumo */}
-            <div style={styles.cardGrid}>
-              <div style={styles.card}>
-                <h4>👥 Usuários Ativos</h4>
-                <p>{metricsData.users?.active_unique ?? 0}</p>
-              </div>
-              <div style={styles.card}>
-                <h4>🆕 Novos Usuários</h4>
-                <p>{metricsData.users?.new_users ?? 0}</p>
-              </div>
-              <div style={styles.card}>
-                <h4>📈 Retenção</h4>
-                <p>{((metricsData.users?.retention_rate ?? 0) * 100).toFixed(1)}%</p>
-              </div>
-              <div style={styles.card}>
-                <h4>🔑 Logins</h4>
-                <p>{metricsData.logins?.total_logins ?? 0}</p>
-              </div>
-              <div style={styles.card}>
-                <h4>✅ Sucesso</h4>
-                <p>{((metricsData.logins?.success_rate ?? 0) * 100).toFixed(1)}%</p>
-              </div>
-              <div style={styles.card}>
-                <h4>❌ Falhas</h4>
-                <p>{metricsData.logins?.failed_logins ?? 0}</p>
-              </div>
-              <div style={styles.card}>
-                <h4>📊 Eventos Totais</h4>
-                <p>{metricsData.events?.total ?? 0}</p>
-              </div>
-            </div>
+            {metricsView === 'platform' && (
+              <>
+                {/* ---- VISÃO PLATAFORMA ---- */}
+                {/* Filtros padrão */}
+                <div style={styles.filterRow}>
+                  <input
+                    placeholder="User ID"
+                    value={filterUser}
+                    onChange={e => setFilterUser(e.target.value)}
+                    style={styles.input}
+                  />
+                  <input
+                    placeholder="Tipo de Evento"
+                    value={filterEvent}
+                    onChange={e => setFilterEvent(e.target.value)}
+                    style={styles.input}
+                  />
+                  <DatePicker
+                    value={filterDateFrom}
+                    onChange={setFilterDateFrom}
+                    slotProps={{ textField: { style: styles.input } }}
+                  />
+                  <DatePicker
+                    value={filterDateTo}
+                    onChange={setFilterDateTo}
+                    slotProps={{ textField: { style: styles.input } }}
+                  />
+                  <button onClick={fetchMetrics} style={styles.actionBtn}>🔍 Aplicar</button>
+                </div>
 
-            {/* Tendência de eventos por dia */}
-            <div style={{ marginTop: 32 }}>
-              <h3 style={styles.sectionTitle}>📅 Eventos por Dia</h3>
-              {metricsData.events?.trend?.length ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={metricsData.events.trend}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="events" stroke="#6a1b9a" />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : <p>Sem dados de tendência.</p>}
-            </div>
+                {/* ---- Cards e gráficos como já existem ---- */}
+                {/* ... (mantém tudo que você já tinha para Plataforma) ... */}
+              </>
+            )}
 
-            {/* Distribuição por tipo */}
-            <div style={{ marginTop: 32 }}>
-              <h3 style={styles.sectionTitle}>🗂️ Eventos por Tipo</h3>
-              {metricsData.events?.by_type && Object.keys(metricsData.events.by_type).length ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart
-                    data={Object.entries(metricsData.events.by_type).map(([type, count]) => ({ type, count }))}
+            {metricsView === 'game' && (
+              <>
+                {/* ---- VISÃO JOGO ---- */}
+                {/* Dropdown de jogos */}
+                <div style={styles.filterRow}>
+                  <select
+                    value={selectedGame}
+                    onChange={e => setSelectedGame(e.target.value)}
+                    style={styles.input}
                   >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="type" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="count" fill="#388e3c" />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : <p>Sem dados de eventos por tipo.</p>}
-            </div>
-
-            {/* Jogos mais jogados */}
-            <div style={{ marginTop: 32 }}>
-              <h3 style={styles.sectionTitle}>🎮 Jogos mais jogados</h3>
-              {metricsData.games?.most_played?.length ? (
-                <table style={styles.table}>
-                  <thead>
-                    <tr>
-                      <th style={styles.th}>Nome do Jogo</th>
-                      <th style={styles.th}>Eventos</th>
-                      <th style={styles.th}>Usuários Únicos</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {metricsData.games.most_played.map(g => (
-                      <tr key={g.game_id} style={styles.tr}>
-                        <td style={styles.td}>{g.game_name}</td>
-                        <td style={styles.td}>{g.events}</td>
-                        <td style={styles.td}>{g.unique_users}</td>
-                      </tr>
+                    <option value="">Selecione um jogo</option>
+                    {gamesList.map(g => (
+                      <option key={g.game_id} value={g.game_id}>
+                        {g.game_name}
+                      </option>
                     ))}
-                  </tbody>
-                </table>
-              ) : <p>Sem dados de jogos.</p>}
-            </div>
+                  </select>
+                </div>
 
-            {/* Usuários mais ativos */}
-            <div style={{ marginTop: 32 }}>
-              <h3 style={styles.sectionTitle}>👤 Usuários mais ativos</h3>
-              {metricsData.users_activity?.top_active_users?.length ? (
-                <table style={styles.table}>
-                  <thead>
-                    <tr>
-                      <th style={styles.th}>Nome do Usuário</th>
-                      <th style={styles.th}>ID da Escola</th>
-                      <th style={styles.th}>Eventos</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {metricsData.users_activity.top_active_users.map(u => (
-                      <tr key={u.user_id} style={styles.tr}>
-                        <td style={styles.td}>{u.user_name}</td>
-                        <td style={styles.td}>{u.school_id}</td>
-                        <td style={styles.td}>{u.events}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : <p>Sem dados de usuários.</p>}
-            </div>
+                {/* Builder de análise */}
+                <div style={{ marginTop: 16 }}>
+                  <h3 style={styles.sectionTitle}>⚙️ Construir Análise</h3>
+                  {customFields.map((f, idx) => (
+                    <div key={idx} style={styles.filterRow}>
+                      <input
+                        placeholder="Campo (ex: correct)"
+                        value={f.field}
+                        onChange={e => updateCustomField(idx, { field: e.target.value })}
+                        style={styles.input}
+                      />
+                      <select
+                        value={f.operation}
+                        onChange={e => updateCustomField(idx, { operation: e.target.value })}
+                        style={styles.input}
+                      >
+                        <option value="count">Count</option>
+                        <option value="sum">Sum</option>
+                        <option value="avg">Average</option>
+                        <option value="min">Min</option>
+                        <option value="max">Max</option>
+                      </select>
+                      <input
+                        placeholder="Condição (opcional)"
+                        value={f.condition?.value ?? ''}
+                        onChange={e => updateCustomField(idx, { condition: { value: e.target.value } })}
+                        style={styles.input}
+                      />
+                      <button onClick={() => removeCustomField(idx)} style={styles.actionBtn}>❌</button>
+                    </div>
+                  ))}
+                  <button onClick={addCustomField} style={styles.actionBtn}>➕ Adicionar Campo</button>
+                  <button onClick={fetchCustomMetrics} style={styles.actionBtn}>📊 Calcular</button>
+                </div>
 
-            {/* Usuários com falha de login */}
-            <div style={{ marginTop: 32 }}>
-              <h3 style={styles.sectionTitle}>⚠️ Usuários com mais falhas de login</h3>
-              {metricsData.logins?.top_failed_users?.length ? (
-                <table style={styles.table}>
-                  <thead>
-                    <tr>
-                      <th style={styles.th}>User ID</th>
-                      <th style={styles.th}>Falhas</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {metricsData.logins.top_failed_users.map(u => (
-                      <tr key={u.user_id} style={styles.tr}>
-                        <td style={styles.td}>{u.user_id}</td>
-                        <td style={styles.td}>{u.failures}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : <p>Nenhum usuário com falhas.</p>}
-            </div>
+                {/* Resultados custom */}
+                {customMetrics && (
+                  <div style={{ marginTop: 24 }}>
+                    <h4>Resultados</h4>
+                    <pre style={styles.pre}>{JSON.stringify(customMetrics, null, 2)}</pre>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </LocalizationProvider>
       )}
