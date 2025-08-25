@@ -42,6 +42,10 @@ export default function Admin() {
   const [metricsView, setMetricsView] = useState('platform'); // 'platform' ou 'game'
   const [customFields, setCustomFields] = useState([]);
   const [customMetrics, setCustomMetrics] = useState(null);
+  const [eventsList, setEventsList] = useState([]); // lista de eventos do jogo
+  const [selectedEvent, setSelectedEvent] = useState(''); // evento selecionado pelo usuário
+  const [eventFields, setEventFields] = useState([]); // campos disponíveis do payload do evento
+
 
   // Handlers para custom fields
   const addCustomField = () => {
@@ -199,7 +203,41 @@ export default function Admin() {
     })();
   }, [user]);
 
-    // NOVA FUNÇÃO PARA BUSCAR MÉTRICAS
+  useEffect(() => {
+    if (!selectedGame) return setEventsList([]);
+    
+    (async () => {
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch(`/api/events/game/${selectedGame}/list`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        setEventsList(data.event_types || []);
+      } catch(err) {
+        toast.error('Erro ao carregar eventos do jogo');
+      }
+    })();
+  }, [selectedGame]);
+
+  useEffect(() => {
+    if (!selectedEvent) return setEventFields([]);
+    
+    (async () => {
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch(`/api/events/game/${selectedGame}/fields?event_type=${selectedEvent}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        setEventFields(data.fields || []);
+      } catch(err) {
+        toast.error('Erro ao carregar campos do evento');
+      }
+    })();
+  }, [selectedEvent]);
+
+  // NOVA FUNÇÃO PARA BUSCAR MÉTRICAS
   const fetchMetrics = async () => {
     try {
       const token = await user.getIdToken();
