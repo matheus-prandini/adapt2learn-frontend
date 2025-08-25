@@ -171,7 +171,7 @@ export default function Admin() {
 
   useEffect(() => {
     if (activeTab === 'sessions') fetchSessions();
-    if (activeTab === 'metrics') fetchMetrics();
+    // if (activeTab === 'metrics') fetchMetrics();
   }, [activeTab, selectedSchool, selectedGame]);
 
   // Load games
@@ -266,9 +266,10 @@ export default function Admin() {
               </label>
             </div>
 
+            {/* ===== VISÃO PLATAFORMA ===== */}
             {metricsView === 'platform' && (
               <>
-                {/* ---- VISÃO PLATAFORMA ---- */}
+                {/* Filtros padrão */}
                 <div style={styles.filterRow}>
                   <input
                     placeholder="User ID"
@@ -438,58 +439,116 @@ export default function Admin() {
               </>
             )}
 
+            {/* ===== VISÃO JOGO ===== */}
             {metricsView === 'game' && (
               <>
-                {/* ---- VISÃO JOGO ---- */}
+                {/* Dropdown de jogos */}
                 <div style={styles.filterRow}>
                   <select
                     value={selectedGame}
-                    onChange={e => setSelectedGame(e.target.value)}
+                    onChange={async e => {
+                      const gameId = e.target.value;
+                      setSelectedGame(gameId);
+                      setSelectedEvent('');
+                      setEventsList([]);
+                      setEventFields([]);
+                      setCustomFields([]);
+                      setCustomMetrics(null);
+
+                      if (!gameId) return;
+
+                      // Buscar eventos do jogo
+                      const token = await user.getIdToken();
+                      const res = await fetch(`/api/events/game/${gameId}/list`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                      });
+                      const data = await res.json();
+                      setEventsList(data.event_types);
+                    }}
                     style={styles.input}
                   >
                     <option value="">Selecione um jogo</option>
                     {gamesList.map(g => (
-                      <option key={g.id} value={g.id}>
-                        {g.name}
+                      <option key={g.game_id} value={g.game_id}>
+                        {g.game_name}
                       </option>
                     ))}
                   </select>
                 </div>
 
-                {/* Builder de análise custom */}
-                <div style={{ marginTop: 16 }}>
-                  <h3 style={styles.sectionTitle}>⚙️ Construir Análise</h3>
-                  {customFields.map((f, idx) => (
-                    <div key={idx} style={styles.filterRow}>
-                      <input
-                        placeholder="Campo (ex: correct)"
-                        value={f.field}
-                        onChange={e => updateCustomField(idx, { field: e.target.value })}
-                        style={styles.input}
-                      />
-                      <select
-                        value={f.operation}
-                        onChange={e => updateCustomField(idx, { operation: e.target.value })}
-                        style={styles.input}
-                      >
-                        <option value="count">Count</option>
-                        <option value="sum">Sum</option>
-                        <option value="avg">Average</option>
-                        <option value="min">Min</option>
-                        <option value="max">Max</option>
-                      </select>
-                      <input
-                        placeholder="Condição (opcional)"
-                        value={f.condition?.value ?? ''}
-                        onChange={e => updateCustomField(idx, { condition: { value: e.target.value } })}
-                        style={styles.input}
-                      />
-                      <button onClick={() => removeCustomField(idx)} style={styles.actionBtn}>❌</button>
-                    </div>
-                  ))}
-                  <button onClick={addCustomField} style={styles.actionBtn}>➕ Adicionar Campo</button>
-                  <button onClick={fetchCustomMetrics} style={styles.actionBtn}>📊 Calcular</button>
-                </div>
+                {/* Dropdown de eventos */}
+                {eventsList.length > 0 && (
+                  <div style={styles.filterRow}>
+                    <select
+                      value={selectedEvent}
+                      onChange={async e => {
+                        const eventType = e.target.value;
+                        setSelectedEvent(eventType);
+                        setCustomFields([]);
+                        setCustomMetrics(null);
+
+                        if (!eventType) return;
+
+                        // Buscar campos do evento
+                        const token = await user.getIdToken();
+                        const res = await fetch(`/api/events/game/${selectedGame}/fields?event_type=${eventType}`, {
+                          headers: { Authorization: `Bearer ${token}` },
+                        });
+                        const data = await res.json();
+                        setEventFields(data.fields);
+                      }}
+                      style={styles.input}
+                    >
+                      <option value="">Selecione um evento</option>
+                      {eventsList.map(ev => (
+                        <option key={ev} value={ev}>{ev}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Builder de análise */}
+                {selectedEvent && (
+                  <div style={{ marginTop: 16 }}>
+                    <h3 style={styles.sectionTitle}>⚙️ Construir Análise</h3>
+                    {customFields.map((f, idx) => (
+                      <div key={idx} style={styles.filterRow}>
+                        <select
+                          value={f.field}
+                          onChange={e => updateCustomField(idx, { field: e.target.value })}
+                          style={styles.input}
+                        >
+                          <option value="">Selecione campo</option>
+                          {eventFields.map(field => (
+                            <option key={field} value={field}>{field}</option>
+                          ))}
+                        </select>
+
+                        <select
+                          value={f.operation}
+                          onChange={e => updateCustomField(idx, { operation: e.target.value })}
+                          style={styles.input}
+                        >
+                          <option value="count">Count</option>
+                          <option value="sum">Sum</option>
+                          <option value="avg">Average</option>
+                          <option value="min">Min</option>
+                          <option value="max">Max</option>
+                        </select>
+
+                        <input
+                          placeholder="Condição (opcional)"
+                          value={f.condition?.value ?? ''}
+                          onChange={e => updateCustomField(idx, { condition: { value: e.target.value } })}
+                          style={styles.input}
+                        />
+                        <button onClick={() => removeCustomField(idx)} style={styles.actionBtn}>❌</button>
+                      </div>
+                    ))}
+                    <button onClick={addCustomField} style={styles.actionBtn}>➕ Adicionar Campo</button>
+                    <button onClick={fetchCustomMetrics} style={styles.actionBtn}>📊 Calcular</button>
+                  </div>
+                )}
 
                 {/* Resultados custom */}
                 {customMetrics && (
