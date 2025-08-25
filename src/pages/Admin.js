@@ -449,8 +449,8 @@ export default function Admin() {
                   >
                     <option value="">Selecione um jogo</option>
                     {gamesList.map(g => (
-                      <option key={g.game_id} value={g.game_id}>
-                        {g.game_name}
+                      <option key={g.id} value={g.id}>
+                        {g.name}
                       </option>
                     ))}
                   </select>
