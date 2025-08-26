@@ -68,10 +68,12 @@ export default function Admin() {
     }
     try {
       const token = await user.getIdToken();
+
       const payload = {
         game_id: selectedGame,
         operations: customFields.map(f => ({
-          field: f.field,
+          // garante que se o campo vier "correct", vira "payload.correct"
+          field: f.field.includes('.') ? f.field : `payload.${f.field}`,
           operation: f.operation,
           condition: f.condition || null
         })),
