@@ -70,7 +70,7 @@ export default function Admin() {
       const token = await user.getIdToken();
       const payload = {
         game_id: selectedGame,
-        fields: customFields.map(f => ({
+        operations: customFields.map(f => ({
           field: f.field,
           operation: f.operation,
           condition: f.condition || null
@@ -78,7 +78,7 @@ export default function Admin() {
         user_id: filterUser || null, // opcional
         date_from: filterDateFrom?.toISOString(),
         date_to: filterDateTo?.toISOString(),
-        event_type: filterEvent || null
+        event_type: selectedEvent || null
       };
 
       const res = await fetch('/api/events/game/custom', {
