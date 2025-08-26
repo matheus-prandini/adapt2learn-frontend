@@ -81,7 +81,7 @@ export default function Admin() {
         event_type: filterEvent || null
       };
 
-      const res = await fetch('/api/metrics/custom', {
+      const res = await fetch('/api/events/game/custom', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -570,8 +570,7 @@ export default function Admin() {
                           <option value="count">Count</option>
                           <option value="sum">Sum</option>
                           <option value="avg">Average</option>
-                          <option value="min">Min</option>
-                          <option value="max">Max</option>
+                          <option value="ration">Ratio</option>
                         </select>
 
                         <input
