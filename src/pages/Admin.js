@@ -572,7 +572,7 @@ export default function Admin() {
                           <option value="count">Count</option>
                           <option value="sum">Sum</option>
                           <option value="avg">Average</option>
-                          <option value="ration">Ratio</option>
+                          <option value="ratio">Ratio</option>
                         </select>
 
                         <input
@@ -592,8 +592,26 @@ export default function Admin() {
                 {/* Resultados custom */}
                 {customMetrics && (
                   <div style={{ marginTop: 24 }}>
-                    <h4>Resultados</h4>
-                    <pre style={styles.pre}>{JSON.stringify(customMetrics, null, 2)}</pre>
+                    <h3 style={styles.sectionTitle}>📊 Resultados da Análise</h3>
+
+                    {Object.keys(customMetrics.results || {}).length > 0 ? (
+                      <div style={styles.cardGrid}>
+                        {Object.entries(customMetrics.results).map(([key, value]) => (
+                          <div key={key} style={styles.card}>
+                            <h4>{key.replace(/_/g, " ")}</h4>
+                            <p>
+                              {typeof value === "number"
+                                ? Number.isInteger(value)
+                                  ? value
+                                  : value.toFixed(2) // limita casas decimais
+                                : value ?? "—"}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p>Nenhum resultado calculado.</p>
+                    )}
                   </div>
                 )}
               </>
