@@ -129,6 +129,7 @@ export default function NewGameForm() {
       toast.success('Jogo criado com sucesso!');
       navigate('/admin');
     } catch (err) {
+      console.log("[HandleSubmit] catch");
       toast.error(err.message);
     } finally {
       setLoading(false);
