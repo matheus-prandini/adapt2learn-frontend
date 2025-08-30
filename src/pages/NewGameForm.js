@@ -28,7 +28,10 @@ export default function NewGameForm() {
     multiple: false,
     maxSize: 10 * 1024 * 1024,
     onDrop: accepted => setIconFile(accepted[0]),
-    onDropRejected: rejections => rejections.forEach(r => toast.error(`Erro: ${r.errors[0].message}`))
+    onDropRejected: rejections => {
+      console.log("Ícone rejeitado:", rejections);
+      rejections.forEach(r => toast.error(`Erro: ${r.errors[0].message}`));
+    }
   });
 
   // Dropzone: zip do jogo
@@ -37,13 +40,8 @@ export default function NewGameForm() {
     getInputProps: getGameInputProps,
     isDragActive: isGameDragActive
   } = useDropzone({
-    accept: {
-      'application/zip': ['.zip'],
-      'application/x-zip-compressed': ['.zip'],
-      'multipart/x-zip': ['.zip']
-    },
     multiple: false,
-    maxSize: 100 * 1024 * 1024,
+    maxSize: 100 * 1024 * 1024, // 100 MB
     onDrop: accepted => {
       console.log("Arquivo aceito:", accepted[0]);
       setGameFile(accepted[0]);
@@ -53,6 +51,13 @@ export default function NewGameForm() {
       rejections.forEach(r =>
         toast.error(`Erro: ${r.errors[0].message}`)
       );
+    },
+    // Aceita qualquer arquivo .zip, independentemente do MIME
+    validator: file => {
+      if (!file.name.toLowerCase().endsWith('.zip')) {
+        return { code: 'file-invalid-type', message: 'Apenas arquivos .zip são permitidos' };
+      }
+      return null;
     }
   });
 
@@ -129,7 +134,7 @@ export default function NewGameForm() {
       toast.success('Jogo criado com sucesso!');
       navigate('/admin');
     } catch (err) {
-      console.log("[HandleSubmit] catch");
+      console.log("[HandleSubmit] catch", err);
       toast.error(err.message);
     } finally {
       setLoading(false);
