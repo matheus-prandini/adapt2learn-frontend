@@ -67,7 +67,7 @@ export default function GameDetails() {
   const { getRootProps, getInputProps, isDragActive, acceptedFiles } = useDropzone({
     accept: { 'application/zip': ['.zip'] },
     multiple: false,
-    maxSize: 50 * 1024 * 1024,
+    maxSize: 200 * 1024 * 1024,
     onDropRejected: errs => errs.forEach(e => toast.error(e.errors[0].message))
   });
   const file = acceptedFiles[0] || null;
