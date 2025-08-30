@@ -37,11 +37,23 @@ export default function NewGameForm() {
     getInputProps: getGameInputProps,
     isDragActive: isGameDragActive
   } = useDropzone({
-    accept: { 'application/zip': ['.zip'] },
+    accept: {
+      'application/zip': ['.zip'],
+      'application/x-zip-compressed': ['.zip'],
+      'multipart/x-zip': ['.zip']
+    },
     multiple: false,
     maxSize: 100 * 1024 * 1024,
-    onDrop: accepted => setGameFile(accepted[0]),
-    onDropRejected: rejections => rejections.forEach(r => toast.error(`Erro: ${r.errors[0].message}`))
+    onDrop: accepted => {
+      console.log("Arquivo aceito:", accepted[0]);
+      setGameFile(accepted[0]);
+    },
+    onDropRejected: rejections => {
+      console.log("Rejeitado:", rejections);
+      rejections.forEach(r =>
+        toast.error(`Erro: ${r.errors[0].message}`)
+      );
+    }
   });
 
   if (loadingAuth) {
