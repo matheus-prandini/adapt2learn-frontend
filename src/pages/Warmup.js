@@ -25,7 +25,6 @@ export default function Warmup() {
   // Redireciona para o jogo
   const redirectToGame = async () => {
     if (!profile) return
-    const token = await user.getIdToken()
     const qs = new URLSearchParams({
       user_id:        profile.uid,
       school_id:      profile.school_id,
@@ -33,7 +32,6 @@ export default function Warmup() {
       discipline,
       subarea,
       session_number: sessionNumber,
-      token:          token,
     }).toString()
     window.location.href = `/${gamePath}/?${qs}`
   }
