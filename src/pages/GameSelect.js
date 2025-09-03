@@ -126,8 +126,7 @@ export default function GameSelect() {
         subarea,
         session_number: sessionNumber,
         game_id:        selectedGame.id,
-        game_path:      selectedGame.path,
-        token
+        game_path:      selectedGame.path
       }).toString();
 
       if (useWarmup) {
