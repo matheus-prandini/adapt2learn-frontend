@@ -60,20 +60,6 @@ jobs:
           mv "$target_dir"/* .
 
           rm -rf tmp deploy.zip
-      
-      # 5.1) Renomeia arquivos Brotli/Gzip para remover a extensão extra (.br ou .gz)
-      - name: Normalize Unity WebGL filenames (Brotli/Gzip)
-        run: |
-          cd public/games/${{ github.event.inputs.game_id }}
-
-          echo "🔍 Procurando arquivos .br e .gz para renomear..."
-
-          shopt -s nullglob
-          for f in Build/*.br Build/*.gz; do
-            base="${f%.*}"   # remove a última extensão (.br ou .gz)
-            echo "📦 Renomeando $f → $base"
-            mv "$f" "$base"
-          done
 
       # 6) Sincroniza o conteúdo extraído de volta para o bucket
       - name: Sync extracted game to GCS
