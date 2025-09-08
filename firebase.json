@@ -1,11 +1,42 @@
 {
   "hosting": {
     "public": "build",
-    "ignore": ["firebase.json","**/.*","**/node_modules/**"],
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "headers": [
+      {
+        "source": "**/*.gz",
+        "headers": [
+          { "key": "Content-Encoding", "value": "gzip" },
+          { "key": "Cache-Control", "value": "public,max-age=31536000" }
+        ]
+      },
+      {
+        "source": "**/*.wasm.gz",
+        "headers": [
+          { "key": "Content-Type", "value": "application/wasm" }
+        ]
+      },
+      {
+        "source": "**/*.js.gz",
+        "headers": [
+          { "key": "Content-Type", "value": "application/javascript" }
+        ]
+      },
+      {
+        "source": "**/*.data.gz",
+        "headers": [
+          { "key": "Content-Type", "value": "application/octet-stream" }
+        ]
+      }
+    ],
     "rewrites": [
-      { "source": "/api/**",  "run": { "serviceId":"adapt2learn","region":"us-central1" } },
-      { "source": "/games/**","function":"serveGame" },
-      { "source": "**",       "destination":"/index.html" }
+      { "source": "/api/**",  "run": { "serviceId": "adapt2learn", "region": "us-central1" } },
+      { "source": "/games/**", "function": "serveGame" },
+      { "source": "**", "destination": "/index.html" }
     ]
   }
 }
