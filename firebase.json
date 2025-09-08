@@ -8,26 +8,26 @@
     ],
     "headers": [
       {
-        "source": "**/*.gz",
+        "source": "**/*.br",
         "headers": [
-          { "key": "Content-Encoding", "value": "gzip" },
+          { "key": "Content-Encoding", "value": "br" },
           { "key": "Cache-Control", "value": "public,max-age=31536000" }
         ]
       },
       {
-        "source": "**/*.wasm.gz",
+        "source": "**/*.wasm.br",
         "headers": [
           { "key": "Content-Type", "value": "application/wasm" }
         ]
       },
       {
-        "source": "**/*.js.gz",
+        "source": "**/*.js.br",
         "headers": [
           { "key": "Content-Type", "value": "application/javascript" }
         ]
       },
       {
-        "source": "**/*.data.gz",
+        "source": "**/*.data.br",
         "headers": [
           { "key": "Content-Type", "value": "application/octet-stream" }
         ]
