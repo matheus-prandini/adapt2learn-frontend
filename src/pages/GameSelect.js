@@ -204,15 +204,16 @@ export default function GameSelect() {
           )}
 
           <button
-            onClick={async () => {
-              if (selectedGame.has_options && (!discipline || !subarea)) {
-                const proceed = window.confirm(
-                  'Você não selecionou disciplina e subárea. Deseja continuar mesmo assim?'
-                );
-                if (!proceed) return;
-              }
-              await onStart();
-            }}
+            // onClick={async () => {
+            //   if (selectedGame.has_options && (!discipline || !subarea)) {
+            //     const proceed = window.confirm(
+            //       'Você não selecionou disciplina e subárea. Deseja continuar mesmo assim?'
+            //     );
+            //     if (!proceed) return;
+            //   }
+            //   await onStart();
+            // }}
+            onClick={onStart}
             disabled={loadingSession}
             style={styles.start}
           >
