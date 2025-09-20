@@ -178,41 +178,35 @@ export default function GameSelect() {
           {selectedGame.has_options && (
             <div style={styles.options}>
               <div style={styles.field}>
-                <label>Disciplina</label>
+                <label>Disciplina (opcional)</label>
                 <select
                   value={discipline}
                   onChange={e => { setDiscipline(e.target.value); setSubarea(''); }}
                   style={styles.select}
                 >
-                  <option value="">Selecione…</option>
+                  <option value="">Nenhuma</option>
                   {disciplineOptions.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
               </div>
               <div style={styles.field}>
-                <label>Subárea</label>
+                <label>Subárea (opcional)</label>
                 <select
                   value={subarea}
                   onChange={e => setSubarea(e.target.value)}
                   disabled={!discipline}
                   style={styles.select}
                 >
-                  <option value="">Selecione…</option>
+                  <option value="">Nenhuma</option>
                   {subareaOptions.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
+              <p style={styles.hint}>
+                Essas opções são <b>opcionais</b>. Você pode iniciar o jogo sem selecionar nada.
+              </p>
             </div>
           )}
 
           <button
-            // onClick={async () => {
-            //   if (selectedGame.has_options && (!discipline || !subarea)) {
-            //     const proceed = window.confirm(
-            //       'Você não selecionou disciplina e subárea. Deseja continuar mesmo assim?'
-            //     );
-            //     if (!proceed) return;
-            //   }
-            //   await onStart();
-            // }}
             onClick={onStart}
             disabled={loadingSession}
             style={styles.start}
