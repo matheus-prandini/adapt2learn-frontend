@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { auth } from '../firebase';
 import { storage } from '../firebase';
-import { getDownloadURL, ref as storageRef } from 'firebase/storage';
+import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
 import axios from 'axios';
 import { useDropzone } from 'react-dropzone';
 import { ToastContainer, toast } from 'react-toastify';
@@ -53,6 +53,7 @@ export default function GameDetails() {
   const [editName, setEditName] = useState('');
   const [editHasOptions, setEditHasOptions] = useState(false);
   const [editHasWarmup, setEditHasWarmup] = useState(false);
+  const [newIconFile, setNewIconFile] = useState(null);
 
   // Polling
   const [confirmingVersion, setConfirmingVersion] = useState(null);
@@ -233,14 +234,59 @@ export default function GameDetails() {
   const handleSaveInfo = async () => {
     try {
       const token = await auth.currentUser.getIdToken();
+      let iconPath = gameInfo.icon_url;
+
+      // Se tiver novo ícone, sobe pelo endpoint de upload
+      if (newIconFile) {
+        // 1) Pede URL de upload
+        const iconUrlRes = await fetch(
+          `/api/games/${gameId}/icon/upload-url?filename=${encodeURIComponent(newIconFile.name)}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!iconUrlRes.ok) throw new Error('Erro ao obter URL do ícone');
+
+        const { upload_url: iconUploadUrl, object_path } = await iconUrlRes.json();
+
+        // 2) Upload direto para o storage via PUT
+        await axios.put(iconUploadUrl, newIconFile, {
+          headers: { 'Content-Type': newIconFile.type },
+          onUploadProgress: evt =>
+            setProgress(Math.round((evt.loaded * 100) / evt.total)),
+        });
+
+        // 3) Atualiza o campo `icon_url` no backend
+        const patchRes = await fetch(`/api/games/${gameId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ icon_url: object_path }),
+        });
+        if (!patchRes.ok) throw new Error('Erro ao atualizar ícone');
+
+        iconPath = object_path;
+      }
+
+      // Atualiza os outros campos
       const res = await fetch(`/api/games/${gameId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type':'application/json', Authorization:`Bearer ${token}` },
-        body: JSON.stringify({ name: editName, has_options: editHasOptions, has_warmup: editHasWarmup })
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: editName,
+          has_options: editHasOptions,
+          has_warmup: editHasWarmup,
+          icon_url: iconPath,
+        }),
       });
-      if (!res.ok) throw new Error('Falha ao salvar');
+
+      if (!res.ok) throw new Error('Falha ao salvar informações');
       toast.success('Informações atualizadas');
       setIsEditing(false);
+      setNewIconFile(null);
       await fetchGame();
     } catch (e) {
       toast.error(e.message);
@@ -270,7 +316,13 @@ export default function GameDetails() {
         <h3 style={styles.sectionTitle}>Informações do Jogo</h3>
         {gameInfo ? (
           <div style={styles.infoCard}>
-            {iconUrl ? <img src={iconUrl} alt="ícone" style={styles.icon} /> : <div style={styles.iconPlaceholder}>No Icon</div>}
+            {newIconFile ? (
+              <img src={URL.createObjectURL(newIconFile)} alt="preview" style={styles.icon} />
+            ) : iconUrl ? (
+              <img src={iconUrl} alt="ícone" style={styles.icon} />
+            ) : (
+              <div style={styles.iconPlaceholder}>No Icon</div>
+            )}
             <div style={{ flex: 1 }}>
               {!isEditing ? (
                 <ul style={styles.infoList}>
@@ -286,8 +338,21 @@ export default function GameDetails() {
                     Nome:
                     <input style={styles.inputInline} value={editName} onChange={e => setEditName(e.target.value)} />
                   </label>
-                  <label><input type="checkbox" checked={editHasOptions} onChange={e => setEditHasOptions(e.target.checked)} /> Precisa de Opções</label>
-                  <label><input type="checkbox" checked={editHasWarmup} onChange={e => setEditHasWarmup(e.target.checked)} /> Possui Warmup</label>
+                  <label>
+                    <input type="checkbox" checked={editHasOptions} onChange={e => setEditHasOptions(e.target.checked)} /> Precisa de Opções
+                  </label>
+                  <label>
+                    <input type="checkbox" checked={editHasWarmup} onChange={e => setEditHasWarmup(e.target.checked)} /> Possui Warmup
+                  </label>
+                  <label style={{ marginTop: 8 }}>
+                    Ícone:
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={e => setNewIconFile(e.target.files[0] || null)} 
+                      style={{ display: 'block', marginTop: 4 }}
+                    />
+                  </label>
                 </div>
               )}
               <button onClick={isEditing ? handleSaveInfo : handleEditToggle} style={styles.editButton}>
