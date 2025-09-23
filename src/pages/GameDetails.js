@@ -249,21 +249,10 @@ export default function GameDetails() {
 
         // 2) Upload direto para o storage via PUT
         await axios.put(iconUploadUrl, newIconFile, {
-          headers: { 'Content-Type': newIconFile.type },
+          headers: { 'Content-Type': 'application/octet-stream' },
           onUploadProgress: evt =>
             setProgress(Math.round((evt.loaded * 100) / evt.total)),
         });
-
-        // 3) Atualiza o campo `icon_url` no backend
-        const patchRes = await fetch(`/api/games/${gameId}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ icon_url: object_path }),
-        });
-        if (!patchRes.ok) throw new Error('Erro ao atualizar ícone');
 
         iconPath = object_path;
       }
