@@ -22,7 +22,7 @@ export default function Register() {
   const [error,           setError]           = useState('');
   const navigate = useNavigate();
 
-  const schoolOptions = ['ColégioObjetivo', 'Eseba', 'Associação21Down'];
+  const schoolOptions = ['ColégioObjetivo', 'Eseba', 'Associação21Down', 'Messias Pedreiro'];
   const roleOptions = [
     { label: 'Aluno',    value: 'student' },
     { label: 'Professor',value: 'teacher' }

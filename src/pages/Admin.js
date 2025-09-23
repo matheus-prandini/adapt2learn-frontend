@@ -14,7 +14,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 
-const SCHOOLS = ['ColégioObjetivo', 'Eseba', 'Associação21Down'];
+const SCHOOLS = ['ColégioObjetivo', 'Eseba', 'Associação21Down', 'Messias Pedreiro'];
 
 export default function Admin() {
   const navigate = useNavigate();
