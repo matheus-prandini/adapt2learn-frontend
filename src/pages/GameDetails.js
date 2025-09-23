@@ -245,11 +245,11 @@ export default function GameDetails() {
         );
         if (!iconUrlRes.ok) throw new Error('Erro ao obter URL do ícone');
 
-        const { upload_url: iconUploadUrl, object_path } = await iconUrlRes.json();
+        const { upload_url: iconUploadUrl, object_path, mime_type } = await iconUrlRes.json();
 
         // 2) Upload direto para o storage via PUT
         await axios.put(iconUploadUrl, newIconFile, {
-          headers: { 'Content-Type': 'application/octet-stream' },
+          headers: { 'Content-Type': mime_type },
           onUploadProgress: evt =>
             setProgress(Math.round((evt.loaded * 100) / evt.total)),
         });

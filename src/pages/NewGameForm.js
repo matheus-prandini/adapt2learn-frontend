@@ -95,9 +95,9 @@ export default function NewGameForm() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!iconUrlRes.ok) throw new Error('Erro ao obter URL do ícone');
-      const { upload_url: iconUploadUrl, object_path } = await iconUrlRes.json();
+      const { upload_url: iconUploadUrl, object_path, mime_type } = await iconUrlRes.json();
       await axios.put(iconUploadUrl, iconFile, {
-        headers: { 'Content-Type': 'application/octet-stream' },
+        headers: { 'Content-Type': mime_type },
         onUploadProgress: evt => setProgress(Math.round((evt.loaded * 100) / evt.total))
       });
       const patchRes = await fetch(`/api/games/${gameId}`, {
