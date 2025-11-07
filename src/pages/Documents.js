@@ -10,7 +10,6 @@ export default function Documents() {
   const [docs, setDocs] = useState([])
   const [examples, setExamples] = useState([])
   const [selectedDoc, setSelectedDoc] = useState(null)
-  const [phase, setPhase] = useState('warmup')
   const [loading, setLoading] = useState(true)
   const [loadingEx, setLoadingEx] = useState(false)
   const [profile, setProfile] = useState(null)
@@ -66,22 +65,22 @@ export default function Documents() {
     }
   }
 
-  const loadExamples = async (doc, phaseType = phase) => {
+  const loadExamples = async (doc) => {
     setSelectedDoc(doc)
-    setPhase(phaseType)
     setExamples([])
     setLoadingEx(true)
     try {
       const token = await auth.currentUser.getIdToken()
       const res = await fetch(
-        `https://adapt2learn-895112363610.us-central1.run.app/api/documents/${doc.id}/examples?phase=${phaseType}`,
+        `https://adapt2learn-895112363610.us-central1.run.app/api/documents/${doc.id}/examples?phase=session`,
         { headers: { Authorization: 'Bearer ' + token } }
       )
       const data = await res.json()
       const formatted = data.map(item => ({
+        question_id: item.id,
         messages: [
-          { role: 'system',   content: '' },
-          { role: 'user',     content: item.question },
+          { role: 'system', content: '' },
+          { role: 'user', content: item.question },
           { role: 'assistant', content: JSON.stringify(item) }
         ]
       }))
@@ -90,6 +89,35 @@ export default function Documents() {
       console.error(err)
     } finally {
       setLoadingEx(false)
+    }
+  }
+
+  const deleteExample = async (questionId) => {
+    if (!selectedDoc) return
+
+    const confirmDelete = window.confirm("Remover este exemplo definitivamente?")
+    if (!confirmDelete) return
+
+    try {
+      const token = await auth.currentUser.getIdToken()
+
+      const url = `https://adapt2learn-895112363610.us-central1.run.app/api/documents/${selectedDoc.id}/examples/${questionId}?phase=session`
+
+      const res = await fetch(url, {
+        method: "DELETE",
+        headers: { Authorization: "Bearer " + token }
+      })
+
+      if (res.status !== 204) {
+        alert("Erro ao remover exemplo")
+        return
+      }
+
+      setExamples(prev => prev.filter(e => e.question_id !== questionId))
+
+    } catch (err) {
+      console.error(err)
+      alert("Erro ao remover exemplo")
     }
   }
 
@@ -107,13 +135,13 @@ export default function Documents() {
         },
         body: JSON.stringify({
           discipline: selectedDoc.discipline,
-          subarea:    selectedDoc.subarea,
-          filename:   selectedDoc.filename
+          subarea: selectedDoc.subarea,
+          filename: selectedDoc.filename
         })
       })
       const json = await res.json()
       setStatus(json.status || 'Processamento iniciado')
-      setTimeout(() => loadExamples(selectedDoc, phase), 3000)
+      setTimeout(() => loadExamples(selectedDoc), 3000)
     } catch (err) {
       console.error(err)
       setStatus('Erro ao agendar exemplos')
@@ -177,54 +205,67 @@ export default function Documents() {
 
       {selectedDoc && (
         <section>
-          <h3 style={{ color:'#00796b', marginBottom:16 }}>Exemplos para: {selectedDoc.filename}</h3>
-          <div style={{ marginBottom:12, textAlign:'center' }}>
-            <button onClick={()=>loadExamples(selectedDoc, 'warmup')} style={{ marginRight:8, padding:8, background:phase==='warmup'?'#4caf50':'#ccc', color:'#fff', border:'none', borderRadius:4, cursor:'pointer' }}>Warmup</button>
-            <button onClick={()=>loadExamples(selectedDoc, 'session')} style={{ padding:8, background:phase==='session'?'#4caf50':'#ccc', color:'#fff', border:'none', borderRadius:4, cursor:'pointer' }}>Session</button>
-          </div>
-          <button onClick={generateExamples} disabled={loadingEx} style={{ marginBottom:12, padding:8, backgroundColor:'#fdd835', border:'none', borderRadius:6, cursor:loadingEx?'not-allowed':'pointer' }}>🔄 Gerar mais exemplos</button>
-          {loadingEx
-            ? <p>Gerando exemplos...</p>
-            : examples.length===0
-              ? <p>Sem exemplos para este documento.</p>
-              : (
-                <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-                  {examples.map((ex,i)=>{
-                    const userMsg = ex.messages[1].content
-                    const assistant = JSON.parse(ex.messages[2].content)
-                    const { math_reasoning, math_solution, scratch_reasoning, scratch_solution, alternatives=[] } = assistant
-                    return (
-                      <details key={i} style={{ border:'1px solid #ddd', borderRadius:8, padding:12, background:'#fff', boxShadow:'0 1px 3px rgba(0,0,0,0.1)' }}>
-                        <summary style={{ cursor:'pointer', fontWeight:'bold', fontSize:16 }}>{userMsg}</summary>
-                        <div style={{ marginTop:8, paddingLeft:12 }}>
-                          <div style={{ marginBottom:8 }}>
-                            <strong>Raciocínio Matemático:</strong>
-                            <pre style={{ margin:'4px 0', whiteSpace:'pre-wrap', background:'#f5f5f5', padding:8, borderRadius:4 }}>{math_reasoning}</pre>
-                          </div>
-                          <div style={{ marginBottom:8 }}>
-                            <strong>Solução Matemática:</strong>
-                            <pre style={{ margin:'4px 0', whiteSpace:'pre-wrap', background:'#f5f5f5', padding:8, borderRadius:4 }}>{math_solution}</pre>
-                          </div>
-                          <div style={{ marginBottom:8 }}>
-                            <strong>Alternativas:</strong>
-                            <ul style={{ margin:'4px 0', paddingLeft:20 }}>
-                              {alternatives.map((alt,idx)=><li key={idx} style={{ fontWeight:alt===math_solution?'bold':'normal', color:alt===math_solution?'#007bff':'#000', fontSize:16 }}>{alt}</li>)}
-                            </ul>
-                          </div>
-                          <div style={{ marginBottom:8 }}>
-                            <strong>Reasoning Scratch:</strong>
-                            <pre style={{ margin:'4px 0', whiteSpace:'pre-wrap', background:'#f5f5f5', padding:8, borderRadius:4 }}>{scratch_reasoning}</pre>
-                          </div>
-                          <div>
-                            <strong>Solução em Scratch:</strong>
-                            <pre style={{ margin:'4px 0', whiteSpace:'pre-wrap', background:'#f5f5f5', padding:8, borderRadius:4 }}>{JSON.stringify(scratch_solution,null,2)}</pre>
-                          </div>
-                        </div>
-                      </details>
-                    )
-                  })}
-                </div>
-              )}
+          <h3 style={{ color: '#00796b', marginBottom: 16 }}>
+            Exemplos (Session) para: {selectedDoc.filename}
+          </h3>
+
+          <button
+            onClick={generateExamples}
+            disabled={loadingEx}
+            style={{ marginBottom: 12, padding: 8, backgroundColor: '#fdd835', border: 'none', borderRadius: 6 }}
+          >
+            🔄 Gerar mais exemplos
+          </button>
+
+          {loadingEx ? (
+            <p>Carregando exemplos...</p>
+          ) : examples.length === 0 ? (
+            <p>Sem exemplos para este documento.</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {examples.map((ex, i) => {
+                const userMsg = ex.messages[1].content
+                const assistant = JSON.parse(ex.messages[2].content)
+                const { math_reasoning, math_solution, alternatives = [] } = assistant
+
+                return (
+                  <details key={i} style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12, background: '#fff' }}>
+                    <summary style={{ cursor: 'pointer', fontWeight: 'bold', fontSize: 16 }}>
+                      {userMsg}
+                    </summary>
+
+                    <div style={{ marginTop: 8, paddingLeft: 12 }}>
+                      <button
+                        onClick={() => deleteExample(ex.question_id)}
+                        style={{ padding: '6px 10px', background: '#e53935', color: 'white', border: 'none', borderRadius: 6, marginBottom: 12 }}
+                      >
+                        🗑 Excluir exemplo
+                      </button>
+
+                      <strong>Raciocínio Matemático:</strong>
+                      <pre style={{ background: '#f5f5f5', padding: 8, whiteSpace: 'pre-wrap' }}>
+                        {math_reasoning}
+                      </pre>
+
+                      <strong>Solução Matemática:</strong>
+                      <pre style={{ background: '#f5f5f5', padding: 8, whiteSpace: 'pre-wrap' }}>
+                        {math_solution}
+                      </pre>
+
+                      <strong>Alternativas:</strong>
+                      <ul>
+                        {alternatives.map((alt, idx) => (
+                          <li key={idx} style={{ fontWeight: alt === math_solution ? 'bold' : 'normal' }}>
+                            {alt}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </details>
+                )
+              })}
+            </div>
+          )}
         </section>
       )}
     </div>
