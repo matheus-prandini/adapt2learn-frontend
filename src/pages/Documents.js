@@ -234,14 +234,23 @@ export default function Documents() {
                       {userMsg}
                     </summary>
 
-                    <div style={{ marginTop: 8, paddingLeft: 12 }}>
+                    <div style={{ marginTop: 10 }}>
                       <button
                         onClick={() => deleteExample(ex.question_id)}
-                        style={{ padding: '6px 10px', background: '#e53935', color: 'white', border: 'none', borderRadius: 6, marginBottom: 12 }}
+                        style={{
+                          padding: '6px 10px',
+                          background: '#e53935',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: 6,
+                          marginBottom: 12
+                        }}
                       >
                         🗑 Excluir exemplo
                       </button>
+                    </div>
 
+                    <div style={{ marginTop: 8, paddingLeft: 12 }}>
                       <strong>Raciocínio Matemático:</strong>
                       <pre style={{ background: '#f5f5f5', padding: 8, whiteSpace: 'pre-wrap' }}>
                         {math_reasoning}
@@ -255,7 +264,10 @@ export default function Documents() {
                       <strong>Alternativas:</strong>
                       <ul>
                         {alternatives.map((alt, idx) => (
-                          <li key={idx} style={{ fontWeight: alt === math_solution ? 'bold' : 'normal' }}>
+                          <li
+                            key={idx}
+                            style={{ fontWeight: alt === math_solution ? 'bold' : 'normal' }}
+                          >
                             {alt}
                           </li>
                         ))}
