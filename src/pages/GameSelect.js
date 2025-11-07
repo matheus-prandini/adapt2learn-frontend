@@ -178,38 +178,56 @@ export default function GameSelect() {
           {selectedGame.has_options && (
             <div style={styles.options}>
               <div style={styles.field}>
-                <label>Disciplina (opcional)</label>
+                <label>Disciplina *</label>
                 <select
                   value={discipline}
                   onChange={e => { setDiscipline(e.target.value); setSubarea(''); }}
-                  style={styles.select}
+                  style={{
+                    ...styles.select,
+                    borderColor: discipline ? '#ccc' : 'red'
+                  }}
+                  required
                 >
-                  <option value="">Nenhuma</option>
-                  {disciplineOptions.map(d => <option key={d} value={d}>{d}</option>)}
+                  <option value="">Selecione...</option>
+                  {disciplineOptions.map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
                 </select>
               </div>
+
               <div style={styles.field}>
-                <label>Subárea (opcional)</label>
+                <label>Subárea *</label>
                 <select
                   value={subarea}
                   onChange={e => setSubarea(e.target.value)}
                   disabled={!discipline}
-                  style={styles.select}
+                  style={{
+                    ...styles.select,
+                    borderColor: subarea ? '#ccc' : 'red',
+                    backgroundColor: discipline ? '#fff' : '#f5f5f5'
+                  }}
+                  required
                 >
-                  <option value="">Nenhuma</option>
-                  {subareaOptions.map(s => <option key={s} value={s}>{s}</option>)}
+                  <option value="">Selecione...</option>
+                  {subareaOptions.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
                 </select>
               </div>
-              <p style={styles.hint}>
-                Essas opções são <b>opcionais</b>. Você pode iniciar o jogo sem selecionar nada.
-              </p>
             </div>
           )}
 
           <button
             onClick={onStart}
-            disabled={loadingSession}
-            style={styles.start}
+            disabled={
+              loadingSession ||
+              (selectedGame.has_options && (!discipline || !subarea))
+            }
+            style={{
+              ...styles.start,
+              opacity: (selectedGame.has_options && (!discipline || !subarea)) ? 0.6 : 1,
+              cursor: (selectedGame.has_options && (!discipline || !subarea)) ? 'not-allowed' : 'pointer'
+            }}
           >
             ▶️ Iniciar Jogo
           </button>
