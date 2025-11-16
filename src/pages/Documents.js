@@ -258,7 +258,7 @@ export default function Documents() {
 
                       <strong>Fórmula Matemática:</strong>
                       <pre style={{ background: '#f5f5f5', padding: 8, whiteSpace: 'pre-wrap' }}>
-                        {math_formula}
+                        {JSON.stringify(math_formula, null, 2)}
                       </pre>
 
                       <strong>Solução Matemática:</strong>
