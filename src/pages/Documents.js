@@ -226,7 +226,7 @@ export default function Documents() {
               {examples.map((ex, i) => {
                 const userMsg = ex.messages[1].content
                 const assistant = JSON.parse(ex.messages[2].content)
-                const { math_reasoning, math_solution, alternatives = [] } = assistant
+                const { math_reasoning, math_formula, math_solution, alternatives = [] } = assistant
 
                 return (
                   <details key={i} style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12, background: '#fff' }}>
@@ -254,6 +254,11 @@ export default function Documents() {
                       <strong>Raciocínio Matemático:</strong>
                       <pre style={{ background: '#f5f5f5', padding: 8, whiteSpace: 'pre-wrap' }}>
                         {math_reasoning}
+                      </pre>
+
+                      <strong>Fórmula Matemática:</strong>
+                      <pre style={{ background: '#f5f5f5', padding: 8, whiteSpace: 'pre-wrap' }}>
+                        {math_formula}
                       </pre>
 
                       <strong>Solução Matemática:</strong>
