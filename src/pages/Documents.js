@@ -15,6 +15,25 @@ export default function Documents() {
   const [profile, setProfile] = useState(null)
   const navigate = useNavigate()
   const disciplineOptions = ['Matemática']
+  const allowedExtensions = ['.txt', '.pdf']
+
+  const isAllowedDocumentFile = (f) => {
+    if (!f?.name) return false
+    const lower = f.name.toLowerCase()
+    return allowedExtensions.some((ext) => lower.endsWith(ext))
+  }
+
+  const handleFileChange = (e) => {
+    const f = e.target.files?.[0]
+    if (f && !isAllowedDocumentFile(f)) {
+      setStatus('Use apenas arquivo .txt ou .pdf.')
+      e.target.value = ''
+      setFile(null)
+      return
+    }
+    setFile(f || null)
+    if (f) setStatus('')
+  }
 
   useEffect(() => {
     ;(async () => {
@@ -38,6 +57,10 @@ export default function Documents() {
   const handleUpload = async e => {
     e.preventDefault()
     if (!file || !discipline || !subarea) return
+    if (!isAllowedDocumentFile(file)) {
+      setStatus('Use apenas arquivo .txt ou .pdf.')
+      return
+    }
     setStatus('Enviando...')
     try {
       const token = await auth.currentUser.getIdToken()
@@ -175,8 +198,15 @@ export default function Documents() {
           </div>
 
           <div style={{ display:'flex', flexDirection:'column' }}>
-            <label htmlFor="file" style={{ fontWeight:'bold', marginBottom:4 }}>Arquivo (.txt)</label>
-            <input id="file" type="file" accept=".txt" onChange={e=>setFile(e.target.files[0])} required style={{ padding:8 }} />
+            <label htmlFor="file" style={{ fontWeight:'bold', marginBottom:4 }}>Arquivo (.txt ou .pdf)</label>
+            <input
+              id="file"
+              type="file"
+              accept=".txt,.pdf,text/plain,application/pdf"
+              onChange={handleFileChange}
+              required
+              style={{ padding:8 }}
+            />
           </div>
 
           <button type="submit" disabled={!file||!discipline||!subarea} style={{ padding:12, backgroundColor:(!file||!discipline||!subarea)?'#ccc':'#4caf50', color:'#fff', fontSize:18, border:'none', borderRadius:6, cursor:(!file||!discipline||!subarea)?'not-allowed':'pointer' }}>
