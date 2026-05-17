@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
-import Documents from './pages/Documents'
+import TeacherCreation from './pages/TeacherCreation'
 import GameSelect from './pages/GameSelect'
 import Report from './pages/Report'
 import Warmup from './pages/Warmup'
@@ -27,7 +27,13 @@ export default function App() {
 
       <Route path="/documents" element={
         <PrivateRoute>
-          <Documents/>
+          <TeacherCreation/>
+        </PrivateRoute>
+      }/>
+
+      <Route path="/creation" element={
+        <PrivateRoute>
+          <TeacherCreation/>
         </PrivateRoute>
       }/>
 

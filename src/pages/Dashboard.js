@@ -48,7 +48,7 @@ export default function Dashboard() {
     return <p style={{ padding:20, textAlign:'center' }}>Redirecionando ao login…</p>;
   }
 
-  const isTeacher = profile?.role === 'teacher';
+  const isTeacher = ['teacher', 'admin'].includes(profile?.role);
 
   return (
     <div style={styles.container}>
@@ -61,10 +61,9 @@ export default function Dashboard() {
             ⚙️ Admin
           </button>
         )}
-        {/* futuro botão de documentos */}
         {isTeacher && (
-          <button onClick={() => navigate('/documents')} style={styles.submit}>
-            📂 Documentos
+          <button onClick={() => navigate('/creation')} style={styles.submit}>
+            ✏️ Área de criação
           </button>
         )}
 
