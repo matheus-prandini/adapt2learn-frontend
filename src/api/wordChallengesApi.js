@@ -1,4 +1,5 @@
 import { apiFetch, parseJsonOrThrow } from './httpClient'
+import { normalizeWordChallengeList } from './wordChallengeNormalize'
 
 /**
  * @param {import('../types/wordChallenges').ListWordChallengesParams} params
@@ -13,7 +14,7 @@ export async function listWordChallenges(params) {
   })
   const res = await apiFetch(`/word-challenges/list?${qs}`)
   const data = await parseJsonOrThrow(res, 'Não foi possível carregar os desafios.')
-  return Array.isArray(data) ? data : []
+  return normalizeWordChallengeList(data)
 }
 
 /**
@@ -27,7 +28,7 @@ export async function listWordChallengesForGame(schoolId, gameId) {
   const res = await apiFetch(`/word-challenges/list?${qs}`)
   if (res.status === 404) return []
   const data = await parseJsonOrThrow(res, 'Não foi possível carregar opções de desafios.')
-  return Array.isArray(data) ? data : []
+  return normalizeWordChallengeList(data)
 }
 
 /**

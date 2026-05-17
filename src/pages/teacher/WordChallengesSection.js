@@ -4,6 +4,7 @@ import {
   createWordChallenges,
   pollWordChallengesList,
 } from '../../api/wordChallengesApi'
+import { sortWordChallengesByDateDesc } from '../../api/wordChallengeNormalize'
 
 const disciplineOptions = ['Português', 'Matemática', 'Ciências', 'História', 'Geografia']
 
@@ -13,12 +14,6 @@ function parseWordsInput(text) {
     .map(w => w.trim())
     .filter(Boolean)
     .slice(0, 30)
-}
-
-function sortByDateDesc(items) {
-  return [...items].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  )
 }
 
 export default function WordChallengesSection({
@@ -54,7 +49,7 @@ export default function WordChallengesSection({
     setLoadingList(true)
     try {
       const data = await listWordChallenges(listParams)
-      setChallenges(sortByDateDesc(data))
+      setChallenges(sortWordChallengesByDateDesc(data))
     } catch (err) {
       console.error(err)
       setStatus(err.message)
@@ -112,7 +107,7 @@ export default function WordChallengesSection({
         timeoutMs: 150000,
       })
 
-      setChallenges(sortByDateDesc(updated))
+      setChallenges(sortWordChallengesByDateDesc(updated))
 
       if (updated.length >= beforeCount + expectedNew) {
         setStatus(`${expectedNew} desafio(s) criado(s) com sucesso.`)
@@ -282,21 +277,39 @@ export default function WordChallengesSection({
           <p style={styles.muted}>Nenhum desafio nesta combinação ainda.</p>
         ) : (
           <div style={styles.grid}>
-            {challenges.map(c => (
-              <article key={c.id} style={styles.card}>
+            {challenges.map((c, index) => (
+              <article
+                key={c.id || `challenge-${index}-${c.word}`}
+                style={styles.card}
+              >
                 {c.image_url ? (
-                  <img src={c.image_url} alt={c.word} style={styles.thumb} />
+                  <img
+                    src={c.image_url}
+                    alt={c.word || 'Desafio'}
+                    style={styles.thumb}
+                    loading="lazy"
+                  />
                 ) : (
                   <div style={styles.thumbPlaceholder}>Sem imagem</div>
                 )}
                 <div style={styles.cardBody}>
-                  <strong style={styles.word}>{c.word}</strong>
-                  <span style={styles.meta}>
-                    {new Date(c.created_at).toLocaleString('pt-BR')}
-                  </span>
-                  {c.pedagogical && (
-                    <p style={styles.pedagogical}>{c.pedagogical}</p>
-                  )}
+                  <strong style={styles.word}>{c.word || '—'}</strong>
+                  {c.created_at ? (
+                    <span style={styles.meta}>
+                      {new Date(c.created_at).toLocaleString('pt-BR')}
+                    </span>
+                  ) : null}
+                  {c.pedagogical_badges?.length > 0 ? (
+                    <div style={styles.badges}>
+                      {c.pedagogical_badges.map(badge => (
+                        <span key={badge.key} style={styles.badge}>
+                          {badge.text}
+                        </span>
+                      ))}
+                    </div>
+                  ) : c.pedagogical_summary ? (
+                    <p style={styles.pedagogical}>{c.pedagogical_summary}</p>
+                  ) : null}
                 </div>
               </article>
             ))}
@@ -407,4 +420,18 @@ const styles = {
   word: { fontSize: 16, display: 'block' },
   meta: { fontSize: 11, color: '#888' },
   pedagogical: { fontSize: 12, color: '#555', marginTop: 6, marginBottom: 0 },
+  badges: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginTop: 8,
+  },
+  badge: {
+    fontSize: 10,
+    padding: '2px 6px',
+    borderRadius: 4,
+    background: '#ede7f6',
+    color: '#5e35b1',
+    fontWeight: 600,
+  },
 }

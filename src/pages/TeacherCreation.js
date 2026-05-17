@@ -50,6 +50,10 @@ export default function TeacherCreation() {
     return <p style={pageStyles.loading}>Carregando área do professor…</p>
   }
 
+  if (!profile) {
+    return null
+  }
+
   return (
     <div style={pageStyles.page}>
       <button type="button" onClick={() => navigate('/')} style={pageStyles.back}>
@@ -105,7 +109,7 @@ export default function TeacherCreation() {
         )}
         {activeTab === 'words' && (
           <WordChallengesSection
-            schoolId={profile?.school_id}
+            schoolId={profile.school_id}
             gameId={gameId}
             discipline={discipline}
             subarea={subarea}
