@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiFetch, parseJsonOrThrow } from '../api/httpClient'
+import { listWordChallengesForGame } from '../api/wordChallengesApi'
+import { buildDisciplineOptions, buildSubareaOptions } from '../utils/contentOptions'
 import DocumentsSection from './teacher/DocumentsSection'
 import WordChallengesSection from './teacher/WordChallengesSection'
+import ContentContextFields from './teacher/ContentContextFields'
 
 const TABS = [
   { id: 'documents', label: 'Documentos', icon: '📂' },
@@ -12,9 +15,13 @@ const TABS = [
 export default function TeacherCreation() {
   const [profile, setProfile] = useState(null)
   const [games, setGames] = useState([])
+  const [docsList, setDocsList] = useState([])
+  const [wordChallengesForGame, setWordChallengesForGame] = useState([])
+  const [loadingContentOptions, setLoadingContentOptions] = useState(false)
   const [gameId, setGameId] = useState('')
   const [discipline, setDiscipline] = useState('')
   const [subarea, setSubarea] = useState('')
+  const [subareaIsCustom, setSubareaIsCustom] = useState(false)
   const [activeTab, setActiveTab] = useState('documents')
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
@@ -37,6 +44,10 @@ export default function TeacherCreation() {
         setProfile(me)
         setGames(gamesList)
         if (gamesList.length === 1) setGameId(gamesList[0].id)
+
+        const docsRes = await apiFetch(`/documents/school/${me.school_id}`)
+        const docs = await parseJsonOrThrow(docsRes, 'Não foi possível carregar documentos.')
+        setDocsList(docs)
       } catch (err) {
         console.error(err)
         navigate('/')
@@ -45,6 +56,51 @@ export default function TeacherCreation() {
       }
     })()
   }, [navigate])
+
+  useEffect(() => {
+    if (!gameId || !profile?.school_id) {
+      setWordChallengesForGame([])
+      return
+    }
+
+    let cancelled = false
+    ;(async () => {
+      setLoadingContentOptions(true)
+      try {
+        const items = await listWordChallengesForGame(profile.school_id, gameId)
+        if (!cancelled) setWordChallengesForGame(items)
+      } catch (err) {
+        console.error(err)
+        if (!cancelled) setWordChallengesForGame([])
+      } finally {
+        if (!cancelled) setLoadingContentOptions(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [gameId, profile?.school_id])
+
+  const disciplineOptions = buildDisciplineOptions(docsList, wordChallengesForGame)
+  const subareaOptions = buildSubareaOptions(
+    discipline,
+    docsList,
+    wordChallengesForGame
+  )
+
+  const handleGameChange = newGameId => {
+    setGameId(newGameId)
+    setDiscipline('')
+    setSubarea('')
+    setSubareaIsCustom(false)
+  }
+
+  const handleDisciplineChange = value => {
+    setDiscipline(value)
+    setSubarea('')
+    setSubareaIsCustom(false)
+  }
 
   if (loading) {
     return <p style={pageStyles.loading}>Carregando área do professor…</p>
@@ -62,27 +118,24 @@ export default function TeacherCreation() {
 
       <h1 style={pageStyles.title}>Área de criação</h1>
       <p style={pageStyles.subtitle}>
-        Cadastre conteúdo para os jogos: documentos com questões de matemática ou desafios palavra + imagem.
+        Cadastre conteúdo para os jogos: documentos com questões de matemática ou desafios
+        palavra + imagem.
       </p>
 
-      <section style={pageStyles.sharedFilters}>
-        <label style={pageStyles.label}>
-          Jogo vinculado
-          <select
-            value={gameId}
-            onChange={e => setGameId(e.target.value)}
-            style={pageStyles.input}
-          >
-            <option value="">Selecione um jogo…</option>
-            {games.map(g => (
-              <option key={g.id} value={g.id}>{g.name}</option>
-            ))}
-          </select>
-        </label>
-        <p style={pageStyles.hint}>
-          Obrigatório para desafios de palavras. Documentos podem ser enviados independentemente.
-        </p>
-      </section>
+      <ContentContextFields
+        games={games}
+        gameId={gameId}
+        onGameChange={handleGameChange}
+        discipline={discipline}
+        onDisciplineChange={handleDisciplineChange}
+        subarea={subarea}
+        onSubareaChange={setSubarea}
+        subareaIsCustom={subareaIsCustom}
+        onSubareaCustomModeChange={setSubareaIsCustom}
+        disciplineOptions={disciplineOptions}
+        subareaOptions={subareaOptions}
+        loadingOptions={loadingContentOptions}
+      />
 
       <nav style={pageStyles.tabs}>
         {TABS.map(tab => (
@@ -102,10 +155,7 @@ export default function TeacherCreation() {
 
       <div style={pageStyles.panel}>
         {activeTab === 'documents' && (
-          <DocumentsSection
-            defaultDiscipline={discipline}
-            defaultSubarea={subarea}
-          />
+          <DocumentsSection discipline={discipline} subarea={subarea} />
         )}
         {activeTab === 'words' && (
           <WordChallengesSection
@@ -113,8 +163,6 @@ export default function TeacherCreation() {
             gameId={gameId}
             discipline={discipline}
             subarea={subarea}
-            onDisciplineChange={setDiscipline}
-            onSubareaChange={setSubarea}
           />
         )}
       </div>
@@ -150,28 +198,6 @@ const pageStyles = {
     marginBottom: 24,
     fontSize: 15,
   },
-  sharedFilters: {
-    background: '#fff',
-    padding: 16,
-    borderRadius: 10,
-    marginBottom: 20,
-    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-  },
-  label: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 6,
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  input: {
-    padding: 8,
-    borderRadius: 6,
-    border: '1px solid #ccc',
-    fontSize: 15,
-    maxWidth: 400,
-  },
-  hint: { fontSize: 13, color: '#777', marginTop: 8, marginBottom: 0 },
   tabs: {
     display: 'flex',
     gap: 8,

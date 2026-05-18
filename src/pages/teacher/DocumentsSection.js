@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { apiFetch, parseJsonOrThrow } from '../../api/httpClient'
 
-const disciplineOptions = ['Matemática', 'Português', 'Ciências', 'História', 'Geografia']
 const allowedExtensions = ['.txt', '.pdf']
 
 function isAllowedDocumentFile(f) {
@@ -10,24 +9,14 @@ function isAllowedDocumentFile(f) {
   return allowedExtensions.some(ext => lower.endsWith(ext))
 }
 
-export default function DocumentsSection({ defaultDiscipline = '', defaultSubarea = '' }) {
+export default function DocumentsSection({ discipline = '', subarea = '' }) {
   const [file, setFile] = useState(null)
-  const [discipline, setDiscipline] = useState(defaultDiscipline)
-  const [subarea, setSubarea] = useState(defaultSubarea)
   const [status, setStatus] = useState('')
   const [docs, setDocs] = useState([])
   const [examples, setExamples] = useState([])
   const [selectedDoc, setSelectedDoc] = useState(null)
   const [loading, setLoading] = useState(true)
   const [loadingEx, setLoadingEx] = useState(false)
-
-  useEffect(() => {
-    setDiscipline(defaultDiscipline)
-  }, [defaultDiscipline])
-
-  useEffect(() => {
-    setSubarea(defaultSubarea)
-  }, [defaultSubarea])
 
   const loadDocs = async () => {
     const res = await apiFetch('/documents')
@@ -163,32 +152,20 @@ export default function DocumentsSection({ defaultDiscipline = '', defaultSubare
           Envie PDF ou TXT para gerar questões de matemática (processamento em background).
         </p>
         <form onSubmit={handleUpload} style={sectionStyles.form}>
-          <label style={sectionStyles.label}>
-            Disciplina
-            <select
-              value={discipline}
-              onChange={e => setDiscipline(e.target.value)}
-              required
-              style={sectionStyles.input}
-            >
-              <option value="">Selecione…</option>
-              {disciplineOptions.map(d => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
-          </label>
-
-          <label style={sectionStyles.label}>
-            Subárea
-            <input
-              type="text"
-              placeholder="Ex: Geometria"
-              value={subarea}
-              onChange={e => setSubarea(e.target.value)}
-              required
-              style={sectionStyles.input}
-            />
-          </label>
+          <p style={sectionStyles.contextNote}>
+            {discipline && subarea ? (
+              <>
+                Enviando para: <strong>{discipline}</strong> / <strong>{subarea}</strong>
+                <span style={sectionStyles.contextHint}>
+                  {' '}(definido nos filtros acima)
+                </span>
+              </>
+            ) : (
+              <span style={sectionStyles.contextWarn}>
+                Selecione disciplina e subárea nos filtros acima antes de enviar.
+              </span>
+            )}
+          </p>
 
           <label style={sectionStyles.label}>
             Arquivo (.txt ou .pdf)
@@ -312,6 +289,9 @@ export default function DocumentsSection({ defaultDiscipline = '', defaultSubare
 const sectionStyles = {
   heading: { color: '#00796b', marginBottom: 12, fontSize: 18 },
   hint: { color: '#666', fontSize: 14, marginBottom: 16 },
+  contextNote: { fontSize: 14, marginBottom: 4, color: '#333' },
+  contextHint: { color: '#888', fontWeight: 'normal' },
+  contextWarn: { color: '#e65100' },
   form: {
     display: 'flex',
     flexDirection: 'column',

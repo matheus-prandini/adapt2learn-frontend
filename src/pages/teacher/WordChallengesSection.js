@@ -6,8 +6,6 @@ import {
 } from '../../api/wordChallengesApi'
 import { sortWordChallengesByDateDesc } from '../../api/wordChallengeNormalize'
 
-const disciplineOptions = ['Português', 'Matemática', 'Ciências', 'História', 'Geografia']
-
 function parseWordsInput(text) {
   return text
     .split(/[\n,;]+/)
@@ -21,8 +19,6 @@ export default function WordChallengesSection({
   gameId,
   discipline,
   subarea,
-  onDisciplineChange,
-  onSubareaChange,
 }) {
   const [mode, setMode] = useState('manual')
   const [wordsText, setWordsText] = useState('')
@@ -127,40 +123,15 @@ export default function WordChallengesSection({
 
   return (
     <div>
-      <section style={styles.filters}>
-        <h3 style={styles.heading}>Contexto dos desafios</h3>
-        <p style={styles.hint}>
-          Os desafios ficam vinculados ao jogo e à combinação disciplina + subárea escolhida.
+      {!filtersReady ? (
+        <p style={styles.warn}>
+          Selecione jogo, disciplina e subárea nos filtros acima para criar ou listar desafios.
         </p>
-        <div style={styles.row}>
-          <label style={styles.label}>
-            Disciplina
-            <select
-              value={discipline}
-              onChange={e => onDisciplineChange(e.target.value)}
-              style={styles.input}
-            >
-              <option value="">Selecione…</option>
-              {disciplineOptions.map(d => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
-          </label>
-          <label style={styles.label}>
-            Subárea
-            <input
-              type="text"
-              placeholder="Ex: Vocabulário"
-              value={subarea}
-              onChange={e => onSubareaChange(e.target.value)}
-              style={styles.input}
-            />
-          </label>
-        </div>
-        {!gameId && (
-          <p style={styles.warn}>Selecione um jogo acima para criar ou listar desafios.</p>
-        )}
-      </section>
+      ) : (
+        <p style={styles.contextNote}>
+          Contexto: <strong>{discipline}</strong> / <strong>{subarea}</strong>
+        </p>
+      )}
 
       <section style={styles.formSection}>
         <h3 style={styles.heading}>Criar desafios (palavra + imagem)</h3>
@@ -321,7 +292,7 @@ export default function WordChallengesSection({
 }
 
 const styles = {
-  filters: { marginBottom: 28 },
+  contextNote: { fontSize: 14, color: '#555', marginBottom: 16 },
   formSection: { marginBottom: 32 },
   heading: { color: '#6a1b9a', marginBottom: 8, fontSize: 18 },
   hint: { color: '#666', fontSize: 14, marginBottom: 12 },
