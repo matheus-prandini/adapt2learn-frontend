@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiFetch, parseJsonOrThrow } from '../api/httpClient'
 import { listWordChallengesForGame } from '../api/wordChallengesApi'
-import { buildDisciplineOptions, buildSubareaOptions } from '../utils/contentOptions'
+import { buildContentCatalog, getGameId } from '../utils/contentOptions'
 import DocumentsSection from './teacher/DocumentsSection'
 import WordChallengesSection from './teacher/WordChallengesSection'
 import ContentContextFields from './teacher/ContentContextFields'
@@ -67,7 +67,7 @@ export default function TeacherCreation() {
     ;(async () => {
       setLoadingContentOptions(true)
       try {
-        const items = await listWordChallengesForGame(profile.school_id, gameId)
+        const items = await listWordChallengesForGame(profile.school_id, getGameId({ id: gameId }))
         if (!cancelled) setWordChallengesForGame(items)
       } catch (err) {
         console.error(err)
@@ -82,12 +82,9 @@ export default function TeacherCreation() {
     }
   }, [gameId, profile?.school_id])
 
-  const disciplineOptions = buildDisciplineOptions(docsList, wordChallengesForGame)
-  const subareaOptions = buildSubareaOptions(
-    discipline,
-    docsList,
-    wordChallengesForGame
-  )
+  const contentCatalog = buildContentCatalog(docsList, wordChallengesForGame)
+  const disciplineOptions = contentCatalog.disciplines
+  const subareaOptions = contentCatalog.getSubareas(discipline)
 
   const handleGameChange = newGameId => {
     setGameId(newGameId)

@@ -24,10 +24,22 @@ export async function listWordChallenges(params) {
  * @returns {Promise<import('../types/wordChallenges').WordChallengeListItem[]>}
  */
 export async function listWordChallengesForGame(schoolId, gameId) {
+  if (!schoolId || !gameId) return []
+
   const qs = new URLSearchParams({ school_id: schoolId, game_id: gameId })
   const res = await apiFetch(`/word-challenges/list?${qs}`)
+
   if (res.status === 404) return []
-  const data = await parseJsonOrThrow(res, 'Não foi possível carregar opções de desafios.')
+
+  if (!res.ok) {
+    console.warn(
+      `word-challenges/list (jogo) retornou ${res.status}`,
+      await res.text().catch(() => '')
+    )
+    return []
+  }
+
+  const data = await res.json().catch(() => null)
   return normalizeWordChallengeList(data)
 }
 

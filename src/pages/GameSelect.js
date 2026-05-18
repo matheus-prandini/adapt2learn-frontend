@@ -1,10 +1,10 @@
 // src/pages/GameSelect.js
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getStorage, ref, getDownloadURL } from 'firebase/storage'
 import { apiFetch, parseJsonOrThrow } from '../api/httpClient'
 import { listWordChallengesForGame } from '../api/wordChallengesApi'
-import { buildDisciplineOptions, buildSubareaOptions } from '../utils/contentOptions'
+import { buildContentCatalog, getGameId } from '../utils/contentOptions'
 
 export default function GameSelect() {
   const [profile, setProfile] = useState(null)
@@ -13,6 +13,7 @@ export default function GameSelect() {
   const [selectedGame, setSelectedGame] = useState(null)
   const [wordChallengesForGame, setWordChallengesForGame] = useState([])
   const [loadingWordOptions, setLoadingWordOptions] = useState(false)
+  const [optionsError, setOptionsError] = useState('')
   const [discipline, setDiscipline] = useState('')
   const [subarea, setSubarea] = useState('')
   const [loading, setLoading] = useState(true)
@@ -20,6 +21,8 @@ export default function GameSelect() {
   const [error, setError] = useState('')
   const navigate = useNavigate()
   const storage = getStorage()
+
+  const selectedGameId = selectedGame ? getGameId(selectedGame) : ''
 
   useEffect(() => {
     ;(async () => {
@@ -55,23 +58,28 @@ export default function GameSelect() {
   }, [])
 
   useEffect(() => {
-    if (!selectedGame?.id || !profile?.school_id) {
+    if (!selectedGameId || !profile?.school_id) {
       setWordChallengesForGame([])
+      setOptionsError('')
       return
     }
 
     let cancelled = false
     ;(async () => {
       setLoadingWordOptions(true)
+      setOptionsError('')
       try {
         const items = await listWordChallengesForGame(
           profile.school_id,
-          selectedGame.id
+          selectedGameId
         )
         if (!cancelled) setWordChallengesForGame(items)
       } catch (err) {
         console.error(err)
-        if (!cancelled) setWordChallengesForGame([])
+        if (!cancelled) {
+          setWordChallengesForGame([])
+          setOptionsError('Não foi possível carregar desafios de palavras deste jogo.')
+        }
       } finally {
         if (!cancelled) setLoadingWordOptions(false)
       }
@@ -80,17 +88,21 @@ export default function GameSelect() {
     return () => {
       cancelled = true
     }
-  }, [selectedGame?.id, profile?.school_id])
+  }, [selectedGameId, profile?.school_id])
+
+  const contentCatalog = useMemo(
+    () => buildContentCatalog(docsList, wordChallengesForGame),
+    [docsList, wordChallengesForGame]
+  )
+
+  const disciplineOptions = contentCatalog.disciplines
+  const subareaOptions = useMemo(
+    () => contentCatalog.getSubareas(discipline),
+    [contentCatalog, discipline]
+  )
 
   if (loading) return <p style={styles.loading}>🔄 Carregando…</p>
   if (error) return <p style={styles.error}>{error}</p>
-
-  const disciplineOptions = buildDisciplineOptions(docsList, wordChallengesForGame)
-  const subareaOptions = buildSubareaOptions(
-    discipline,
-    docsList,
-    wordChallengesForGame
-  )
 
   async function createSession(gameId) {
     const res = await apiFetch('/sessions', {
@@ -108,14 +120,14 @@ export default function GameSelect() {
   const onStart = async () => {
     setLoadingSession(true)
     try {
-      const sessionNumber = await createSession(selectedGame.id)
+      const sessionNumber = await createSession(selectedGameId)
 
       await apiFetch('/events/platform', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           event_type: 'game_start',
-          game_id: selectedGame.id,
+          game_id: selectedGameId,
           payload: {
             discipline,
             subarea,
@@ -131,7 +143,7 @@ export default function GameSelect() {
         discipline,
         subarea,
         session_number: sessionNumber,
-        game_id: selectedGame.id,
+        game_id: selectedGameId,
         game_path: selectedGame.path,
       }).toString()
 
@@ -153,6 +165,12 @@ export default function GameSelect() {
     setDiscipline('')
     setSubarea('')
     setWordChallengesForGame([])
+    setOptionsError('')
+  }
+
+  const handleDisciplineChange = value => {
+    setDiscipline(value)
+    setSubarea('')
   }
 
   return (
@@ -167,7 +185,7 @@ export default function GameSelect() {
           <div style={styles.grid}>
             {gamesList.map(game => (
               <div
-                key={game.id}
+                key={getGameId(game)}
                 onClick={() => onGameSelect(game)}
                 style={styles.card}
               >
@@ -195,59 +213,79 @@ export default function GameSelect() {
           {selectedGame.has_options && (
             <div style={styles.options}>
               {loadingWordOptions && (
-                <p style={styles.optionsHint}>Carregando opções de conteúdo…</p>
-              )}
-              <div style={styles.field}>
-                <label>Disciplina *</label>
-                <select
-                  value={discipline}
-                  onChange={e => {
-                    setDiscipline(e.target.value)
-                    setSubarea('')
-                  }}
-                  disabled={loadingWordOptions}
-                  style={{
-                    ...styles.select,
-                    borderColor: discipline ? '#ccc' : 'red',
-                  }}
-                  required
-                >
-                  <option value="">Selecione...</option>
-                  {disciplineOptions.map(d => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={styles.field}>
-                <label>Subárea *</label>
-                <select
-                  value={subarea}
-                  onChange={e => setSubarea(e.target.value)}
-                  disabled={!discipline || loadingWordOptions}
-                  style={{
-                    ...styles.select,
-                    borderColor: subarea ? '#ccc' : 'red',
-                    backgroundColor: discipline ? '#fff' : '#f5f5f5',
-                  }}
-                  required
-                >
-                  <option value="">Selecione...</option>
-                  {subareaOptions.map(s => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {!loadingWordOptions && disciplineOptions.length === 0 && (
-                <p style={styles.optionsWarn}>
-                  Nenhum conteúdo cadastrado. Peça ao professor para enviar documentos ou
-                  criar desafios de palavras neste jogo.
+                <p style={styles.optionsHint}>
+                  Carregando disciplinas e subáreas (documentos + desafios de palavras)…
                 </p>
               )}
+              {optionsError && (
+                <p style={styles.optionsWarn}>{optionsError}</p>
+              )}
+
+              <div style={styles.fieldRow}>
+                <div style={styles.field}>
+                  <label>Disciplina *</label>
+                  <select
+                    value={discipline}
+                    onChange={e => handleDisciplineChange(e.target.value)}
+                    disabled={loadingWordOptions}
+                    style={{
+                      ...styles.select,
+                      borderColor: discipline ? '#ccc' : 'red',
+                    }}
+                    required
+                  >
+                    <option value="">Selecione...</option>
+                    {disciplineOptions.map(d => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={styles.field}>
+                  <label>Subárea *</label>
+                  <select
+                    value={subarea}
+                    onChange={e => setSubarea(e.target.value)}
+                    disabled={!discipline || loadingWordOptions}
+                    style={{
+                      ...styles.select,
+                      borderColor: subarea ? '#ccc' : 'red',
+                      backgroundColor: discipline ? '#fff' : '#f5f5f5',
+                    }}
+                    required
+                  >
+                    <option value="">
+                      {discipline
+                        ? subareaOptions.length > 0
+                          ? 'Selecione...'
+                          : 'Nenhuma subárea cadastrada'
+                        : 'Escolha a disciplina primeiro'}
+                    </option>
+                    {subareaOptions.map(s => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {!loadingWordOptions && disciplineOptions.length === 0 && (
+                <p style={styles.optionsWarn}>
+                  Nenhum conteúdo cadastrado para este jogo. Peça ao professor para
+                  enviar documentos ou criar desafios de palavras.
+                </p>
+              )}
+              {!loadingWordOptions &&
+                discipline &&
+                subareaOptions.length === 0 && (
+                  <p style={styles.optionsWarn}>
+                    Não há subáreas cadastradas para &quot;{discipline}&quot; neste
+                    jogo.
+                  </p>
+                )}
             </div>
           )}
 
@@ -317,7 +355,8 @@ const styles = {
   },
   optionsHint: { fontSize: 13, color: '#666', margin: 0 },
   optionsWarn: { fontSize: 13, color: '#e65100', margin: 0 },
-  field: { display: 'flex', flexDirection: 'column', flex: 1, gap: 6 },
+  fieldRow: { display: 'flex', gap: 24, flexWrap: 'wrap' },
+  field: { display: 'flex', flexDirection: 'column', flex: 1, gap: 6, minWidth: 200 },
   select: { padding: 8, borderRadius: 6, border: '1px solid #ccc' },
   start: {
     width: '100%',
