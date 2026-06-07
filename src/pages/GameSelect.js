@@ -12,7 +12,6 @@ export default function GameSelect() {
   const [gamesList, setGamesList] = useState([])
   const [selectedGame, setSelectedGame] = useState(null)
   const [wordChallengesList, setWordChallengesList] = useState([])
-  const [loadingWordOptions, setLoadingWordOptions] = useState(false)
   const [optionsError, setOptionsError] = useState('')
   const [discipline, setDiscipline] = useState('')
   const [subarea, setSubarea] = useState('')
@@ -35,6 +34,14 @@ export default function GameSelect() {
         const docs = await parseJsonOrThrow(docsRes, 'Falha ao carregar documentos')
         setDocsList(docs)
 
+        try {
+          const wordItems = await listWordChallengesForSchool(pr.school_id)
+          setWordChallengesList(wordItems)
+        } catch (wordErr) {
+          console.error(wordErr)
+          setOptionsError('Não foi possível carregar opções de desafios de palavras.')
+        }
+
         const gamesRes = await apiFetch('/games')
         const games = await parseJsonOrThrow(gamesRes, 'Falha ao carregar jogos')
 
@@ -56,36 +63,6 @@ export default function GameSelect() {
       }
     })()
   }, [])
-
-  useEffect(() => {
-    if (!profile?.school_id) {
-      setWordChallengesList([])
-      setOptionsError('')
-      return
-    }
-
-    let cancelled = false
-    ;(async () => {
-      setLoadingWordOptions(true)
-      setOptionsError('')
-      try {
-        const items = await listWordChallengesForSchool(profile.school_id)
-        if (!cancelled) setWordChallengesList(items)
-      } catch (err) {
-        console.error(err)
-        if (!cancelled) {
-          setWordChallengesList([])
-          setOptionsError('Não foi possível carregar opções de desafios de palavras.')
-        }
-      } finally {
-        if (!cancelled) setLoadingWordOptions(false)
-      }
-    })()
-
-    return () => {
-      cancelled = true
-    }
-  }, [profile?.school_id])
 
   const contentCatalog = useMemo(
     () => buildContentCatalog(docsList, wordChallengesList),
@@ -161,7 +138,6 @@ export default function GameSelect() {
     setSelectedGame(g)
     setDiscipline('')
     setSubarea('')
-    setWordChallengesList([])
     setOptionsError('')
   }
 
@@ -209,7 +185,7 @@ export default function GameSelect() {
 
           {selectedGame.has_options && (
             <div style={styles.options}>
-              {loadingWordOptions && (
+              {loading && (
                 <p style={styles.optionsHint}>
                   Carregando disciplinas e subáreas (documentos + desafios de palavras)…
                 </p>
@@ -224,7 +200,7 @@ export default function GameSelect() {
                   <select
                     value={discipline}
                     onChange={e => handleDisciplineChange(e.target.value)}
-                    disabled={loadingWordOptions}
+                    disabled={loading}
                     style={{
                       ...styles.select,
                       borderColor: discipline ? '#ccc' : 'red',
@@ -245,7 +221,7 @@ export default function GameSelect() {
                   <select
                     value={subarea}
                     onChange={e => setSubarea(e.target.value)}
-                    disabled={!discipline || loadingWordOptions}
+                    disabled={!discipline || loading}
                     style={{
                       ...styles.select,
                       borderColor: subarea ? '#ccc' : 'red',
@@ -269,18 +245,17 @@ export default function GameSelect() {
                 </div>
               </div>
 
-              {!loadingWordOptions && disciplineOptions.length === 0 && (
+              {!loading && disciplineOptions.length === 0 && (
                 <p style={styles.optionsWarn}>
-                  Nenhum conteúdo cadastrado para este jogo. Peça ao professor para
+                  Nenhum conteúdo cadastrado para esta escola. Peça ao professor para
                   enviar documentos ou criar desafios de palavras.
                 </p>
               )}
-              {!loadingWordOptions &&
+              {!loading &&
                 discipline &&
                 subareaOptions.length === 0 && (
                   <p style={styles.optionsWarn}>
-                    Não há subáreas cadastradas para &quot;{discipline}&quot; neste
-                    jogo.
+                    Não há subáreas cadastradas para &quot;{discipline}&quot;.
                   </p>
                 )}
             </div>
@@ -291,7 +266,7 @@ export default function GameSelect() {
             onClick={onStart}
             disabled={
               loadingSession ||
-              loadingWordOptions ||
+              loading ||
               (selectedGame.has_options && (!discipline || !subarea))
             }
             style={{

@@ -9,7 +9,11 @@ function isAllowedDocumentFile(f) {
   return allowedExtensions.some(ext => lower.endsWith(ext))
 }
 
-export default function DocumentsSection({ discipline = '', subarea = '' }) {
+export default function DocumentsSection({
+  discipline = '',
+  subarea = '',
+  onContentChanged,
+}) {
   const [file, setFile] = useState(null)
   const [status, setStatus] = useState('')
   const [docs, setDocs] = useState([])
@@ -67,6 +71,7 @@ export default function DocumentsSection({ discipline = '', subarea = '' }) {
       const j = await parseJsonOrThrow(res, 'Erro ao enviar documento.')
       setStatus(j.status || 'Upload completo!')
       await loadDocs()
+      onContentChanged?.()
       setFile(null)
     } catch (err) {
       console.error(err)

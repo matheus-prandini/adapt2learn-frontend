@@ -18,6 +18,7 @@ export default function WordChallengesSection({
   schoolId,
   discipline,
   subarea,
+  onContentChanged,
 }) {
   const [mode, setMode] = useState('manual')
   const [wordsText, setWordsText] = useState('')
@@ -103,6 +104,7 @@ export default function WordChallengesSection({
       })
 
       setChallenges(sortWordChallengesByDateDesc(updated))
+      onContentChanged?.()
 
       if (updated.length >= beforeCount + expectedNew) {
         setStatus(`${expectedNew} desafio(s) criado(s) com sucesso.`)

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiFetch, parseJsonOrThrow } from '../api/httpClient'
 import { listWordChallengesForSchool } from '../api/wordChallengesApi'
@@ -48,6 +48,13 @@ export default function TeacherCreation() {
         const docsRes = await apiFetch(`/documents/school/${me.school_id}`)
         const docs = await parseJsonOrThrow(docsRes, 'Não foi possível carregar documentos.')
         setDocsList(docs)
+
+        try {
+          const wordItems = await listWordChallengesForSchool(me.school_id)
+          setWordChallengesList(wordItems)
+        } catch (wordErr) {
+          console.error(wordErr)
+        }
       } catch (err) {
         console.error(err)
         navigate('/')
@@ -57,28 +64,25 @@ export default function TeacherCreation() {
     })()
   }, [navigate])
 
-  useEffect(() => {
-    if (!profile?.school_id) {
-      setWordChallengesList([])
-      return
-    }
+  const refreshContentCatalog = useCallback(async () => {
+    if (!profile?.school_id) return
 
-    let cancelled = false
-    ;(async () => {
-      setLoadingContentOptions(true)
-      try {
-        const items = await listWordChallengesForSchool(profile.school_id)
-        if (!cancelled) setWordChallengesList(items)
-      } catch (err) {
-        console.error(err)
-        if (!cancelled) setWordChallengesList([])
-      } finally {
-        if (!cancelled) setLoadingContentOptions(false)
-      }
-    })()
-
-    return () => {
-      cancelled = true
+    setLoadingContentOptions(true)
+    try {
+      const [docsRes, wordItems] = await Promise.all([
+        apiFetch(`/documents/school/${profile.school_id}`),
+        listWordChallengesForSchool(profile.school_id),
+      ])
+      const docs = await parseJsonOrThrow(
+        docsRes,
+        'Não foi possível carregar documentos.'
+      )
+      setDocsList(docs)
+      setWordChallengesList(wordItems)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingContentOptions(false)
     }
   }, [profile?.school_id])
 
@@ -152,13 +156,18 @@ export default function TeacherCreation() {
 
       <div style={pageStyles.panel}>
         {activeTab === 'documents' && (
-          <DocumentsSection discipline={discipline} subarea={subarea} />
+          <DocumentsSection
+            discipline={discipline}
+            subarea={subarea}
+            onContentChanged={refreshContentCatalog}
+          />
         )}
         {activeTab === 'words' && (
           <WordChallengesSection
             schoolId={profile.school_id}
             discipline={discipline}
             subarea={subarea}
+            onContentChanged={refreshContentCatalog}
           />
         )}
       </div>

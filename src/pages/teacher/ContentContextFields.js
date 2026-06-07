@@ -115,7 +115,7 @@ export default function ContentContextFields({
       </div>
 
       {loadingOptions && (
-        <p style={styles.hint}>Carregando disciplinas e subáreas do jogo…</p>
+        <p style={styles.hint}>Carregando disciplinas e subáreas…</p>
       )}
       <p style={styles.hint}>
         Opções dos documentos da escola e dos desafios de palavras.
