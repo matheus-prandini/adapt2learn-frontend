@@ -6,60 +6,31 @@ import { normalizeWordChallengeList } from './wordChallengeNormalize'
  * @returns {Promise<import('../types/wordChallenges').WordChallengeListItem[]>}
  */
 export async function listWordChallenges(params) {
-  const qs = new URLSearchParams({
-    school_id: params.school_id,
-    game_id: params.game_id,
-    discipline: params.discipline,
-    subarea: params.subarea,
-  })
+  const qs = new URLSearchParams({ school_id: params.school_id })
+  if (params.discipline) qs.set('discipline', params.discipline)
+  if (params.subarea) qs.set('subarea', params.subarea)
+
   const res = await apiFetch(`/word-challenges/list?${qs}`)
   const data = await parseJsonOrThrow(res, 'Não foi possível carregar os desafios.')
   return normalizeWordChallengeList(data)
 }
 
 /**
- * Lista desafios do jogo (sem filtrar disciplina/subárea) para montar opções no GameSelect.
+ * Lista desafios da escola (discipline/subarea opcionais no backend).
  * @param {string} schoolId
- * @param {string} gameId
- * @returns {Promise<import('../types/wordChallenges').WordChallengeListItem[]>}
  */
-export async function listWordChallengesForGame(schoolId, gameId) {
-  if (!schoolId || !gameId) return []
+export async function listWordChallengesForSchool(schoolId) {
+  if (!schoolId) return []
 
-  const qs = new URLSearchParams({ school_id: schoolId, game_id: gameId })
+  const qs = new URLSearchParams({ school_id: schoolId })
   const res = await apiFetch(`/word-challenges/list?${qs}`)
-
   if (res.status === 404) return []
 
-  if (!res.ok) {
-    console.warn(
-      `word-challenges/list (jogo) retornou ${res.status}`,
-      await res.text().catch(() => '')
-    )
-    return []
-  }
-
-  const data = await res.json().catch(() => null)
+  const data = await parseJsonOrThrow(
+    res,
+    'Não foi possível carregar opções de desafios.'
+  )
   return normalizeWordChallengeList(data)
-}
-
-/**
- * Extrai pares únicos disciplina/subárea de itens de word-challenges.
- * @param {import('../types/wordChallenges').WordChallengeListItem[]} items
- */
-export function disciplineSubareaPairsFromChallenges(items) {
-  const seen = new Set()
-  const pairs = []
-  for (const item of items) {
-    const discipline = item.discipline?.trim()
-    const subarea = item.subarea?.trim()
-    if (!discipline || !subarea) continue
-    const key = `${discipline}\0${subarea}`
-    if (seen.has(key)) continue
-    seen.add(key)
-    pairs.push({ discipline, subarea })
-  }
-  return pairs
 }
 
 /**
@@ -102,7 +73,6 @@ export async function pollWordChallengesList(params, opts = {}) {
 export async function fetchNextWordChallenge(params) {
   const qs = new URLSearchParams({
     school_id: params.school_id,
-    game_id: params.game_id,
     discipline: params.discipline,
     subarea: params.subarea,
   })

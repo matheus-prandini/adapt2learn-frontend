@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getStorage, ref, getDownloadURL } from 'firebase/storage'
 import { apiFetch, parseJsonOrThrow } from '../api/httpClient'
-import { listWordChallengesForGame } from '../api/wordChallengesApi'
+import { listWordChallengesForSchool } from '../api/wordChallengesApi'
 import { buildContentCatalog, getGameId } from '../utils/contentOptions'
 
 export default function GameSelect() {
@@ -11,7 +11,7 @@ export default function GameSelect() {
   const [docsList, setDocsList] = useState([])
   const [gamesList, setGamesList] = useState([])
   const [selectedGame, setSelectedGame] = useState(null)
-  const [wordChallengesForGame, setWordChallengesForGame] = useState([])
+  const [wordChallengesList, setWordChallengesList] = useState([])
   const [loadingWordOptions, setLoadingWordOptions] = useState(false)
   const [optionsError, setOptionsError] = useState('')
   const [discipline, setDiscipline] = useState('')
@@ -58,8 +58,8 @@ export default function GameSelect() {
   }, [])
 
   useEffect(() => {
-    if (!selectedGameId || !profile?.school_id) {
-      setWordChallengesForGame([])
+    if (!profile?.school_id) {
+      setWordChallengesList([])
       setOptionsError('')
       return
     }
@@ -69,16 +69,13 @@ export default function GameSelect() {
       setLoadingWordOptions(true)
       setOptionsError('')
       try {
-        const items = await listWordChallengesForGame(
-          profile.school_id,
-          selectedGameId
-        )
-        if (!cancelled) setWordChallengesForGame(items)
+        const items = await listWordChallengesForSchool(profile.school_id)
+        if (!cancelled) setWordChallengesList(items)
       } catch (err) {
         console.error(err)
         if (!cancelled) {
-          setWordChallengesForGame([])
-          setOptionsError('Não foi possível carregar desafios de palavras deste jogo.')
+          setWordChallengesList([])
+          setOptionsError('Não foi possível carregar opções de desafios de palavras.')
         }
       } finally {
         if (!cancelled) setLoadingWordOptions(false)
@@ -88,11 +85,11 @@ export default function GameSelect() {
     return () => {
       cancelled = true
     }
-  }, [selectedGameId, profile?.school_id])
+  }, [profile?.school_id])
 
   const contentCatalog = useMemo(
-    () => buildContentCatalog(docsList, wordChallengesForGame),
-    [docsList, wordChallengesForGame]
+    () => buildContentCatalog(docsList, wordChallengesList),
+    [docsList, wordChallengesList]
   )
 
   const disciplineOptions = contentCatalog.disciplines
@@ -164,7 +161,7 @@ export default function GameSelect() {
     setSelectedGame(g)
     setDiscipline('')
     setSubarea('')
-    setWordChallengesForGame([])
+    setWordChallengesList([])
     setOptionsError('')
   }
 

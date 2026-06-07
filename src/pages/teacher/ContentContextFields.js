@@ -118,8 +118,7 @@ export default function ContentContextFields({
         <p style={styles.hint}>Carregando disciplinas e subáreas do jogo…</p>
       )}
       <p style={styles.hint}>
-        Opções dos documentos da escola
-        {gameId ? ' e dos desafios de palavras deste jogo.' : '. Selecione um jogo para incluir desafios de palavras.'}
+        Opções dos documentos da escola e dos desafios de palavras.
       </p>
     </section>
   )

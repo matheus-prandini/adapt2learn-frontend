@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiFetch, parseJsonOrThrow } from '../api/httpClient'
-import { listWordChallengesForGame } from '../api/wordChallengesApi'
-import { buildContentCatalog, getGameId } from '../utils/contentOptions'
+import { listWordChallengesForSchool } from '../api/wordChallengesApi'
+import { buildContentCatalog } from '../utils/contentOptions'
 import DocumentsSection from './teacher/DocumentsSection'
 import WordChallengesSection from './teacher/WordChallengesSection'
 import ContentContextFields from './teacher/ContentContextFields'
@@ -16,7 +16,7 @@ export default function TeacherCreation() {
   const [profile, setProfile] = useState(null)
   const [games, setGames] = useState([])
   const [docsList, setDocsList] = useState([])
-  const [wordChallengesForGame, setWordChallengesForGame] = useState([])
+  const [wordChallengesList, setWordChallengesList] = useState([])
   const [loadingContentOptions, setLoadingContentOptions] = useState(false)
   const [gameId, setGameId] = useState('')
   const [discipline, setDiscipline] = useState('')
@@ -58,8 +58,8 @@ export default function TeacherCreation() {
   }, [navigate])
 
   useEffect(() => {
-    if (!gameId || !profile?.school_id) {
-      setWordChallengesForGame([])
+    if (!profile?.school_id) {
+      setWordChallengesList([])
       return
     }
 
@@ -67,11 +67,11 @@ export default function TeacherCreation() {
     ;(async () => {
       setLoadingContentOptions(true)
       try {
-        const items = await listWordChallengesForGame(profile.school_id, getGameId({ id: gameId }))
-        if (!cancelled) setWordChallengesForGame(items)
+        const items = await listWordChallengesForSchool(profile.school_id)
+        if (!cancelled) setWordChallengesList(items)
       } catch (err) {
         console.error(err)
-        if (!cancelled) setWordChallengesForGame([])
+        if (!cancelled) setWordChallengesList([])
       } finally {
         if (!cancelled) setLoadingContentOptions(false)
       }
@@ -80,9 +80,9 @@ export default function TeacherCreation() {
     return () => {
       cancelled = true
     }
-  }, [gameId, profile?.school_id])
+  }, [profile?.school_id])
 
-  const contentCatalog = buildContentCatalog(docsList, wordChallengesForGame)
+  const contentCatalog = buildContentCatalog(docsList, wordChallengesList)
   const disciplineOptions = contentCatalog.disciplines
   const subareaOptions = contentCatalog.getSubareas(discipline)
 
@@ -157,7 +157,6 @@ export default function TeacherCreation() {
         {activeTab === 'words' && (
           <WordChallengesSection
             schoolId={profile.school_id}
-            gameId={gameId}
             discipline={discipline}
             subarea={subarea}
           />

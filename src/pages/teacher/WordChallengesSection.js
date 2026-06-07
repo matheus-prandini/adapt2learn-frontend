@@ -16,7 +16,6 @@ function parseWordsInput(text) {
 
 export default function WordChallengesSection({
   schoolId,
-  gameId,
   discipline,
   subarea,
 }) {
@@ -30,14 +29,14 @@ export default function WordChallengesSection({
   const [creating, setCreating] = useState(false)
   const [status, setStatus] = useState('')
 
-  const filtersReady = schoolId && gameId && discipline && subarea
+  const filtersReady = schoolId && discipline && subarea
 
   const listParams = useMemo(
     () =>
       filtersReady
-        ? { school_id: schoolId, game_id: gameId, discipline, subarea }
+        ? { school_id: schoolId, discipline, subarea }
         : null,
-    [filtersReady, schoolId, gameId, discipline, subarea]
+    [filtersReady, schoolId, discipline, subarea]
   )
 
   const loadList = useCallback(async () => {
@@ -62,7 +61,7 @@ export default function WordChallengesSection({
   const handleCreate = async e => {
     e.preventDefault()
     if (!listParams) {
-      setStatus('Selecione jogo, disciplina e subárea.')
+      setStatus('Selecione disciplina e subárea.')
       return
     }
 
@@ -125,7 +124,7 @@ export default function WordChallengesSection({
     <div>
       {!filtersReady ? (
         <p style={styles.warn}>
-          Selecione jogo, disciplina e subárea nos filtros acima para criar ou listar desafios.
+          Selecione disciplina e subárea nos filtros acima para criar ou listar desafios.
         </p>
       ) : (
         <p style={styles.contextNote}>
@@ -241,7 +240,7 @@ export default function WordChallengesSection({
         </div>
 
         {!filtersReady ? (
-          <p style={styles.muted}>Preencha jogo, disciplina e subárea para ver a lista.</p>
+          <p style={styles.muted}>Preencha disciplina e subárea para ver a lista.</p>
         ) : loadingList && challenges.length === 0 ? (
           <p style={styles.muted}>Carregando…</p>
         ) : challenges.length === 0 ? (
