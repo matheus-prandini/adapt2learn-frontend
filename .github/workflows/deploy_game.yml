@@ -20,17 +20,17 @@ jobs:
     steps:
       # 1) Checkout do código
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # 2) Autentica no GCP
       - name: Authenticate to GCP
-        uses: google-github-actions/auth@v1
+        uses: google-github-actions/auth@v3
         with:
           credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_JSON }}
 
       # 3) Prepara o SDK do Google Cloud
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+        uses: google-github-actions/setup-gcloud@v3
         with:
           project_id: adapt2learn-api
 
@@ -70,7 +70,7 @@ jobs:
 
       # 7) Setup Node.js para build
       - name: Setup Node.js 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22.x'
 
@@ -91,11 +91,23 @@ jobs:
           npm run build
 
       # 10) Deploy no Firebase Hosting
-      # Usamos o firebase-tools direto (em vez do action-hosting-deploy) porque
-      # ele trata deploy sem mudanças como no-op, em vez de estourar
-      # FAILED_PRECONDITION ("supplied version is the current active version").
-      # Isso é importante ao reenviar/atualizar um jogo já existente, cujo build
-      # pode sair idêntico ao que já está no ar. Autentica via ADC exportado pelo
-      # google-github-actions/auth (GOOGLE_APPLICATION_CREDENTIALS).
+      # firebase-tools direto (autentica via ADC exportado pelo
+      # google-github-actions/auth -> GOOGLE_APPLICATION_CREDENTIALS).
+      # Ao reenviar/atualizar um jogo que ja existe, o build pode sair identico
+      # ao que ja esta no ar; o Firebase deduplica a versao e recusa a release
+      # com 400 "is the current active version". Isso NAO e falha real (nada
+      # mudou), entao engolimos SO esse erro e propagamos qualquer outro.
       - name: Deploy to Firebase Hosting
-        run: npx firebase-tools@^15 deploy --only hosting --project adapt2learn-api --non-interactive
+        shell: bash
+        run: |
+          set -o pipefail
+          set +e
+          npx firebase-tools@^15 deploy --only hosting --project adapt2learn-api --non-interactive 2>&1 | tee deploy.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            if grep -q "is the current active version" deploy.log; then
+              echo "::notice::Nada mudou desde a ultima publicacao; versao identica ja esta no ar. Tratando como sucesso."
+              exit 0
+            fi
+            exit "$status"
+          fi
