@@ -91,10 +91,11 @@ jobs:
           npm run build
 
       # 10) Deploy no Firebase Hosting
+      # Usamos o firebase-tools direto (em vez do action-hosting-deploy) porque
+      # ele trata deploy sem mudanças como no-op, em vez de estourar
+      # FAILED_PRECONDITION ("supplied version is the current active version").
+      # Isso é importante ao reenviar/atualizar um jogo já existente, cujo build
+      # pode sair idêntico ao que já está no ar. Autentica via ADC exportado pelo
+      # google-github-actions/auth (GOOGLE_APPLICATION_CREDENTIALS).
       - name: Deploy to Firebase Hosting
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken:              ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.GCP_SERVICE_ACCOUNT_JSON }}
-          channelId:              live
-          projectId:              adapt2learn-api
+        run: npx firebase-tools@^15 deploy --only hosting --project adapt2learn-api --non-interactive
