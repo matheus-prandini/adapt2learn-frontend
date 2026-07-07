@@ -3,18 +3,14 @@ import { toast } from 'react-toastify'
 import { apiFetch, parseJsonOrThrow } from '../api/httpClient'
 
 // Painel de admin: liga/desliga a personalização adaptativa em runtime e roda um
-// dry-run (preview) mostrando o split de braços e quem receberia personalização.
+// dry-run (preview) da coorte (roster study_participants), com split por turma.
 export default function PersonalizationPanel() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [enabled, setEnabled] = useState(false)
   const [subarea, setSubarea] = useState('Geometria Plana')
-  const [gradeLevel, setGradeLevel] = useState('2º ano EM')
-  const [activeSince, setActiveSince] = useState('2026-01-01')
   const [testUids, setTestUids] = useState('') // vírgula-separado
 
-  // dry-run
-  const [schoolId, setSchoolId] = useState('Messias Pedreiro')
   const [preview, setPreview] = useState(null)
   const [previewing, setPreviewing] = useState(false)
 
@@ -25,8 +21,6 @@ export default function PersonalizationPanel() {
         const cfg = await parseJsonOrThrow(res)
         setEnabled(!!cfg.enabled)
         setSubarea(cfg.subarea || 'Geometria Plana')
-        setGradeLevel(cfg.grade_level || '2º ano EM')
-        setActiveSince(cfg.active_since || '2026-01-01')
         setTestUids((cfg.test_uids || []).join(', '))
       } catch (e) {
         toast.error('Falha ao carregar a config de personalização.')
@@ -46,13 +40,7 @@ export default function PersonalizationPanel() {
       const res = await apiFetch('/personalization/config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          enabled,
-          subarea,
-          grade_level: gradeLevel,
-          active_since: activeSince,
-          test_uids,
-        }),
+        body: JSON.stringify({ enabled, subarea, test_uids }),
       })
       await parseJsonOrThrow(res)
       toast.success(
@@ -70,8 +58,7 @@ export default function PersonalizationPanel() {
     setPreviewing(true)
     setPreview(null)
     try {
-      const qs = `?school_id=${encodeURIComponent(schoolId)}&subarea=${encodeURIComponent(subarea)}`
-      const res = await apiFetch(`/personalization/preview${qs}`)
+      const res = await apiFetch('/personalization/preview')
       const data = await parseJsonOrThrow(res)
       setPreview(data)
     } catch (e) {
@@ -88,8 +75,10 @@ export default function PersonalizationPanel() {
       <h3 style={s.title}>🎯 Personalização adaptativa</h3>
       <p style={s.note}>
         Liga/desliga a seleção personalizada de questões (braço adaptativo) em runtime, sem
-        redeploy. Controle = comportamento atual; qualquer erro cai no comportamento atual
-        (fallback). A atribuição de braço é persistida e imutável.
+        redeploy. A coorte são <strong>apenas os alunos matriculados</strong> (roster{' '}
+        <code>study_participants</code>); a randomização é <strong>estratificada por turma</strong> e
+        imutável. Controle = comportamento atual; qualquer erro cai no comportamento atual
+        (fallback).
       </p>
 
       <label style={s.toggle}>
@@ -105,30 +94,15 @@ export default function PersonalizationPanel() {
       </label>
 
       <label style={s.field}>
-        <span>Série (grade_level) — só esses alunos entram no estudo</span>
-        <input style={s.input} value={gradeLevel} onChange={(e) => setGradeLevel(e.target.value)} />
-      </label>
-
-      <label style={s.field}>
-        <span>Ativos desde (coorte 2026 = tem evento a partir desta data)</span>
-        <input
-          style={s.input}
-          value={activeSince}
-          onChange={(e) => setActiveSince(e.target.value)}
-          placeholder="2026-01-01"
-        />
-      </label>
-
-      <label style={s.field}>
         <span>UIDs de teste (opcional)</span>
         <textarea
           style={{ ...s.input, minHeight: 60 }}
-          placeholder="vírgula-separados — vazio = TODOS; preencha p/ testar só alguns"
+          placeholder="vírgula-separados — vazio = coorte inteira; preencha p/ testar só alguns"
           value={testUids}
           onChange={(e) => setTestUids(e.target.value)}
         />
         <small style={s.hint}>
-          Com UIDs preenchidos, só eles recebem a personalização (teste seguro). Vazio = coorte
+          Com UIDs preenchidos, só eles (e do roster) recebem a personalização. Vazio = coorte
           inteira.
         </small>
       </label>
@@ -141,13 +115,9 @@ export default function PersonalizationPanel() {
       <hr style={s.hr} />
       <h4 style={s.subtitle}>🔍 Dry-run (preview, não altera nada)</h4>
       <p style={s.note}>
-        Mostra o split projetado (controle × adaptativo) e quem receberia a personalização com a
-        config atual — <strong>sem persistir</strong> nada.
+        Mostra a coorte matriculada, o split projetado (controle × adaptativo) por turma, e quem
+        receberia a personalização — <strong>sem persistir</strong> nada.
       </p>
-      <label style={s.field}>
-        <span>Escola (school_id)</span>
-        <input style={s.input} value={schoolId} onChange={(e) => setSchoolId(e.target.value)} />
-      </label>
       <button style={{ ...s.btn, background: '#00695c' }} onClick={runPreview} disabled={previewing}>
         {previewing ? 'Rodando…' : 'Rodar dry-run'}
       </button>
@@ -155,46 +125,43 @@ export default function PersonalizationPanel() {
       {preview && (
         <div style={s.previewBox}>
           <div>
-            <strong>2º-EM na escola:</strong> {preview.n_grade_level} →{' '}
-            <strong>coorte 2026 (ativos desde {preview.active_since}):</strong>{' '}
-            {preview.n_students}
+            <strong>Coorte (roster):</strong> {preview.n_participants} · já atribuídos:{' '}
+            {preview.n_assigned}
           </div>
           <div>
             <strong>split projetado</strong> — controle: {preview.projected_split?.control} ·
             adaptativo: {preview.projected_split?.adaptive}
           </div>
           <div>
-            <strong>Receberiam personalização</strong> (braço adaptativo + elegível):{' '}
-            {preview.n_would_get_personalization} · elegíveis (gate test_uids): {preview.n_eligible}
+            <strong>Receberiam personalização</strong> (adaptativo + elegível):{' '}
+            {preview.n_would_get_personalization}
           </div>
           <div style={s.cfgLine}>
-            master switch: <strong>{preview.enabled ? 'LIGADO' : 'desligado'}</strong> · subarea=
-            {preview.subarea} · test_uids={(preview.config?.test_uids || []).length || 'todos'}
+            master switch: <strong>{preview.enabled ? 'LIGADO' : 'desligado'}</strong>
             {!preview.enabled && ' — ligue o toggle acima p/ aplicar de fato'}
           </div>
-          <details style={{ marginTop: 8 }}>
-            <summary>Ver por aluno ({preview.students?.length})</summary>
+          {preview.by_turma && (
             <table style={s.table}>
               <thead>
                 <tr>
-                  <th style={s.th}>Nome</th>
-                  <th style={s.th}>Braço</th>
-                  <th style={s.th}>Atribuído?</th>
-                  <th style={s.th}>Recebe?</th>
+                  <th style={s.th}>Turma</th>
+                  <th style={s.th}>Controle</th>
+                  <th style={s.th}>Adaptativo</th>
                 </tr>
               </thead>
               <tbody>
-                {(preview.students || []).map((p) => (
-                  <tr key={p.uid}>
-                    <td style={s.td}>{p.name || p.uid.slice(0, 8)}</td>
-                    <td style={s.td}>{p.arm}</td>
-                    <td style={s.td}>{p.assigned ? 'sim' : '—'}</td>
-                    <td style={s.td}>{p.would_get_personalization ? '✅' : '—'}</td>
-                  </tr>
-                ))}
+                {Object.entries(preview.by_turma)
+                  .sort()
+                  .map(([t, c]) => (
+                    <tr key={t}>
+                      <td style={s.td}>{t}</td>
+                      <td style={s.td}>{c.control}</td>
+                      <td style={s.td}>{c.adaptive}</td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
-          </details>
+          )}
         </div>
       )}
     </div>
@@ -230,7 +197,7 @@ const s = {
     lineHeight: 1.6,
   },
   cfgLine: { color: '#555', fontSize: 12, marginTop: 6 },
-  table: { width: '100%', borderCollapse: 'collapse', marginTop: 8, fontSize: 13 },
+  table: { width: '100%', borderCollapse: 'collapse', marginTop: 10, fontSize: 13 },
   th: { textAlign: 'left', borderBottom: '1px solid #999', padding: 6 },
   td: { padding: 6, borderBottom: '1px solid #eee' },
 }
