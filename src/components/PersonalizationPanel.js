@@ -9,6 +9,7 @@ export default function PersonalizationPanel() {
   const [saving, setSaving] = useState(false)
   const [enabled, setEnabled] = useState(false)
   const [subarea, setSubarea] = useState('Geometria Plana')
+  const [activeSince, setActiveSince] = useState('2026-01-01')
   const [testUids, setTestUids] = useState('') // vírgula-separado
 
   const [preview, setPreview] = useState(null)
@@ -21,6 +22,7 @@ export default function PersonalizationPanel() {
         const cfg = await parseJsonOrThrow(res)
         setEnabled(!!cfg.enabled)
         setSubarea(cfg.subarea || 'Geometria Plana')
+        setActiveSince(cfg.active_since || '2026-01-01')
         setTestUids((cfg.test_uids || []).join(', '))
       } catch (e) {
         toast.error('Falha ao carregar a config de personalização.')
@@ -40,7 +42,7 @@ export default function PersonalizationPanel() {
       const res = await apiFetch('/personalization/config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled, subarea, test_uids }),
+        body: JSON.stringify({ enabled, subarea, active_since: activeSince, test_uids }),
       })
       await parseJsonOrThrow(res)
       toast.success(
@@ -94,6 +96,16 @@ export default function PersonalizationPanel() {
       </label>
 
       <label style={s.field}>
+        <span>Ativos desde (corte p/ "ativo" no dry-run — ex.: rollout de geometria)</span>
+        <input
+          style={s.input}
+          value={activeSince}
+          onChange={(e) => setActiveSince(e.target.value)}
+          placeholder="2026-06-01"
+        />
+      </label>
+
+      <label style={s.field}>
         <span>UIDs de teste (opcional)</span>
         <textarea
           style={{ ...s.input, minHeight: 60 }}
@@ -127,6 +139,10 @@ export default function PersonalizationPanel() {
           <div>
             <strong>Coorte (roster):</strong> {preview.n_participants} · já atribuídos:{' '}
             {preview.n_assigned}
+          </div>
+          <div>
+            <strong>Ativos</strong> (com evento desde {preview.active_since}): {preview.n_active} de{' '}
+            {preview.n_participants}
           </div>
           <div>
             <strong>split projetado</strong> — controle: {preview.projected_split?.control} ·
