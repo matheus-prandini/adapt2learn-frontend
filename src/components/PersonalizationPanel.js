@@ -9,6 +9,8 @@ export default function PersonalizationPanel() {
   const [saving, setSaving] = useState(false)
   const [enabled, setEnabled] = useState(false)
   const [subarea, setSubarea] = useState('Geometria Plana')
+  const [gradeLevel, setGradeLevel] = useState('2º ano EM')
+  const [activeSince, setActiveSince] = useState('2026-01-01')
   const [testUids, setTestUids] = useState('') // vírgula-separado
 
   // dry-run
@@ -23,6 +25,8 @@ export default function PersonalizationPanel() {
         const cfg = await parseJsonOrThrow(res)
         setEnabled(!!cfg.enabled)
         setSubarea(cfg.subarea || 'Geometria Plana')
+        setGradeLevel(cfg.grade_level || '2º ano EM')
+        setActiveSince(cfg.active_since || '2026-01-01')
         setTestUids((cfg.test_uids || []).join(', '))
       } catch (e) {
         toast.error('Falha ao carregar a config de personalização.')
@@ -42,7 +46,13 @@ export default function PersonalizationPanel() {
       const res = await apiFetch('/personalization/config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled, subarea, test_uids }),
+        body: JSON.stringify({
+          enabled,
+          subarea,
+          grade_level: gradeLevel,
+          active_since: activeSince,
+          test_uids,
+        }),
       })
       await parseJsonOrThrow(res)
       toast.success(
@@ -95,6 +105,21 @@ export default function PersonalizationPanel() {
       </label>
 
       <label style={s.field}>
+        <span>Série (grade_level) — só esses alunos entram no estudo</span>
+        <input style={s.input} value={gradeLevel} onChange={(e) => setGradeLevel(e.target.value)} />
+      </label>
+
+      <label style={s.field}>
+        <span>Ativos desde (coorte 2026 = tem evento a partir desta data)</span>
+        <input
+          style={s.input}
+          value={activeSince}
+          onChange={(e) => setActiveSince(e.target.value)}
+          placeholder="2026-01-01"
+        />
+      </label>
+
+      <label style={s.field}>
         <span>UIDs de teste (opcional)</span>
         <textarea
           style={{ ...s.input, minHeight: 60 }}
@@ -130,7 +155,11 @@ export default function PersonalizationPanel() {
       {preview && (
         <div style={s.previewBox}>
           <div>
-            <strong>Alunos:</strong> {preview.n_students} ·{' '}
+            <strong>2º-EM na escola:</strong> {preview.n_grade_level} →{' '}
+            <strong>coorte 2026 (ativos desde {preview.active_since}):</strong>{' '}
+            {preview.n_students}
+          </div>
+          <div>
             <strong>split projetado</strong> — controle: {preview.projected_split?.control} ·
             adaptativo: {preview.projected_split?.adaptive}
           </div>
