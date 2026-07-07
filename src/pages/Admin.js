@@ -7,6 +7,7 @@ import { getDownloadURL, ref as storageRef } from 'firebase/storage';
 import { storage } from '../firebase';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import PersonalizationPanel from '../components/PersonalizationPanel';
 
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -265,7 +266,7 @@ export default function Admin() {
       <button onClick={() => navigate(-1)} style={styles.backButton}>← Voltar</button>
       <h2 style={styles.heading}>🛠️ Painel de Administração</h2>
       <div style={styles.tabs}>
-        {['metrics', 'students', 'sessions', 'games'].map(tab => (
+        {['metrics', 'students', 'sessions', 'games', 'personalization'].map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -277,6 +278,8 @@ export default function Admin() {
               ? '🕹️ Sessões Jogadas'
               : tab === 'games'
               ? '🎮 Lista de Jogos'
+              : tab === 'personalization'
+              ? '🎯 Personalização'
               : '📊 Métricas'}
           </button>
         ))}
@@ -741,6 +744,9 @@ export default function Admin() {
           )}
         </>
       )}
+
+      {/* ABA DE PERSONALIZAÇÃO */}
+      {activeTab === 'personalization' && <PersonalizationPanel />}
     </div>
   );
 }
