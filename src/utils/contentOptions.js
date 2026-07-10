@@ -11,6 +11,36 @@ export function normalizeContentKey(value) {
 }
 
 /**
+ * Restrição TEMPORÁRIA por escola (estudo em andamento): enquanto a escola
+ * estiver listada aqui, os alunos só conseguem selecionar as subáreas
+ * permitidas. Remova a entrada da escola para liberar todas novamente.
+ * Chaves e valores são comparados via normalizeContentKey (case/acentos ok).
+ */
+const SCHOOL_SUBAREA_ALLOWLIST = {
+  'messias pedreiro': ['Geometria Plana'],
+}
+
+/**
+ * @param {string} [schoolId]
+ */
+export function hasSubareaRestriction(schoolId) {
+  return Boolean(SCHOOL_SUBAREA_ALLOWLIST[normalizeContentKey(schoolId)])
+}
+
+/**
+ * Filtra as subáreas pela allowlist da escola; escolas sem restrição
+ * recebem a lista intacta.
+ * @param {string} [schoolId]
+ * @param {string[]} subareas
+ */
+export function filterAllowedSubareas(schoolId, subareas) {
+  const allow = SCHOOL_SUBAREA_ALLOWLIST[normalizeContentKey(schoolId)]
+  if (!allow || !Array.isArray(subareas)) return subareas
+  const allowedKeys = new Set(allow.map(normalizeContentKey))
+  return subareas.filter(s => allowedKeys.has(normalizeContentKey(s)))
+}
+
+/**
  * @param {Array<{ discipline?: string, subarea?: string }>} docs
  * @param {Array<{ discipline?: string, subarea?: string }>} wordChallengeItems
  */

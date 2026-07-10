@@ -4,7 +4,12 @@ import { useNavigate } from 'react-router-dom'
 import { getStorage, ref, getDownloadURL } from 'firebase/storage'
 import { apiFetch, parseJsonOrThrow } from '../api/httpClient'
 import { listWordChallengesForSchool } from '../api/wordChallengesApi'
-import { buildContentCatalog, getGameId } from '../utils/contentOptions'
+import {
+  buildContentCatalog,
+  filterAllowedSubareas,
+  getGameId,
+  hasSubareaRestriction,
+} from '../utils/contentOptions'
 
 export default function GameSelect() {
   const [profile, setProfile] = useState(null)
@@ -69,11 +74,36 @@ export default function GameSelect() {
     [docsList, wordChallengesList]
   )
 
-  const disciplineOptions = contentCatalog.disciplines
+  const schoolId = profile?.school_id
+
+  // Escolas com restrição ativa (estudo em andamento) só exibem as subáreas
+  // permitidas — e escondem disciplinas que ficariam sem nenhuma subárea.
+  const disciplineOptions = useMemo(() => {
+    if (!hasSubareaRestriction(schoolId)) return contentCatalog.disciplines
+    return contentCatalog.disciplines.filter(
+      d => filterAllowedSubareas(schoolId, contentCatalog.getSubareas(d)).length > 0
+    )
+  }, [contentCatalog, schoolId])
+
   const subareaOptions = useMemo(
-    () => contentCatalog.getSubareas(discipline),
-    [contentCatalog, discipline]
+    () => filterAllowedSubareas(schoolId, contentCatalog.getSubareas(discipline)),
+    [contentCatalog, discipline, schoolId]
   )
+
+  // Com uma única opção disponível, pré-seleciona — menos chance de o aluno
+  // escolher errado (ou não escolher) durante a aplicação.
+  useEffect(() => {
+    if (!discipline && disciplineOptions.length === 1) {
+      setDiscipline(disciplineOptions[0])
+      setSubarea('')
+    }
+  }, [discipline, disciplineOptions])
+
+  useEffect(() => {
+    if (discipline && !subarea && subareaOptions.length === 1) {
+      setSubarea(subareaOptions[0])
+    }
+  }, [discipline, subarea, subareaOptions])
 
   if (loading) return <p style={styles.loading}>🔄 Carregando…</p>
   if (error) return <p style={styles.error}>{error}</p>
