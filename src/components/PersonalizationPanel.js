@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
+import {
+  LuTarget, LuFlaskConical, LuFactory, LuSave, LuPlay,
+} from 'react-icons/lu'
 import { apiFetch, parseJsonOrThrow } from '../api/httpClient'
+import { Card, Button, Field, Alert, Badge, Switch, Loader, Stat } from './ui'
 
 // Painel de admin: liga/desliga a personalização adaptativa em runtime e roda um
 // dry-run (preview) da coorte (roster study_participants), com split por turma.
@@ -127,209 +131,213 @@ export default function PersonalizationPanel() {
     }
   }
 
-  if (loading) return <p>🔄 Carregando configuração…</p>
+  if (loading) return <Loader label="Carregando configuração…" />
 
   return (
-    <div style={s.wrap}>
-      <h3 style={s.title}>🎯 Personalização adaptativa</h3>
-      <p style={s.note}>
-        Liga/desliga a seleção personalizada de questões (braço adaptativo) em runtime, sem
-        redeploy. A coorte são <strong>apenas os alunos matriculados</strong> (roster{' '}
-        <code>study_participants</code>); a randomização é <strong>estratificada por turma</strong> e
-        imutável. Controle = comportamento atual; qualquer erro cai no comportamento atual
-        (fallback).
-      </p>
+    <div className="a2l-stack" style={{ gap: 20, maxWidth: 760, margin: '0 auto', textAlign: 'left' }}>
+      {/* ---- Configuração ---- */}
+      <Card hero>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 14 }}>
+          <span className="a2l-icon-chip a2l-icon-chip--solid"><LuTarget size={19} /></span>
+          <div>
+            <h3 style={{ fontSize: 'var(--a2l-text-lg)' }}>Personalização adaptativa</h3>
+            <p className="a2l-hint" style={{ marginTop: 4 }}>
+              Liga/desliga a seleção personalizada de questões em runtime, sem redeploy.
+            </p>
+          </div>
+        </div>
 
-      <label style={s.toggle}>
-        <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
-        <strong style={{ color: enabled ? '#2e7d32' : '#777' }}>
-          {enabled ? 'ATIVADA' : 'Desativada'}
-        </strong>
-      </label>
+        <Alert tone="info" style={{ marginBottom: 20 }}>
+          A coorte são <strong>apenas os alunos matriculados</strong> (roster <code>study_participants</code>).
+          A randomização é <strong>estratificada por turma</strong> e imutável. Controle = comportamento
+          atual; qualquer erro cai no comportamento atual (fallback).
+        </Alert>
 
-      <label style={s.field}>
-        <span>Subárea do estudo</span>
-        <input style={s.input} value={subarea} onChange={(e) => setSubarea(e.target.value)} />
-      </label>
+        <div
+          style={{
+            display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px',
+            background: enabled ? 'var(--a2l-success-bg)' : 'var(--a2l-surface-2)',
+            border: `1px solid ${enabled ? 'var(--a2l-success-br)' : 'var(--a2l-line)'}`,
+            borderRadius: 'var(--a2l-radius)',
+            marginBottom: 20,
+            transition: 'all var(--a2l-normal) var(--a2l-ease)',
+          }}
+        >
+          <Switch checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: 'var(--a2l-font-display)', fontWeight: 700 }}>
+              {enabled ? 'Personalização ativada' : 'Personalização desativada'}
+            </div>
+            <div className="a2l-hint">
+              {enabled
+                ? 'A coorte adaptativa recebe questões personalizadas.'
+                : 'Todos os alunos seguem o comportamento de controle.'}
+            </div>
+          </div>
+          <Badge tone={enabled ? 'success' : 'neutral'}>{enabled ? 'ON' : 'OFF'}</Badge>
+        </div>
 
-      <label style={s.field}>
-        <span>Ativos desde (corte p/ "ativo" no dry-run — ex.: rollout de geometria)</span>
-        <input
-          style={s.input}
-          value={activeSince}
-          onChange={(e) => setActiveSince(e.target.value)}
-          placeholder="2026-06-01"
-        />
-      </label>
+        <div className="a2l-stack" style={{ gap: 16 }}>
+          <Field label="Subárea do estudo">
+            <input value={subarea} onChange={(e) => setSubarea(e.target.value)} />
+          </Field>
 
-      <label style={s.field}>
-        <span>UIDs de teste (opcional)</span>
-        <textarea
-          style={{ ...s.input, minHeight: 60 }}
-          placeholder="vírgula-separados — vazio = coorte inteira; preencha p/ testar só alguns"
-          value={testUids}
-          onChange={(e) => setTestUids(e.target.value)}
-        />
-        <small style={s.hint}>
-          Com UIDs preenchidos, só eles (e do roster) recebem a personalização. Vazio = coorte
-          inteira.
-        </small>
-      </label>
+          <Field
+            label="Ativos desde"
+            hint='Corte para considerar um aluno "ativo" no dry-run — ex.: rollout de geometria.'
+          >
+            <input
+              value={activeSince}
+              onChange={(e) => setActiveSince(e.target.value)}
+              placeholder="2026-06-01"
+            />
+          </Field>
 
-      <button style={s.btn} onClick={save} disabled={saving}>
-        {saving ? 'Salvando…' : 'Salvar'}
-      </button>
+          <Field
+            label="UIDs de teste"
+            optional
+            hint="Com UIDs preenchidos, só eles (e do roster) recebem a personalização. Vazio = coorte inteira."
+          >
+            <textarea
+              placeholder="vírgula-separados — vazio = coorte inteira"
+              value={testUids}
+              onChange={(e) => setTestUids(e.target.value)}
+              rows={2}
+            />
+          </Field>
+        </div>
+
+        <Button onClick={save} loading={saving} icon={<LuSave size={17} />} style={{ marginTop: 18 }}>
+          {saving ? 'Salvando…' : 'Salvar configuração'}
+        </Button>
+      </Card>
 
       {/* ---- Dry-run / preview ---- */}
-      <hr style={s.hr} />
-      <h4 style={s.subtitle}>🔍 Dry-run (preview, não altera nada)</h4>
-      <p style={s.note}>
-        Mostra a coorte matriculada, o split projetado (controle × adaptativo) por turma, e quem
-        receberia a personalização — <strong>sem persistir</strong> nada.
-      </p>
-      <button style={{ ...s.btn, background: '#00695c' }} onClick={runPreview} disabled={previewing}>
-        {previewing ? 'Rodando…' : 'Rodar dry-run'}
-      </button>
-
-      {preview && (
-        <div style={s.previewBox}>
+      <Card>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 14 }}>
+          <span className="a2l-icon-chip a2l-icon-chip--mint"><LuFlaskConical size={19} /></span>
           <div>
-            <strong>Coorte (roster):</strong> {preview.n_participants} · já atribuídos:{' '}
-            {preview.n_assigned}
+            <h4 style={{ fontSize: 'var(--a2l-text-md)' }}>Dry-run (preview)</h4>
+            <p className="a2l-hint" style={{ marginTop: 4 }}>
+              Mostra a coorte matriculada, o split projetado por turma e quem receberia a
+              personalização — <strong>sem persistir nada</strong>.
+            </p>
           </div>
-          <div>
-            <strong>Ativos</strong> (com evento desde {preview.active_since}): {preview.n_active} de{' '}
-            {preview.n_participants}
-          </div>
-          <div>
-            <strong>split projetado</strong> — controle: {preview.projected_split?.control} ·
-            adaptativo: {preview.projected_split?.adaptive}
-          </div>
-          <div>
-            <strong>Receberiam personalização</strong> (adaptativo + elegível):{' '}
-            {preview.n_would_get_personalization}
-          </div>
-          <div style={s.cfgLine}>
-            master switch: <strong>{preview.enabled ? 'LIGADO' : 'desligado'}</strong>
-            {!preview.enabled && ' — ligue o toggle acima p/ aplicar de fato'}
-          </div>
-          {preview.by_turma && (
-            <table style={s.table}>
-              <thead>
-                <tr>
-                  <th style={s.th}>Turma</th>
-                  <th style={s.th}>Controle</th>
-                  <th style={s.th}>Adaptativo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(preview.by_turma)
-                  .sort()
-                  .map(([t, c]) => (
-                    <tr key={t}>
-                      <td style={s.td}>{t}</td>
-                      <td style={s.td}>{c.control}</td>
-                      <td style={s.td}>{c.adaptive}</td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          )}
         </div>
-      )}
+
+        <Button variant="accent" onClick={runPreview} loading={previewing} icon={<LuPlay size={16} />}>
+          {previewing ? 'Rodando…' : 'Rodar dry-run'}
+        </Button>
+
+        {preview && (
+          <div className="a2l-anim-in" style={{ marginTop: 20 }}>
+            <div className="a2l-grid a2l-grid--stats" style={{ marginBottom: 16 }}>
+              <Stat label="Coorte (roster)" value={preview.n_participants} foot={`${preview.n_assigned} já atribuídos`} />
+              <Stat label="Ativos" tone="mint" value={preview.n_active} foot={`desde ${preview.active_since}`} />
+              <Stat label="Controle" tone="neutral" value={preview.projected_split?.control ?? '—'} />
+              <Stat label="Adaptativo" tone="success" value={preview.projected_split?.adaptive ?? '—'} />
+            </div>
+
+            <Alert tone={preview.enabled ? 'success' : 'warning'}>
+              Receberiam personalização: <strong>{preview.n_would_get_personalization}</strong> · master
+              switch <strong>{preview.enabled ? 'LIGADO' : 'desligado'}</strong>
+              {!preview.enabled && ' — ligue o toggle acima para aplicar de fato.'}
+            </Alert>
+
+            {preview.by_turma && (
+              <div className="a2l-table-wrap" style={{ marginTop: 16 }}>
+                <table className="a2l-table">
+                  <thead>
+                    <tr><th>Turma</th><th>Controle</th><th>Adaptativo</th></tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(preview.by_turma).sort().map(([t, c]) => (
+                      <tr key={t}>
+                        <td style={{ fontWeight: 600 }}>{t}</td>
+                        <td>{c.control}</td>
+                        <td>{c.adaptive}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+      </Card>
 
       {/* ---- Estágio 1: geração de itens novos ---- */}
-      <hr style={s.hr} />
-      <h4 style={{ ...s.subtitle, color: '#e65100' }}>🏭 Gerar itens novos (Estágio 1)</h4>
-      <p style={s.note}>
-        Pré-preenche o pool com itens novos (ex.: tier <code>hard</code>, que está vazio) via LLM,
-        <strong> fora do caminho do aluno</strong>. Depois, a seleção adaptativa passa a servir esses
-        itens. Requer <code>OPENAI_API_KEY</code> configurada no backend.
-      </p>
-
-      <label style={s.field}>
-        <span>Itens por célula (conceito × dificuldade)</span>
-        <input
-          style={s.input}
-          type="number"
-          min={1}
-          value={genTarget}
-          onChange={(e) => setGenTarget(e.target.value)}
-        />
-      </label>
-      <label style={s.toggle}>
-        <input type="checkbox" checked={genCommit} onChange={(e) => setGenCommit(e.target.checked)} />
-        <span>Persistir no pool (desmarque p/ rodada seca / QA)</span>
-      </label>
-
-      <button
-        style={{ ...s.btn, background: '#e65100' }}
-        onClick={runGeneration}
-        disabled={generating}
-      >
-        {generating ? 'Gerando… (pode levar minutos)' : 'Gerar itens (Estágio 1)'}
-      </button>
-
-      <p style={s.hint}>
-        ⚠️ Em Cloud Run com <code>min-instances 0</code>, o job roda em background e pode ser{' '}
-        <strong>interrompido</strong> (CPU throttled após a resposta). Para um lote grande e
-        confiável, prefira a CLI (<code>python -m app.experiments.pregenerate_pool --commit</code>) ou
-        mantenha uma instância quente durante a geração.
-      </p>
-
-      {genJob && (
-        <div style={s.previewBox}>
+      <Card>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 14 }}>
+          <span className="a2l-icon-chip a2l-icon-chip--sun"><LuFactory size={19} /></span>
           <div>
-            <strong>Status:</strong> {genJob.status}
-            {generating && genJob.status === 'started' && ' 🔄'}
+            <h4 style={{ fontSize: 'var(--a2l-text-md)' }}>Gerar itens novos (Estágio 1)</h4>
+            <p className="a2l-hint" style={{ marginTop: 4 }}>
+              Pré-preenche o pool com itens novos (ex.: tier <code>hard</code>, que está vazio) via LLM,
+              <strong> fora do caminho do aluno</strong>. Requer <code>OPENAI_API_KEY</code> no backend.
+            </p>
           </div>
-          {genJob.report && <pre style={s.pre}>{JSON.stringify(genJob.report, null, 2)}</pre>}
-          {genJob.error && <div style={{ color: '#c62828' }}>Erro: {genJob.error}</div>}
         </div>
-      )}
+
+        <div className="a2l-stack" style={{ gap: 16 }}>
+          <Field label="Itens por célula" hint="Combinação conceito × dificuldade.">
+            <input
+              type="number"
+              min={1}
+              value={genTarget}
+              onChange={(e) => setGenTarget(e.target.value)}
+            />
+          </Field>
+
+          <Switch
+            checked={genCommit}
+            onChange={(e) => setGenCommit(e.target.checked)}
+            label="Persistir no pool"
+            hint="Desmarque para rodada seca / QA."
+          />
+        </div>
+
+        <Button
+          variant="sun"
+          onClick={runGeneration}
+          loading={generating}
+          icon={<LuFactory size={17} />}
+          style={{ marginTop: 18 }}
+        >
+          {generating ? 'Gerando… (pode levar minutos)' : 'Gerar itens (Estágio 1)'}
+        </Button>
+
+        <Alert tone="warning" style={{ marginTop: 16 }}>
+          Em Cloud Run com <code>min-instances 0</code>, o job roda em background e pode ser{' '}
+          <strong>interrompido</strong> (CPU throttled após a resposta). Para um lote grande e
+          confiável, prefira a CLI (<code>python -m app.experiments.pregenerate_pool --commit</code>) ou
+          mantenha uma instância quente durante a geração.
+        </Alert>
+
+        {genJob && (
+          <div className="a2l-anim-in" style={{ marginTop: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span className="a2l-eyebrow-sm">Status</span>
+              <Badge
+                tone={
+                  genJob.status === 'done' ? 'success'
+                  : genJob.status === 'error' ? 'danger'
+                  : 'brand'
+                }
+              >
+                {genJob.status}
+              </Badge>
+              {generating && genJob.status === 'started' && (
+                <span className="a2l-spinner a2l-spinner--sm" aria-hidden="true" />
+              )}
+            </div>
+            {genJob.report && <pre className="a2l-pre">{JSON.stringify(genJob.report, null, 2)}</pre>}
+            {genJob.error && (
+              <Alert tone="error" style={{ marginTop: 10 }}>Erro: {genJob.error}</Alert>
+            )}
+          </div>
+        )}
+      </Card>
     </div>
   )
-}
-
-const s = {
-  wrap: { maxWidth: 680, margin: '0 auto', textAlign: 'left' },
-  title: { fontSize: 18, color: '#4a148c', margin: '8px 0 4px' },
-  subtitle: { fontSize: 16, color: '#00695c', margin: '4px 0' },
-  note: { color: '#555', fontSize: 14, marginBottom: 16, lineHeight: 1.5 },
-  toggle: { display: 'flex', gap: 10, alignItems: 'center', margin: '12px 0', fontSize: 16 },
-  field: { display: 'flex', flexDirection: 'column', gap: 4, margin: '12px 0' },
-  input: { padding: 8, borderRadius: 6, border: '1px solid #ccc', fontFamily: 'inherit' },
-  hint: { color: '#777', fontSize: 12 },
-  hr: { margin: '20px 0', border: 'none', borderTop: '1px solid #ddd' },
-  btn: {
-    marginTop: 12,
-    padding: '10px 20px',
-    background: '#6a1b9a',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 6,
-    cursor: 'pointer',
-    fontWeight: 'bold',
-  },
-  previewBox: {
-    marginTop: 16,
-    padding: 12,
-    background: '#e0f2f1',
-    borderRadius: 8,
-    fontSize: 14,
-    lineHeight: 1.6,
-  },
-  cfgLine: { color: '#555', fontSize: 12, marginTop: 6 },
-  pre: {
-    marginTop: 8,
-    padding: 8,
-    background: '#fff',
-    borderRadius: 6,
-    fontSize: 12,
-    overflowX: 'auto',
-    whiteSpace: 'pre-wrap',
-  },
-  table: { width: '100%', borderCollapse: 'collapse', marginTop: 10, fontSize: 13 },
-  th: { textAlign: 'left', borderBottom: '1px solid #999', padding: 6 },
-  td: { padding: 6, borderBottom: '1px solid #eee' },
 }
