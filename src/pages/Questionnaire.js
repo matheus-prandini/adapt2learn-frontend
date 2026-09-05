@@ -2,6 +2,9 @@
 import React, { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { auth } from '../firebase'
+import { LuMessageSquareHeart, LuSend, LuPartyPopper, LuArrowLeft } from 'react-icons/lu'
+import { AppShell, Card, Button, Alert, PageHead } from '../components/ui'
+import { API_BASE_URL } from '../api/config';
 
 export default function Questionnaire() {
   const navigate    = useNavigate()
@@ -10,6 +13,7 @@ export default function Questionnaire() {
   const [suggestion, setSuggestion] = useState('')
   const [submitted, setSubmitted]   = useState(false)
   const [error, setError]           = useState('')
+  const [sending, setSending]       = useState(false)
 
   // ler params
   const params = new URLSearchParams(search)
@@ -27,6 +31,7 @@ export default function Questionnaire() {
   const handleSubmit = async e => {
     e.preventDefault()
     setError('')
+    setSending(true)
     try {
       const token = await auth.currentUser.getIdToken()
       const payload = {
@@ -39,7 +44,7 @@ export default function Questionnaire() {
         suggestion
       }
 
-      const res = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/questionnaire', {
+      const res = await fetch(`${API_BASE_URL}/questionnaire`, {
         method: 'POST',
         headers: {
           'Content-Type':  'application/json',
@@ -52,130 +57,107 @@ export default function Questionnaire() {
     } catch (err) {
       console.error(err)
       setError('Erro ao enviar feedback. Tente novamente.')
+    } finally {
+      setSending(false)
     }
   }
 
   if (submitted) {
     return (
-      <div style={styles.container}>
-        <h2>🙏 Obrigado pelo seu feedback!</h2>
-        <button onClick={() => navigate('/dashboard')} style={styles.back}>
-          ← Voltar ao Menu
-        </button>
-      </div>
+      <AppShell width="md" topbar={false}>
+        <div style={{ display: 'grid', placeItems: 'center', minHeight: '70vh' }}>
+          <Card hero className="a2l-anim-pop" style={{ textAlign: 'center', maxWidth: 440 }}>
+            <span className="a2l-icon-chip a2l-icon-chip--lg a2l-icon-chip--solid" style={{ margin: '0 auto 16px' }}>
+              <LuPartyPopper size={26} />
+            </span>
+            <h2 style={{ fontSize: 'var(--a2l-text-xl)' }}>Obrigado pelo seu feedback!</h2>
+            <p style={{ color: 'var(--a2l-ink-500)', marginTop: 8, marginBottom: 22 }}>
+              Suas respostas ajudam a deixar a plataforma melhor para toda a turma.
+            </p>
+            <Button variant="secondary" icon={<LuArrowLeft size={17} />} onClick={() => navigate('/dashboard')}>
+              Voltar ao painel
+            </Button>
+          </Card>
+        </div>
+      </AppShell>
     )
   }
 
   return (
-    <div style={styles.container}>
-      <h2>📝 Questionário de Feedback</h2>
-      {error && <p style={{ color:'red' }}>{error}</p>}
-      <form onSubmit={handleSubmit} style={styles.form}>
-        {questions.map(q => (
-          <fieldset key={q.id} style={styles.fieldset}>
-            <legend style={styles.legend}>{q.text}</legend>
-            {q.options.map(opt => (
-              <label key={opt} style={styles.label}>
-                <input
-                  type="radio"
-                  name={q.id}
-                  value={opt}
-                  checked={answers[q.id] === opt}
-                  onChange={() => handleChange(q.id, opt)}
-                  required
-                />{' '}
-                {opt}
-              </label>
-            ))}
-          </fieldset>
+    <AppShell width="md" back={-1}>
+      <PageHead
+        className="a2l-anim-in"
+        eyebrow={<><LuMessageSquareHeart size={13} /> Sua opinião</>}
+        title="Como foi a experiência?"
+        subtitle="São três perguntas rápidas — leva menos de um minuto."
+      />
+
+      {error && <Alert tone="error" style={{ marginBottom: 18 }}>{error}</Alert>}
+
+      <form onSubmit={handleSubmit} className="a2l-stack a2l-anim-in a2l-delay-1" style={{ gap: 16 }}>
+        {questions.map((q, qi) => (
+          <Card key={q.id}>
+            <fieldset style={{ border: 'none', margin: 0, padding: 0 }}>
+              <legend
+                style={{
+                  fontFamily: 'var(--a2l-font-display)',
+                  fontWeight: 700,
+                  fontSize: 'var(--a2l-text-md)',
+                  color: 'var(--a2l-ink-900)',
+                  marginBottom: 14,
+                  padding: 0,
+                }}
+              >
+                <span style={{ color: 'var(--a2l-brand-500)' }}>{qi + 1}.</span> {q.text}
+              </legend>
+              <div className="a2l-stack" style={{ gap: 9 }}>
+                {q.options.map(opt => (
+                  <label
+                    key={opt}
+                    className={`a2l-option ${answers[q.id] === opt ? 'a2l-option--checked' : ''}`}
+                  >
+                    <input
+                      className="a2l-check"
+                      type="radio"
+                      name={q.id}
+                      value={opt}
+                      checked={answers[q.id] === opt}
+                      onChange={() => handleChange(q.id, opt)}
+                      required
+                    />
+                    {opt}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          </Card>
         ))}
 
-        <div style={styles.suggestionContainer}>
-          <label style={styles.suggestionLabel}>
-            Dê sugestões e comente o que gostaria de encontrar na plataforma:
+        <Card>
+          <label
+            className="a2l-label"
+            htmlFor="a2l-suggestion"
+            style={{ fontSize: 'var(--a2l-text-md)', marginBottom: 6 }}
+          >
+            Quer sugerir algo?
           </label>
+          <p className="a2l-hint" style={{ marginBottom: 10 }}>
+            Conte o que você gostaria de encontrar na plataforma.
+          </p>
           <textarea
+            id="a2l-suggestion"
+            className="a2l-input"
             value={suggestion}
             onChange={e => setSuggestion(e.target.value)}
-            placeholder="Escreva aqui suas sugestões..."
+            placeholder="Escreva aqui suas sugestões…"
             rows={4}
-            style={styles.suggestionInput}
           />
-        </div>
+        </Card>
 
-        <button type="submit" style={styles.submitButton}>
-          Enviar Feedback
-        </button>
+        <Button type="submit" size="lg" icon={<LuSend size={17} />} loading={sending}>
+          {sending ? 'Enviando…' : 'Enviar feedback'}
+        </Button>
       </form>
-    </div>
+    </AppShell>
   )
-}
-
-const styles = {
-  container: {
-    padding: 20,
-    maxWidth: 600,
-    margin: '40px auto',
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-    fontFamily: 'Arial, sans-serif',
-    textAlign: 'center'
-  },
-  back: {
-    background: '#FFD54F',
-    border: 'none',
-    borderRadius: 6,
-    padding: '6px 12px',
-    cursor: 'pointer',
-    marginTop: 16,
-    fontWeight: 'bold'
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 24,
-    marginTop: 24
-  },
-  fieldset: {
-    border: '1px solid #ccc',
-    borderRadius: 8,
-    padding: 16,
-    textAlign: 'left'
-  },
-  legend: {
-    fontWeight: 'bold',
-    marginBottom: 12
-  },
-  label: {
-    display: 'block',
-    marginBottom: 8,
-    cursor: 'pointer'
-  },
-  suggestionContainer: {
-    textAlign: 'left',
-    marginBottom: 24
-  },
-  suggestionLabel: {
-    display: 'block',
-    fontWeight: 'bold',
-    marginBottom: 8
-  },
-  suggestionInput: {
-    width: '100%',
-    padding: 10,
-    borderRadius: 6,
-    border: '1px solid #ccc',
-    fontSize: 14,
-    minHeight: 80
-  },
-  submitButton: {
-    padding: '12px 24px',
-    backgroundColor: '#4FC3F7',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 6,
-    fontSize: 16,
-    cursor: 'pointer'
-  }
 }

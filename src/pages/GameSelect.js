@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getStorage, ref, getDownloadURL } from 'firebase/storage'
+import { LuGamepad2, LuPlay, LuRepeat, LuTarget, LuInbox } from 'react-icons/lu'
 import { apiFetch, parseJsonOrThrow } from '../api/httpClient'
 import { listWordChallengesForSchool } from '../api/wordChallengesApi'
 import {
@@ -10,6 +11,9 @@ import {
   getGameId,
   hasSubareaRestriction,
 } from '../utils/contentOptions'
+import {
+  AppShell, Card, Button, Field, Alert, Loader, PageHead, EmptyState,
+} from '../components/ui'
 
 export default function GameSelect() {
   const [profile, setProfile] = useState(null)
@@ -105,8 +109,14 @@ export default function GameSelect() {
     }
   }, [discipline, subarea, subareaOptions])
 
-  if (loading) return <p style={styles.loading}>🔄 Carregando…</p>
-  if (error) return <p style={styles.error}>{error}</p>
+  if (loading) return <Loader label="Carregando os jogos…" />
+  if (error) {
+    return (
+      <AppShell width="md" back="/">
+        <Alert tone="error">{error}</Alert>
+      </AppShell>
+    )
+  }
 
   async function createSession(gameId) {
     const res = await apiFetch('/sessions', {
@@ -176,200 +186,162 @@ export default function GameSelect() {
     setSubarea('')
   }
 
-  return (
-    <div style={styles.container}>
-      <button type="button" onClick={() => navigate(-1)} style={styles.back}>
-        ← Voltar
-      </button>
+  const missingOptions = selectedGame?.has_options && (!discipline || !subarea)
 
+  return (
+    <AppShell width="lg" back="/" backLabel="Painel">
       {!selectedGame ? (
         <>
-          <h2 style={styles.header}>🕹️ Escolha um Jogo</h2>
-          <div style={styles.grid}>
-            {gamesList.map(game => (
-              <div
-                key={getGameId(game)}
-                onClick={() => onGameSelect(game)}
-                style={styles.card}
-              >
-                {game.iconUrl ? (
-                  <img src={game.iconUrl} alt={game.name} style={styles.icon} />
-                ) : (
-                  <div style={styles.placeholder} />
-                )}
-                <div style={styles.gameName}>{game.name}</div>
-              </div>
-            ))}
-          </div>
-        </>
-      ) : (
-        <>
-          <button
-            type="button"
-            onClick={() => setSelectedGame(null)}
-            style={styles.back}
-          >
-            ← Trocar Jogo
-          </button>
-          <h2 style={styles.header}>🎯 {selectedGame.name}</h2>
+          <PageHead
+            className="a2l-anim-in"
+            eyebrow={<><LuGamepad2 size={13} /> Biblioteca</>}
+            title="Escolha um jogo"
+            subtitle="Cada jogo trabalha habilidades diferentes. Toque em um para começar."
+          />
 
-          {selectedGame.has_options && (
-            <div style={styles.options}>
-              {loading && (
-                <p style={styles.optionsHint}>
-                  Carregando disciplinas e subáreas (documentos + desafios de palavras)…
-                </p>
-              )}
-              {optionsError && (
-                <p style={styles.optionsWarn}>{optionsError}</p>
-              )}
-
-              <div style={styles.fieldRow}>
-                <div style={styles.field}>
-                  <label>Disciplina *</label>
-                  <select
-                    value={discipline}
-                    onChange={e => handleDisciplineChange(e.target.value)}
-                    disabled={loading}
+          {gamesList.length === 0 ? (
+            <Card>
+              <EmptyState
+                icon={<LuInbox size={24} />}
+                title="Nenhum jogo disponível"
+                description="Peça ao seu professor para liberar jogos para a sua escola."
+              />
+            </Card>
+          ) : (
+            <div className="a2l-grid a2l-grid--cards a2l-anim-in a2l-delay-1">
+              {gamesList.map(game => (
+                <Card
+                  key={getGameId(game)}
+                  interactive
+                  onClick={() => onGameSelect(game)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onGameSelect(game)}
+                  style={{ textAlign: 'center', padding: 20 }}
+                >
+                  <div
                     style={{
-                      ...styles.select,
-                      borderColor: discipline ? '#ccc' : 'red',
+                      height: 96,
+                      display: 'grid',
+                      placeItems: 'center',
+                      borderRadius: 'var(--a2l-radius-md)',
+                      background: 'linear-gradient(160deg, var(--a2l-brand-50), var(--a2l-mint-50))',
+                      marginBottom: 14,
                     }}
-                    required
                   >
-                    <option value="">Selecione...</option>
-                    {disciplineOptions.map(d => (
-                      <option key={d} value={d}>
-                        {d}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div style={styles.field}>
-                  <label>Subárea *</label>
-                  <select
-                    value={subarea}
-                    onChange={e => setSubarea(e.target.value)}
-                    disabled={!discipline || loading}
-                    style={{
-                      ...styles.select,
-                      borderColor: subarea ? '#ccc' : 'red',
-                      backgroundColor: discipline ? '#fff' : '#f5f5f5',
-                    }}
-                    required
-                  >
-                    <option value="">
-                      {discipline
-                        ? subareaOptions.length > 0
-                          ? 'Selecione...'
-                          : 'Nenhuma subárea cadastrada'
-                        : 'Escolha a disciplina primeiro'}
-                    </option>
-                    {subareaOptions.map(s => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {!loading && disciplineOptions.length === 0 && (
-                <p style={styles.optionsWarn}>
-                  Nenhum conteúdo cadastrado para esta escola. Peça ao professor para
-                  enviar documentos ou criar desafios de palavras.
-                </p>
-              )}
-              {!loading &&
-                discipline &&
-                subareaOptions.length === 0 && (
-                  <p style={styles.optionsWarn}>
-                    Não há subáreas cadastradas para &quot;{discipline}&quot;.
-                  </p>
-                )}
+                    {game.iconUrl ? (
+                      <img
+                        src={game.iconUrl}
+                        alt=""
+                        style={{ width: 72, height: 72, objectFit: 'contain' }}
+                      />
+                    ) : (
+                      <LuGamepad2 size={34} style={{ color: 'var(--a2l-brand-400)' }} />
+                    )}
+                  </div>
+                  <div style={{ fontFamily: 'var(--a2l-font-display)', fontWeight: 700, color: 'var(--a2l-ink-900)' }}>
+                    {game.name}
+                  </div>
+                </Card>
+              ))}
             </div>
           )}
-
-          <button
-            type="button"
-            onClick={onStart}
-            disabled={
-              loadingSession ||
-              loading ||
-              (selectedGame.has_options && (!discipline || !subarea))
-            }
-            style={{
-              ...styles.start,
-              opacity:
-                selectedGame.has_options && (!discipline || !subarea) ? 0.6 : 1,
-              cursor:
-                selectedGame.has_options && (!discipline || !subarea)
-                  ? 'not-allowed'
-                  : 'pointer',
-            }}
-          >
-            ▶️ Iniciar Jogo
-          </button>
         </>
-      )}
-    </div>
-  )
-}
+      ) : (
+        <div style={{ maxWidth: 620, margin: '0 auto' }}>
+          <PageHead
+            className="a2l-anim-in"
+            eyebrow={<><LuTarget size={13} /> Preparar sessão</>}
+            title={selectedGame.name}
+            subtitle={
+              selectedGame.has_options
+                ? 'Escolha o conteúdo que você quer praticar agora.'
+                : 'Tudo pronto — é só começar.'
+            }
+            action={
+              <Button variant="ghost" size="sm" icon={<LuRepeat size={15} />} onClick={() => setSelectedGame(null)}>
+                Trocar jogo
+              </Button>
+            }
+          />
 
-const styles = {
-  container: {
-    padding: 20,
-    maxWidth: 600,
-    margin: '40px auto',
-    background: '#fffde7',
-    borderRadius: 12,
-  },
-  back: {
-    background: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: 16,
-    marginBottom: 20,
-  },
-  header: { textAlign: 'center', color: '#f57f17', marginBottom: 20 },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill,minmax(120px,1fr))',
-    gap: 16,
-  },
-  card: {
-    cursor: 'pointer',
-    background: '#fff',
-    border: '2px solid #ffe082',
-    borderRadius: 12,
-    padding: 12,
-    textAlign: 'center',
-  },
-  icon: { width: 80, height: 80, marginBottom: 8 },
-  placeholder: { height: 80, marginBottom: 8, background: '#eee' },
-  gameName: { fontSize: 14, fontWeight: 'bold', color: '#33691e' },
-  options: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 16,
-    marginBottom: 24,
-  },
-  optionsHint: { fontSize: 13, color: '#666', margin: 0 },
-  optionsWarn: { fontSize: 13, color: '#e65100', margin: 0 },
-  fieldRow: { display: 'flex', gap: 24, flexWrap: 'wrap' },
-  field: { display: 'flex', flexDirection: 'column', flex: 1, gap: 6, minWidth: 200 },
-  select: { padding: 8, borderRadius: 6, border: '1px solid #ccc' },
-  start: {
-    width: '100%',
-    padding: 12,
-    fontSize: 16,
-    background: '#66bb6a',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 8,
-    cursor: 'pointer',
-  },
-  loading: { padding: 20, textAlign: 'center' },
-  error: { padding: 20, textAlign: 'center', color: 'red' },
+          <Card hero className="a2l-anim-in a2l-delay-1">
+            {selectedGame.has_options && (
+              <div className="a2l-stack" style={{ gap: 18, marginBottom: 22 }}>
+                {optionsError && <Alert tone="warning">{optionsError}</Alert>}
+
+                <div className="a2l-grid a2l-grid--2">
+                  <Field
+                    label="Disciplina"
+                    required
+                    error={!discipline ? 'Selecione uma disciplina.' : ''}
+                  >
+                    <select
+                      value={discipline}
+                      onChange={e => handleDisciplineChange(e.target.value)}
+                      disabled={loading}
+                      required
+                    >
+                      <option value="">Selecione…</option>
+                      {disciplineOptions.map(d => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </Field>
+
+                  <Field
+                    label="Subárea"
+                    required
+                    error={discipline && !subarea ? 'Selecione uma subárea.' : ''}
+                  >
+                    <select
+                      value={subarea}
+                      onChange={e => setSubarea(e.target.value)}
+                      disabled={!discipline || loading}
+                      required
+                    >
+                      <option value="">
+                        {discipline
+                          ? subareaOptions.length > 0
+                            ? 'Selecione…'
+                            : 'Nenhuma subárea cadastrada'
+                          : 'Escolha a disciplina primeiro'}
+                      </option>
+                      {subareaOptions.map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
+
+                {!loading && disciplineOptions.length === 0 && (
+                  <Alert tone="warning">
+                    Nenhum conteúdo cadastrado para esta escola. Peça ao professor para enviar
+                    documentos ou criar desafios de palavras.
+                  </Alert>
+                )}
+                {!loading && discipline && subareaOptions.length === 0 && (
+                  <Alert tone="warning">
+                    Não há subáreas cadastradas para &quot;{discipline}&quot;.
+                  </Alert>
+                )}
+              </div>
+            )}
+
+            <Button
+              size="lg"
+              block
+              variant="accent"
+              icon={<LuPlay size={18} />}
+              onClick={onStart}
+              loading={loadingSession}
+              disabled={loadingSession || loading || missingOptions}
+            >
+              {loadingSession ? 'Preparando…' : 'Iniciar jogo'}
+            </Button>
+          </Card>
+        </div>
+      )}
+    </AppShell>
+  )
 }

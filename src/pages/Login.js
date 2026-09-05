@@ -8,6 +8,9 @@ import {
   signOut
 } from 'firebase/auth';
 import { FcGoogle } from 'react-icons/fc';
+import { LuLock, LuMail, LuLogIn } from 'react-icons/lu';
+import { AuthShell, Card, Button, Field, Alert, SegmentedControl } from '../components/ui';
+import { API_BASE_URL } from '../api/config';
 
 export default function Login() {
   const [method, setMethod]     = useState('google');
@@ -18,7 +21,7 @@ export default function Login() {
   const navigate = useNavigate();
 
   const checkProfile = async (token) => {
-    const res = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/me', {
+    const res = await fetch(`${API_BASE_URL}/me`, {
       headers: { Authorization: 'Bearer ' + token }
     });
     return res.ok;
@@ -27,7 +30,7 @@ export default function Login() {
   // função utilitária para logar eventos de login
   async function logLoginEvent(token, status, method, message = null) {
     try {
-      await fetch("https://adapt2learn-895112363610.us-central1.run.app/api/events/platform", {
+      await fetch(`${API_BASE_URL}/events/platform`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -88,120 +91,72 @@ export default function Login() {
   }
 
   return (
-    <div style={{
-      maxWidth: 360,
-      margin: '60px auto',
-      padding: 24,
-      backgroundColor: '#fce4ec',
-      borderRadius: 12,
-      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-      textAlign: 'center'
-    }}>
-      <h2 style={{ color: '#d81b60', marginBottom: 16 }}>🎉 Bem-vindo!</h2>
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'center', gap: 8 }}>
-        <button
-          onClick={() => setMethod('google')}
-          style={{
-            padding:'8px 16px',
-            backgroundColor: method==='google' ? '#d81b60' : '#f8bbd0',
-            color:'#fff',
-            border:'none',
-            borderRadius:4,
-            cursor:'pointer'
-          }}
-        >
-          Google
-        </button>
-        <button
-          onClick={() => setMethod('email')}
-          style={{
-            padding:'8px 16px',
-            backgroundColor: method==='email' ? '#d81b60' : '#f8bbd0',
-            color:'#fff',
-            border:'none',
-            borderRadius:4,
-            cursor:'pointer'
-          }}
-        >
-          E-mail
-        </button>
-      </div>
+    <AuthShell>
+      <Card hero>
+        <div style={{ textAlign: 'center', marginBottom: 22 }}>
+          <h2 style={{ fontSize: 'var(--a2l-text-xl)' }}>Bem-vindo de volta</h2>
+          <p style={{ color: 'var(--a2l-ink-500)', marginTop: 6 }}>
+            Entre para continuar sua jornada.
+          </p>
+        </div>
 
-      {method === 'google' ? (
-        <>
-          <button
+        <SegmentedControl
+          style={{ display: 'flex', width: '100%', marginBottom: 22 }}
+          value={method}
+          onChange={setMethod}
+          items={[
+            { id: 'google', label: 'Google', icon: <FcGoogle size={16} /> },
+            { id: 'email', label: 'E-mail', icon: <LuMail size={15} /> },
+          ]}
+        />
+
+        {method === 'google' ? (
+          <Button
+            variant="secondary"
+            size="lg"
+            block
             onClick={handleGoogleSignIn}
-            disabled={loading}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              width: '100%',
-              padding: 12,
-              backgroundColor: '#4285f4',
-              color: '#fff',
-              fontSize: 16,
-              border: 'none',
-              borderRadius: 6,
-              cursor: loading ? 'not-allowed' : 'pointer'
-            }}
+            loading={loading}
+            icon={<FcGoogle size={20} />}
           >
-            <FcGoogle size={24} />
             {loading ? 'Entrando…' : 'Entrar com Google'}
-          </button>
-        </>
-      ) : (
-        <form onSubmit={handleEmailSignIn} style={{ display:'flex', flexDirection:'column', gap:12, textAlign:'left' }}>
-          <label>📧 E-mail</label>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            style={{ width:'100%', padding:10, borderRadius:6, border:'1px solid #ccc', fontSize:16 }}
-          />
+          </Button>
+        ) : (
+          <form onSubmit={handleEmailSignIn} className="a2l-stack" style={{ gap: 16 }}>
+            <Field label={<><LuMail size={14} /> E-mail</>} required>
+              <input
+                type="email"
+                required
+                autoComplete="email"
+                placeholder="voce@escola.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+              />
+            </Field>
 
-          <label>🔒 Senha</label>
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            style={{ width:'100%', padding:10, borderRadius:6, border:'1px solid #ccc', fontSize:16 }}
-          />
+            <Field label={<><LuLock size={14} /> Senha</>} required>
+              <input
+                type="password"
+                required
+                autoComplete="current-password"
+                placeholder="••••••••"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+              />
+            </Field>
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              marginTop:8,
-              padding:12,
-              backgroundColor:'#d81b60',
-              color:'#fff',
-              fontSize:16,
-              border:'none',
-              borderRadius:6,
-              cursor: loading ? 'not-allowed' : 'pointer'
-            }}
-          >
-            {loading ? 'Entrando…' : 'Entrar'}
-          </button>
-        </form>
-      )}
+            <Button type="submit" size="lg" block loading={loading} icon={<LuLogIn size={18} />}>
+              {loading ? 'Entrando…' : 'Entrar'}
+            </Button>
+          </form>
+        )}
 
-      {error && (
-        <p style={{ color:'red', marginTop:12, fontSize:14 }}>
-          {error}
+        {error && <Alert tone="error" className="a2l-anim-in" style={{ marginTop: 18 }}>{error}</Alert>}
+
+        <p style={{ marginTop: 22, textAlign: 'center', fontSize: 'var(--a2l-text-base)', color: 'var(--a2l-ink-500)' }}>
+          Não tem conta? <Link to="/register">Cadastre-se</Link>
         </p>
-      )}
-
-      <p style={{ marginTop: 20, fontSize: 14, color: '#555' }}>
-        Não tem conta?{' '}
-        <Link to="/register" style={{ color: '#d81b60', fontWeight: 'bold' }}>
-          Cadastre-se
-        </Link>
-      </p>
-    </div>
+      </Card>
+    </AuthShell>
   );
 }

@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react'
+import {
+  LuUpload, LuFileText, LuSparkles, LuTrash2, LuInbox, LuRefreshCw,
+} from 'react-icons/lu'
 import { apiFetch, parseJsonOrThrow } from '../../api/httpClient'
+import { Card, Button, Field, Alert, Badge, EmptyState, Loader } from '../../components/ui'
 
 const allowedExtensions = ['.txt', '.pdf']
 
@@ -147,138 +151,172 @@ export default function DocumentsSection({
     }
   }
 
-  if (loading) return <p style={sectionStyles.muted}>Carregando documentos…</p>
+  if (loading) return <Loader label="Carregando documentos…" />
+
+  const contextReady = discipline && subarea
 
   return (
-    <div>
-      <section style={{ marginBottom: 32 }}>
-        <h3 style={sectionStyles.heading}>Enviar documento</h3>
-        <p style={sectionStyles.hint}>
-          Envie PDF ou TXT para gerar questões de matemática (processamento em background).
+    <div className="a2l-stack" style={{ gap: 32 }}>
+      <section>
+        <h3 style={{ fontSize: 'var(--a2l-text-lg)', marginBottom: 6 }}>Enviar documento</h3>
+        <p className="a2l-hint" style={{ marginBottom: 16 }}>
+          Envie PDF ou TXT para gerar questões de matemática. O processamento acontece em segundo plano.
         </p>
-        <form onSubmit={handleUpload} style={sectionStyles.form}>
-          <p style={sectionStyles.contextNote}>
-            {discipline && subarea ? (
-              <>
-                Enviando para: <strong>{discipline}</strong> / <strong>{subarea}</strong>
-                <span style={sectionStyles.contextHint}>
-                  {' '}(definido nos filtros acima)
-                </span>
-              </>
-            ) : (
-              <span style={sectionStyles.contextWarn}>
-                Selecione disciplina e subárea nos filtros acima antes de enviar.
-              </span>
-            )}
-          </p>
 
-          <label style={sectionStyles.label}>
-            Arquivo (.txt ou .pdf)
+        <Card quiet as="form" onSubmit={handleUpload} style={{ padding: 20 }}>
+          {contextReady ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+              <span className="a2l-eyebrow-sm">Enviando para</span>
+              <Badge tone="brand">{discipline}</Badge>
+              <Badge tone="mint">{subarea}</Badge>
+            </div>
+          ) : (
+            <Alert tone="warning" style={{ marginBottom: 16 }}>
+              Selecione disciplina e subárea no contexto acima antes de enviar.
+            </Alert>
+          )}
+
+          <Field label="Arquivo (.txt ou .pdf)" required>
             <input
               type="file"
               accept=".txt,.pdf,text/plain,application/pdf"
               onChange={handleFileChange}
               required
-              style={sectionStyles.input}
+              className="a2l-file"
             />
-          </label>
+          </Field>
 
-          <button
+          <Button
             type="submit"
-            disabled={!file || !discipline || !subarea}
-            style={{
-              ...sectionStyles.primaryBtn,
-              opacity: !file || !discipline || !subarea ? 0.6 : 1,
-            }}
+            icon={<LuUpload size={17} />}
+            disabled={!file || !contextReady}
+            style={{ marginTop: 16 }}
           >
-            Enviar
-          </button>
-        </form>
-        {!!status && <p style={sectionStyles.status}>{status}</p>}
+            Enviar documento
+          </Button>
+
+          {!!status && <p className="a2l-hint" style={{ marginTop: 12 }}>{status}</p>}
+        </Card>
       </section>
 
-      <section style={{ marginBottom: 32 }}>
-        <h3 style={sectionStyles.heading}>Seus documentos</h3>
+      <section>
+        <h3 style={{ fontSize: 'var(--a2l-text-lg)', marginBottom: 14 }}>Seus documentos</h3>
         {docs.length === 0 ? (
-          <p style={sectionStyles.muted}>Nenhum documento enviado ainda.</p>
+          <Card quiet>
+            <EmptyState
+              icon={<LuInbox size={22} />}
+              title="Nenhum documento enviado"
+              description="Envie um PDF ou TXT acima para gerar questões automaticamente."
+            />
+          </Card>
         ) : (
-          <div style={sectionStyles.grid}>
+          <div className="a2l-grid a2l-grid--wide">
             {docs.map(d => (
-              <button
+              <Card
                 key={d.id}
-                type="button"
+                interactive
+                selected={selectedDoc?.id === d.id}
                 onClick={() => loadExamples(d)}
-                style={{
-                  ...sectionStyles.docCard,
-                  borderColor: selectedDoc?.id === d.id ? '#00796b' : '#ccc',
-                }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && loadExamples(d)}
+                style={{ padding: 16 }}
               >
-                <strong>{d.filename}</strong>
-                <span style={sectionStyles.meta}>
-                  {new Date(d.created_at).toLocaleString()}
-                </span>
-                <span style={sectionStyles.meta}>{d.discipline} / {d.subarea}</span>
-              </button>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  <span className="a2l-icon-chip a2l-icon-chip--neutral" style={{ width: 34, height: 34, borderRadius: 11 }}>
+                    <LuFileText size={17} />
+                  </span>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div
+                      style={{
+                        fontFamily: 'var(--a2l-font-display)', fontWeight: 700,
+                        color: 'var(--a2l-ink-900)', overflow: 'hidden',
+                        textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}
+                      title={d.filename}
+                    >
+                      {d.filename}
+                    </div>
+                    <div className="a2l-hint" style={{ marginTop: 2 }}>
+                      {new Date(d.created_at).toLocaleString('pt-BR')}
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+                      <Badge tone="neutral">{d.discipline}</Badge>
+                      <Badge tone="neutral">{d.subarea}</Badge>
+                    </div>
+                  </div>
+                </div>
+              </Card>
             ))}
           </div>
         )}
       </section>
 
       {selectedDoc && (
-        <section>
-          <h3 style={sectionStyles.heading}>
-            Exemplos (sessão): {selectedDoc.filename}
-          </h3>
-          <button
-            type="button"
-            onClick={generateExamples}
-            disabled={loadingEx}
-            style={sectionStyles.secondaryBtn}
-          >
-            Gerar mais exemplos
-          </button>
+        <section className="a2l-anim-in">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
+            <h3 style={{ fontSize: 'var(--a2l-text-lg)', flex: 1, minWidth: 200 }}>
+              Exemplos de <span style={{ color: 'var(--a2l-brand-600)' }}>{selectedDoc.filename}</span>
+            </h3>
+            <Button
+              variant="soft"
+              size="sm"
+              icon={loadingEx ? <LuRefreshCw size={14} /> : <LuSparkles size={14} />}
+              onClick={generateExamples}
+              disabled={loadingEx}
+            >
+              Gerar mais exemplos
+            </Button>
+          </div>
 
           {loadingEx ? (
-            <p style={sectionStyles.muted}>Carregando exemplos…</p>
+            <Loader label="Carregando exemplos…" />
           ) : examples.length === 0 ? (
-            <p style={sectionStyles.muted}>Sem exemplos para este documento.</p>
+            <Card quiet>
+              <EmptyState
+                icon={<LuSparkles size={22} />}
+                title="Sem exemplos para este documento"
+                description="Use “Gerar mais exemplos” para criar questões a partir deste conteúdo."
+              />
+            </Card>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
+            <div className="a2l-stack" style={{ gap: 10 }}>
               {examples.map((ex, i) => {
                 const userMsg = ex.messages[1].content
                 const assistant = JSON.parse(ex.messages[2].content)
                 const { math_reasoning, math_formula, math_solution, alternatives = [] } = assistant
 
                 return (
-                  <details key={i} style={sectionStyles.exampleCard}>
-                    <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>
-                      {userMsg}
-                    </summary>
-                    <button
-                      type="button"
-                      onClick={() => deleteExample(ex.question_id)}
-                      style={sectionStyles.dangerBtn}
-                    >
-                      Excluir exemplo
-                    </button>
-                    <div style={{ marginTop: 8 }}>
-                      <strong>Raciocínio:</strong>
-                      <pre style={sectionStyles.pre}>{math_reasoning}</pre>
-                      <strong>Fórmula:</strong>
-                      <pre style={sectionStyles.pre}>{JSON.stringify(math_formula, null, 2)}</pre>
-                      <strong>Solução:</strong>
-                      <pre style={sectionStyles.pre}>{math_solution}</pre>
-                      <strong>Alternativas:</strong>
-                      <ul>
+                  <details key={i} className="a2l-details">
+                    <summary>{userMsg}</summary>
+                    <div className="a2l-details__body">
+                      <div className="a2l-eyebrow-sm">Raciocínio</div>
+                      <pre className="a2l-pre">{math_reasoning}</pre>
+
+                      <div className="a2l-eyebrow-sm">Fórmula</div>
+                      <pre className="a2l-pre">{JSON.stringify(math_formula, null, 2)}</pre>
+
+                      <div className="a2l-eyebrow-sm">Solução</div>
+                      <pre className="a2l-pre">{math_solution}</pre>
+
+                      <div className="a2l-eyebrow-sm">Alternativas</div>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
                         {alternatives.map((alt, idx) => (
-                          <li
-                            key={idx}
-                            style={{ fontWeight: alt === math_solution ? 'bold' : 'normal' }}
-                          >
+                          <Badge key={idx} tone={alt === math_solution ? 'success' : 'neutral'}>
                             {alt}
-                          </li>
+                          </Badge>
                         ))}
-                      </ul>
+                      </div>
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={<LuTrash2 size={14} />}
+                        onClick={() => deleteExample(ex.question_id)}
+                        style={{ marginTop: 16, color: 'var(--a2l-danger)' }}
+                      >
+                        Excluir exemplo
+                      </Button>
                     </div>
                   </details>
                 )
@@ -289,76 +327,4 @@ export default function DocumentsSection({
       )}
     </div>
   )
-}
-
-const sectionStyles = {
-  heading: { color: '#00796b', marginBottom: 12, fontSize: 18 },
-  hint: { color: '#666', fontSize: 14, marginBottom: 16 },
-  contextNote: { fontSize: 14, marginBottom: 4, color: '#333' },
-  contextHint: { color: '#888', fontWeight: 'normal' },
-  contextWarn: { color: '#e65100' },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 14,
-    background: '#fff8e1',
-    padding: 20,
-    borderRadius: 12,
-    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-  },
-  label: { display: 'flex', flexDirection: 'column', gap: 4, fontWeight: 'bold', fontSize: 14 },
-  input: { padding: 8, borderRadius: 6, border: '1px solid #ccc', fontSize: 15 },
-  primaryBtn: {
-    padding: 12,
-    backgroundColor: '#4caf50',
-    color: '#fff',
-    fontSize: 16,
-    border: 'none',
-    borderRadius: 6,
-    cursor: 'pointer',
-  },
-  secondaryBtn: {
-    marginBottom: 12,
-    padding: 8,
-    backgroundColor: '#fdd835',
-    border: 'none',
-    borderRadius: 6,
-    cursor: 'pointer',
-  },
-  dangerBtn: {
-    padding: '6px 10px',
-    background: '#e53935',
-    color: 'white',
-    border: 'none',
-    borderRadius: 6,
-    marginTop: 8,
-    cursor: 'pointer',
-  },
-  status: { marginTop: 10, textAlign: 'center', color: '#333' },
-  muted: { color: '#666' },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-    gap: 12,
-  },
-  docCard: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    gap: 4,
-    padding: 12,
-    border: '2px solid #ccc',
-    borderRadius: 8,
-    background: '#fafafa',
-    cursor: 'pointer',
-    textAlign: 'left',
-  },
-  meta: { fontSize: 12, color: '#666' },
-  exampleCard: {
-    border: '1px solid #ddd',
-    borderRadius: 8,
-    padding: 12,
-    background: '#fff',
-  },
-  pre: { background: '#f5f5f5', padding: 8, whiteSpace: 'pre-wrap', fontSize: 13 },
 }

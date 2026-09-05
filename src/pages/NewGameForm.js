@@ -6,6 +6,8 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { useDropzone } from 'react-dropzone';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { LuUpload, LuImage, LuFileArchive, LuGamepad2, LuPlus } from 'react-icons/lu';
+import { AppShell, Card, Button, Field, Loader, PageHead, Switch } from '../components/ui';
 
 export default function NewGameForm() {
   const [user, loadingAuth] = useAuthState(auth);
@@ -62,7 +64,7 @@ export default function NewGameForm() {
   });
 
   if (loadingAuth) {
-    return <p style={{ textAlign: 'center', padding: 20 }}>Carregando…</p>;
+    return <Loader />;
   }
 
   const handleSubmit = async e => {
@@ -143,67 +145,97 @@ export default function NewGameForm() {
   };
 
   return (
-    <div style={styles.container}>
-      <button onClick={() => navigate(-1)} style={styles.backButton}>← Voltar</button>
-      <h2 style={styles.heading}>🎮 Novo Jogo</h2>
-      <form onSubmit={handleSubmit} style={styles.form}>
-        <label style={styles.label}>Nome</label>
-        <input value={name} onChange={e => setName(e.target.value)} style={styles.input} />
+    <AppShell width="md" back={-1}>
+      <PageHead
+        className="a2l-anim-in"
+        eyebrow={<><LuGamepad2 size={13} /> Administração</>}
+        title="Novo jogo"
+        subtitle="Cadastre o jogo, envie o ícone e o pacote .zip da build."
+      />
 
-        <label style={styles.label}>Ícone (.png, .jpg)</label>
-        <div {...getIconRootProps()} style={styles.dropzone}>
-          <input {...getIconInputProps()} />
-          {isIconDragActive
-            ? 'Solte o ícone aqui…'
-            : iconFile
-            ? iconFile.name
-            : 'Clique ou arraste o ícone (.png/.jpg)'}
+      <Card hero as="form" onSubmit={handleSubmit} className="a2l-anim-in a2l-delay-1">
+        <div className="a2l-stack" style={{ gap: 18 }}>
+          <Field label="Nome do jogo" required>
+            <input
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Ex: Desafio de Geometria"
+            />
+          </Field>
+
+          <div className="a2l-field">
+            <span className="a2l-label"><LuImage size={14} /> Ícone (.png, .jpg)</span>
+            <div
+              {...getIconRootProps()}
+              className="a2l-dropzone"
+              data-active={isIconDragActive || undefined}
+              data-filled={iconFile ? true : undefined}
+            >
+              <input {...getIconInputProps()} />
+              <LuUpload size={20} />
+              <span>
+                {isIconDragActive
+                  ? 'Solte o ícone aqui…'
+                  : iconFile
+                  ? iconFile.name
+                  : 'Clique ou arraste o ícone (.png/.jpg)'}
+              </span>
+            </div>
+          </div>
+
+          <div className="a2l-field">
+            <span className="a2l-label"><LuFileArchive size={14} /> Arquivo do jogo (.zip)</span>
+            <div
+              {...getGameRootProps()}
+              className="a2l-dropzone"
+              data-active={isGameDragActive || undefined}
+              data-filled={gameFile ? true : undefined}
+            >
+              <input {...getGameInputProps()} />
+              <LuUpload size={20} />
+              <span>
+                {isGameDragActive
+                  ? 'Solte o .zip aqui…'
+                  : gameFile
+                  ? gameFile.name
+                  : 'Clique ou arraste o .zip'}
+              </span>
+            </div>
+          </div>
+
+          <div className="a2l-stack" style={{ gap: 14, padding: '4px 0' }}>
+            <Switch
+              checked={hasWarmup}
+              onChange={e => setHasWarmup(e.target.checked)}
+              label="Possui aquecimento"
+              hint="Exibe uma atividade de preparação antes de jogar."
+            />
+            <Switch
+              checked={hasOptions}
+              onChange={e => setHasOptions(e.target.checked)}
+              label="Precisa de opções"
+              hint="O aluno escolhe disciplina e subárea antes de começar."
+            />
+          </div>
+
+          {progress > 0 && (
+            <div>
+              <div className="a2l-progress">
+                <div className="a2l-progress__bar" style={{ width: `${progress}%` }} />
+              </div>
+              <span className="a2l-hint" style={{ marginTop: 6, display: 'block' }}>
+                Enviando… {progress}%
+              </span>
+            </div>
+          )}
+
+          <Button type="submit" size="lg" loading={loading} icon={<LuPlus size={18} />}>
+            {loading ? 'Criando…' : 'Criar jogo'}
+          </Button>
         </div>
+      </Card>
 
-        <label style={styles.label}>Arquivo do Jogo (.zip)</label>
-        <div {...getGameRootProps()} style={styles.dropzone}>
-          <input {...getGameInputProps()} />
-          {isGameDragActive
-            ? 'Solte o .zip aqui…'
-            : gameFile
-            ? gameFile.name
-            : 'Clique ou arraste o .zip'}
-        </div>
-
-        <div style={styles.checkboxRow}>
-          <label style={styles.checkboxLabel}>
-            <input type="checkbox" checked={hasWarmup} onChange={e => setHasWarmup(e.target.checked)} />
-            Possui warmup
-            <span style={styles.infoText}>necessário atividade antes de jogar</span>
-          </label>
-          <label style={styles.checkboxLabel}>
-            <input type="checkbox" checked={hasOptions} onChange={e => setHasOptions(e.target.checked)} />
-            Precisa de opções
-            <span style={styles.infoText}>configurar disciplina e subárea</span>
-          </label>
-        </div>
-
-        {progress > 0 && <progress value={progress} max="100" style={styles.progress}>{progress}%</progress>}
-        <button type="submit" disabled={loading} style={styles.createButton}>
-          {loading ? 'Criando…' : 'Criar Jogo'}
-        </button>
-      </form>
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
-    </div>
+    </AppShell>
   );
 }
-
-const styles = {
-  container: { maxWidth: 960, margin: '40px auto', padding: 32, backgroundColor: '#fff8f0', borderRadius: 12, boxShadow: '0 0 10px rgba(0,0,0,0.1)' },
-  backButton: { background: 'transparent', border: 'none', fontSize: 16, color: '#333', marginBottom: 16, cursor: 'pointer' },
-  heading: { textAlign: 'center', marginBottom: 24, color: '#6a1b9a' },
-  form: { display: 'flex', flexDirection: 'column', gap: 16 },
-  label: { fontSize: 14, color: '#4a148c' },
-  input: { padding: 8, fontSize: 14, borderRadius: 6, border: '1px solid #aaa' },
-  dropzone: { padding: 20, border: '2px dashed #ccc', borderRadius: 6, textAlign: 'center', backgroundColor: '#eee', cursor: 'pointer' },
-  checkboxRow: { display: 'flex', flexDirection: 'column', gap: 12 },
-  checkboxLabel: { fontSize: 14, color: '#555' },
-  infoText: { fontSize: 12, color: '#777', marginLeft: 24, marginTop: 4 },
-  progress: { width: '100%', marginTop: 8 },
-  createButton: { padding: '10px 20px', background: '#28a745', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 16 }
-};

@@ -7,34 +7,25 @@ import axios from 'axios';
 import { useDropzone } from 'react-dropzone';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { LuPackage, LuUpload, LuPencil, LuCheck, LuX, LuImage } from 'react-icons/lu';
+import { AppShell, Card, Button, Badge, Loader, PageHead } from '../components/ui';
 
 // Modal de confirmação para ativar versão
 function ConfirmModal({ isOpen, title, message, onConfirm, onCancel }) {
   if (!isOpen) return null;
   return (
-    <div style={modalStyles.overlay} role="dialog" aria-modal="true">
-      <div style={modalStyles.modal}>
-        <h2>{title}</h2>
-        <p>{message}</p>
-        <div style={modalStyles.buttons}>
-          <button onClick={onCancel} style={modalStyles.cancelBtn}>Cancelar</button>
-          <button onClick={onConfirm} style={modalStyles.confirmBtn}>Confirmar</button>
+    <div className="a2l-overlay" role="dialog" aria-modal="true">
+      <div className="a2l-modal">
+        <h2 style={{ fontSize: 'var(--a2l-text-lg)' }}>{title}</h2>
+        <p style={{ color: 'var(--a2l-ink-500)', marginTop: 8 }}>{message}</p>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 22 }}>
+          <Button variant="secondary" onClick={onCancel}>Cancelar</Button>
+          <Button onClick={onConfirm} icon={<LuCheck size={16} />}>Confirmar</Button>
         </div>
       </div>
     </div>
   );
 }
-
-const modalStyles = {
-  overlay: {
-    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-    background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
-  },
-  modal: { background: '#fff', padding: 24, borderRadius: 8, maxWidth: 400, width: '90%' },
-  buttons: { display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 },
-  cancelBtn: { background: '#ccc', border: 'none', padding: '8px 16px', borderRadius: 4, cursor: 'pointer' },
-  confirmBtn: { background: '#28a745', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 4, cursor: 'pointer' },
-};
 
 export default function GameDetails() {
   const { id: gameId } = useParams();
@@ -283,11 +274,11 @@ export default function GameDetails() {
   };
 
   if (gameInfo === null) {
-    return <p style={{ textAlign:'center', padding:20 }}>Carregando…</p>;
+    return <Loader />;
   }
 
   return (
-    <div style={styles.container}>
+    <AppShell width="lg" back={-1}>
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
       <ConfirmModal
         isOpen={!!confirmingVersion}
@@ -297,151 +288,221 @@ export default function GameDetails() {
         onCancel={() => setConfirmingVersion(null)}
       />
 
-      <button onClick={() => navigate(-1)} style={styles.back}>← Voltar</button>
-      <h2 style={styles.title}>Detalhes do Jogo</h2>
+      <PageHead
+        className="a2l-anim-in"
+        eyebrow={<><LuPackage size={13} /> Administração</>}
+        title="Detalhes do jogo"
+        subtitle="Informações, histórico de versões e publicação de novos builds."
+      />
 
       {/* Informações do Jogo */}
-      <section style={styles.section}>
-        <h3 style={styles.sectionTitle}>Informações do Jogo</h3>
+      <Card hero className="a2l-anim-in a2l-delay-1" style={{ marginBottom: 20 }}>
+        <h3 style={{ fontSize: 'var(--a2l-text-lg)', marginBottom: 18 }}>Informações do jogo</h3>
         {gameInfo ? (
-          <div style={styles.infoCard}>
+          <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
             {newIconFile ? (
-              <img src={URL.createObjectURL(newIconFile)} alt="preview" style={styles.icon} />
+              <img src={URL.createObjectURL(newIconFile)} alt="Pré-visualização do ícone" style={styles.icon} />
             ) : iconUrl ? (
-              <img src={iconUrl} alt="ícone" style={styles.icon} />
+              <img src={iconUrl} alt="Ícone do jogo" style={styles.icon} />
             ) : (
-              <div style={styles.iconPlaceholder}>No Icon</div>
+              <div style={styles.iconPlaceholder}><LuImage size={24} /></div>
             )}
-            <div style={{ flex: 1 }}>
+
+            <div style={{ flex: '1 1 260px', minWidth: 0 }}>
               {!isEditing ? (
-                <ul style={styles.infoList}>
-                  <li><strong>Nome:</strong> {gameInfo.name}</li>
-                  <li><strong>ID:</strong> {gameId}</li>
-                  <li><strong>Possui Opções:</strong> {gameInfo.has_options ? 'Sim' : 'Não'}</li>
-                  <li><strong>Possui Warmup:</strong> {gameInfo.has_warmup ? 'Sim' : 'Não'}</li>
-                  <li><strong>Versão Ativa:</strong> {gameInfo.active_version || 'Nenhuma'}</li>
-                </ul>
+                <dl style={styles.infoList}>
+                  <div style={styles.infoRow}>
+                    <dt style={styles.infoKey}>Nome</dt>
+                    <dd style={styles.infoVal}>{gameInfo.name}</dd>
+                  </div>
+                  <div style={styles.infoRow}>
+                    <dt style={styles.infoKey}>ID</dt>
+                    <dd style={{ ...styles.infoVal, fontFamily: 'var(--a2l-font-mono)', fontSize: 'var(--a2l-text-sm)' }}>{gameId}</dd>
+                  </div>
+                  <div style={styles.infoRow}>
+                    <dt style={styles.infoKey}>Opções</dt>
+                    <dd style={styles.infoVal}>
+                      <Badge tone={gameInfo.has_options ? 'success' : 'neutral'}>
+                        {gameInfo.has_options ? 'Sim' : 'Não'}
+                      </Badge>
+                    </dd>
+                  </div>
+                  <div style={styles.infoRow}>
+                    <dt style={styles.infoKey}>Aquecimento</dt>
+                    <dd style={styles.infoVal}>
+                      <Badge tone={gameInfo.has_warmup ? 'success' : 'neutral'}>
+                        {gameInfo.has_warmup ? 'Sim' : 'Não'}
+                      </Badge>
+                    </dd>
+                  </div>
+                  <div style={styles.infoRow}>
+                    <dt style={styles.infoKey}>Versão ativa</dt>
+                    <dd style={styles.infoVal}>
+                      <Badge tone={gameInfo.active_version ? 'brand' : 'neutral'}>
+                        {gameInfo.active_version || 'Nenhuma'}
+                      </Badge>
+                    </dd>
+                  </div>
+                </dl>
               ) : (
-                <div style={styles.formInline}>
-                  <label>
-                    Nome:
-                    <input style={styles.inputInline} value={editName} onChange={e => setEditName(e.target.value)} />
+                <div className="a2l-stack" style={{ gap: 14 }}>
+                  <div className="a2l-field">
+                    <span className="a2l-label">Nome</span>
+                    <input className="a2l-input" value={editName} onChange={e => setEditName(e.target.value)} />
+                  </div>
+                  <label className="a2l-option" style={{ maxWidth: 320 }}>
+                    <input className="a2l-check" type="checkbox" checked={editHasOptions} onChange={e => setEditHasOptions(e.target.checked)} />
+                    Precisa de opções
                   </label>
-                  <label>
-                    <input type="checkbox" checked={editHasOptions} onChange={e => setEditHasOptions(e.target.checked)} /> Precisa de Opções
+                  <label className="a2l-option" style={{ maxWidth: 320 }}>
+                    <input className="a2l-check" type="checkbox" checked={editHasWarmup} onChange={e => setEditHasWarmup(e.target.checked)} />
+                    Possui aquecimento
                   </label>
-                  <label>
-                    <input type="checkbox" checked={editHasWarmup} onChange={e => setEditHasWarmup(e.target.checked)} /> Possui Warmup
-                  </label>
-                  <label style={{ marginTop: 8 }}>
-                    Ícone:
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={e => setNewIconFile(e.target.files[0] || null)} 
-                      style={{ display: 'block', marginTop: 4 }}
+                  <div className="a2l-field">
+                    <span className="a2l-label">Ícone</span>
+                    <input
+                      className="a2l-file"
+                      type="file"
+                      accept="image/*"
+                      onChange={e => setNewIconFile(e.target.files[0] || null)}
                     />
-                  </label>
+                  </div>
                 </div>
               )}
-              <button onClick={isEditing ? handleSaveInfo : handleEditToggle} style={styles.editButton}>
-                {isEditing ? 'Salvar' : 'Editar'}
-              </button>
-              {isEditing && <button onClick={handleEditToggle} style={styles.cancelButton}>Cancelar</button>}
+
+              <div style={{ display: 'flex', gap: 10, marginTop: 18, flexWrap: 'wrap' }}>
+                <Button
+                  onClick={isEditing ? handleSaveInfo : handleEditToggle}
+                  icon={isEditing ? <LuCheck size={16} /> : <LuPencil size={15} />}
+                >
+                  {isEditing ? 'Salvar' : 'Editar'}
+                </Button>
+                {isEditing && (
+                  <Button variant="secondary" icon={<LuX size={16} />} onClick={handleEditToggle}>
+                    Cancelar
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
-        ) : <p>Carregando informações...</p>}
-      </section>
+        ) : (
+          <Loader label="Carregando informações…" />
+        )}
+      </Card>
 
       {/* Histórico de Deploys */}
-      <section style={styles.section}>
-        <h3 style={styles.sectionTitle}>Histórico de Deploys</h3>
-        <div style={styles.tableWrapper}>
-          <table style={styles.table}>
+      <Card className="a2l-anim-in a2l-delay-2" style={{ marginBottom: 20 }}>
+        <h3 style={{ fontSize: 'var(--a2l-text-lg)', marginBottom: 16 }}>Histórico de deploys</h3>
+        <div className="a2l-table-wrap">
+          <table className="a2l-table">
             <thead>
               <tr>
-                <th style={styles.th}>Versão</th>
-                <th style={styles.th}>Data</th>
-                <th style={styles.th}>Quem</th>
-                <th style={styles.th}>Notas</th>
-                <th style={styles.th}>Ação</th>
+                <th>Versão</th>
+                <th>Data</th>
+                <th>Quem</th>
+                <th>Notas</th>
+                <th>Ação</th>
               </tr>
             </thead>
             <tbody>
               {deploys.map(d => (
                 <tr key={d.id}>
-                  <td style={styles.td}>{d.version}</td>
-                  <td style={styles.td}>{new Date(d.deployed_at).toLocaleString()}</td>
-                  <td style={styles.td}>{d.deployed_by_name || d.deployed_by}</td>
-                  <td style={styles.td}>{d.notes || '–'}</td>
-                  <td style={styles.td}>
+                  <td style={{ fontFamily: 'var(--a2l-font-mono)', fontSize: 'var(--a2l-text-sm)' }}>{d.version}</td>
+                  <td>{new Date(d.deployed_at).toLocaleString('pt-BR')}</td>
+                  <td>{d.deployed_by_name || d.deployed_by}</td>
+                  <td>{d.notes || '–'}</td>
+                  <td>
                     {gameInfo.active_version === d.version ? (
-                      <span style={styles.activeLabel}>Ativa</span>
+                      <Badge tone="success" icon={<LuCheck size={12} />}>Ativa</Badge>
                     ) : (
-                      <button onClick={() => confirmActivate(d.version)} style={styles.activateButton}>Ativar</button>
+                      <Button variant="soft" size="sm" onClick={() => confirmActivate(d.version)}>
+                        Ativar
+                      </Button>
                     )}
                   </td>
                 </tr>
               ))}
               {!deploys.length && (
-                <tr><td colSpan={5} style={styles.empty}>Nenhum deploy encontrado.</td></tr>
+                <tr>
+                  <td colSpan={5} style={{ padding: 28, textAlign: 'center', color: 'var(--a2l-ink-400)' }}>
+                    Nenhum deploy encontrado.
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
         </div>
-      </section>
+      </Card>
 
       {/* Novo Deploy */}
-      <section style={styles.section}>
-        <h3 style={styles.sectionTitle}>Novo Deploy</h3>
+      <Card className="a2l-anim-in a2l-delay-3">
+        <h3 style={{ fontSize: 'var(--a2l-text-lg)', marginBottom: 16 }}>Novo deploy</h3>
+
         <div
           {...getRootProps()}
-          style={{ ...styles.uploadCard, border: isDragActive ? '2px dashed #1976d2' : '2px dashed #ccc' }}
+          className="a2l-dropzone"
+          data-active={isDragActive || undefined}
+          data-filled={file ? true : undefined}
         >
           <input {...getInputProps()} />
-          {file ? <p>{file.name} ({(file.size/1024/1024).toFixed(2)} MB)</p> : <p>Arraste e solte seu .zip aqui, ou clique para selecionar</p>}
+          <LuUpload size={20} />
+          <span>
+            {file
+              ? `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`
+              : 'Arraste e solte seu .zip aqui, ou clique para selecionar'}
+          </span>
         </div>
-        {uploadProgress > 0 && <progress value={uploadProgress} max="100" style={styles.progress}>{uploadProgress}%</progress>}
+
+        {uploadProgress > 0 && (
+          <div style={{ marginTop: 14 }}>
+            <div className="a2l-progress">
+              <div className="a2l-progress__bar" style={{ width: `${uploadProgress}%` }} />
+            </div>
+            <span className="a2l-hint" style={{ marginTop: 6, display: 'block' }}>
+              Enviando… {uploadProgress}%
+            </span>
+          </div>
+        )}
+
         <textarea
+          className="a2l-input"
           placeholder="Notas sobre esta versão"
           disabled={loading}
           value={notes}
           onChange={e => setNotes(e.target.value)}
-          style={styles.textarea}
+          style={{ marginTop: 16 }}
         />
-        <button
+
+        <Button
           onClick={handleDeploy}
+          loading={loading}
           disabled={loading || !file}
-          style={styles.uploadButton}
-        >{loading ? 'Enviando…' : 'Fazer Deploy'}</button>
-      </section>
-    </div>
+          icon={<LuUpload size={17} />}
+          style={{ marginTop: 16 }}
+        >
+          {loading ? 'Enviando…' : 'Fazer deploy'}
+        </Button>
+      </Card>
+    </AppShell>
   );
 }
 
 const styles = {
-  container: { padding:24, maxWidth:900, margin:'40px auto', background:'#fafafa', borderRadius:8, boxShadow:'0 4px 12px rgba(0,0,0,0.1)' },
-  back: { background:'transparent', border:'none', cursor:'pointer', fontSize:16, color:'#555', marginBottom:16 },
-  title: { margin:'0 0 16px', fontSize:28, color:'#333' },
-  section: { marginBottom:32 },
-  sectionTitle: { fontSize:20, marginBottom:12, color:'#444', borderBottom:'2px solid #ddd', paddingBottom:4 },
-  infoCard: { display:'flex', gap:16, alignItems:'center', background:'#fff', padding:16, borderRadius:6, boxShadow:'0 2px 6px rgba(0,0,0,0.05)' },
-  icon: { width:64, height:64, borderRadius:8, objectFit:'cover' },
-  iconPlaceholder: { width:64, height:64, borderRadius:8, background:'#e0e0e0', display:'flex', alignItems:'center', justifyContent:'center', color:'#999' },
-  infoList: { listStyle:'none', padding:0, margin:0, display:'flex', flexDirection:'column', gap:4 },
-  formInline: { display:'flex', flexDirection:'column', gap:8 },
-  inputInline: { marginLeft:8, padding:4, borderRadius:4, border:'1px solid #ccc' },
-  editButton: { marginTop:12, padding:'6px 12px', background:'#1976d2', color:'#fff', border:'none', borderRadius:4, cursor:'pointer' },
-  cancelButton: { marginTop:12, marginLeft:8, padding:'6px 12px', background:'#ccc', color:'#333', border:'none', borderRadius:4, cursor:'pointer' },
-  tableWrapper: { overflowX:'auto' },
-  table: { width:'100%', borderCollapse:'collapse' },
-  th: { textAlign:'left', borderBottom:'2px solid #999', padding:10, background:'#e0e0e0', color:'#333' },
-  td: { padding:10, borderBottom:'1px solid #ddd' },
-  activateButton: { padding:'4px 12px', background:'#28a745', color:'#fff', border:'none', borderRadius:4, cursor:'pointer' },
-  activeLabel: { padding:'4px 12px', background:'#ccc', color:'#333', borderRadius:4, fontSize:'0.9em' },
-  empty: { padding:16, textAlign:'center', color:'#999' },
-  uploadCard: { display:'flex', flexDirection:'column', gap:12, padding:16, background:'#fff', borderRadius:6, border:'1px solid #ddd', alignItems:'center', textAlign:'center', cursor:'pointer' },
-  progress: { width:'100%', marginTop:8 },
-  textarea: { width:'100%', minHeight:80, padding:8, borderRadius:4, border:'1px solid #ccc', resize:'vertical', marginTop:12 },
-  uploadButton: { marginTop:12, padding:'10px 24px', background:'#007bff', color:'#fff', border:'none', borderRadius:4, cursor:'pointer', fontSize:16 }
+  icon: {
+    width: 76, height: 76, borderRadius: 'var(--a2l-radius-md)',
+    objectFit: 'cover', border: '1px solid var(--a2l-line)', flex: 'none',
+  },
+  iconPlaceholder: {
+    width: 76, height: 76, borderRadius: 'var(--a2l-radius-md)',
+    background: 'var(--a2l-surface-2)', border: '1px solid var(--a2l-line)',
+    display: 'grid', placeItems: 'center', color: 'var(--a2l-ink-400)', flex: 'none',
+  },
+  infoList: { margin: 0, display: 'flex', flexDirection: 'column', gap: 10 },
+  infoRow: { display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' },
+  infoKey: {
+    minWidth: 120, fontFamily: 'var(--a2l-font-display)', fontWeight: 700,
+    fontSize: 'var(--a2l-text-xs)', textTransform: 'uppercase',
+    letterSpacing: '0.05em', color: 'var(--a2l-ink-500)',
+  },
+  infoVal: { margin: 0, color: 'var(--a2l-ink-900)', fontWeight: 600 },
 };

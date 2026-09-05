@@ -3,6 +3,9 @@ import React, { useState, useEffect } from 'react'
 import { auth } from '../firebase'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuthState } from 'react-firebase-hooks/auth'
+import { LuBookOpen, LuCheck, LuSkipForward, LuLightbulb } from 'react-icons/lu'
+import { AppShell, Card, Button, Alert, Loader, PageHead, Badge } from '../components/ui'
+import { API_BASE_URL } from '../api/config';
 
 export default function Warmup() {
   const [profile, setProfile]       = useState(null)
@@ -49,7 +52,7 @@ export default function Warmup() {
         const token = await user.getIdToken()
 
         // busca profile
-        const meRes = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/me', {
+        const meRes = await fetch(`${API_BASE_URL}/me`, {
           headers: { Authorization: `Bearer ${token}` }
         })
         if (!meRes.ok) throw new Error('Falha ao carregar perfil')
@@ -57,7 +60,7 @@ export default function Warmup() {
         setProfile(pr)
 
         // busca exemplo de warmup
-        const url = new URL('https://adapt2learn-895112363610.us-central1.run.app/api/warmup_example')
+        const url = new URL(`${API_BASE_URL}/warmup_example`, window.location.origin)
         url.searchParams.set('discipline', discipline)
         url.searchParams.set('subarea', subarea)
         url.searchParams.set('session_number', sessionNumber)
@@ -78,7 +81,7 @@ export default function Warmup() {
   }, [user, loadingAuth, discipline, subarea, sessionNumber, navigate])
 
   if (loadingAuth || loading) {
-    return <p style={styles.loading}>🔄 Carregando aquecimento…</p>
+    return <Loader label="Preparando seu aquecimento…" />
   }
 
   const onFinish = async () => {
@@ -95,7 +98,7 @@ export default function Warmup() {
           { role: 'assistant', content: ''                }
         ]
       }]
-      const res = await fetch('https://adapt2learn-895112363610.us-central1.run.app/api/warmup_responses', {
+      const res = await fetch(`${API_BASE_URL}/warmup_responses`, {
         method:  'POST',
         headers: {
           'Content-Type':  'application/json',
@@ -115,91 +118,58 @@ export default function Warmup() {
   }
 
   return (
-    <div style={styles.container}>
-      <button onClick={() => navigate(-1)} style={styles.back}>← Voltar</button>
-      <h2 style={styles.title}>📖 Aquecimento</h2>
+    <AppShell width="md" back={-1}>
+      <PageHead
+        className="a2l-anim-in"
+        eyebrow={<><LuBookOpen size={13} /> Antes de jogar</>}
+        title="Aquecimento"
+        subtitle="Leia com calma. Pensar no exemplo antes de começar ajuda a fixar o raciocínio."
+      />
 
       {error ? (
-        <>
-          <p style={styles.error}>{error}</p>
-          <button
-            onClick={redirectToGame}
-            style={{ ...styles.finish, backgroundColor: '#ffa726' }}
-          >
-            Pular Aquecimento
-          </button>
-        </>
+        <div className="a2l-stack a2l-anim-in" style={{ gap: 16 }}>
+          <Alert tone="error">{error}</Alert>
+          <Button variant="secondary" icon={<LuSkipForward size={17} />} onClick={redirectToGame}>
+            Pular aquecimento e jogar
+          </Button>
+        </div>
       ) : (
-        <>
-          <div style={styles.card}>
-            <p style={styles.question}>{example.question}</p>
-          </div>
-          <button
-            onClick={onFinish}
-            disabled={saving}
-            style={styles.finish}
-          >
-            Concluir Aquecimento{saving ? '…' : ''}
-          </button>
-        </>
-      )}
-    </div>
-  )
-}
+        <div className="a2l-stack a2l-anim-in a2l-delay-1" style={{ gap: 20 }}>
+          <Card hero>
+            <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+              <span className="a2l-icon-chip a2l-icon-chip--sun"><LuLightbulb size={20} /></span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+                  {discipline && <Badge tone="brand">{discipline}</Badge>}
+                  {subarea && <Badge tone="mint">{subarea}</Badge>}
+                </div>
+                <p
+                  style={{
+                    fontFamily: 'var(--a2l-font-display)',
+                    fontSize: 'var(--a2l-text-lg)',
+                    lineHeight: 1.6,
+                    color: 'var(--a2l-ink-900)',
+                    fontWeight: 600,
+                  }}
+                >
+                  {example.question}
+                </p>
+              </div>
+            </div>
+          </Card>
 
-const styles = {
-  container: {
-    padding: 20,
-    maxWidth: 600,
-    margin: '40px auto',
-    backgroundColor: '#FFF8E1',
-    borderRadius: 12,
-    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-    fontFamily: '"Comic Sans MS", cursive, sans-serif',
-    textAlign: 'center',
-  },
-  back: {
-    background: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: 16,
-    marginBottom: 12
-  },
-  title: {
-    fontSize: 28,
-    color: '#FB8C00',
-    marginBottom: 24
-  },
-  card: {
-    backgroundColor: '#FFF3E0',
-    padding: 24,
-    borderRadius: 12,
-    marginBottom: 24,
-    boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
-  },
-  question: {
-    fontSize: 20,
-    color: '#6D4C41',
-    lineHeight: 1.4
-  },
-  finish: {
-    padding: '10px 20px',
-    fontSize: 16,
-    backgroundColor: '#66BB6A',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 8,
-    cursor: 'pointer'
-  },
-  loading: {
-    padding: 20,
-    textAlign: 'center',
-    fontSize: 18
-  },
-  error: {
-    padding: 20,
-    textAlign: 'center',
-    fontSize: 18,
-    color: 'red'
-  }
+          <Button
+            size="lg"
+            variant="accent"
+            icon={<LuCheck size={18} />}
+            onClick={onFinish}
+            loading={saving}
+            disabled={saving}
+          >
+            {saving ? 'Salvando…' : 'Concluir e jogar'}
+          </Button>
+        </div>
+      )}
+    </AppShell>
+  )
 }
