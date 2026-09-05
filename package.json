@@ -45,6 +45,7 @@
     ]
   },
   "devDependencies": {
+    "http-proxy-middleware": "^2.0.10",
     "typescript": "^4.9.5"
   }
 }
