@@ -32,6 +32,10 @@ module.exports = function setupProxy(app) {
       target: API_TARGET,
       changeOrigin: true,
       logLevel: 'warn',
+      // Cold start do Cloud Run leva ~10s; sem isto o proxy devolvia 504 antes
+      // de o backend responder.
+      proxyTimeout: 120_000,
+      timeout: 120_000,
       onError(err, req, res) {
         console.error(`[proxy] ${req.method} ${req.url} → ${err.message}`)
         if (!res.headersSent) res.writeHead(502, { 'Content-Type': 'application/json' })
