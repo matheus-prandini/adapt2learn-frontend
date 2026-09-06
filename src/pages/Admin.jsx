@@ -1,9 +1,7 @@
-import React, { useCallback, useEffect, useState } from 'react'
-import { getDownloadURL, ref as storageRef } from 'firebase/storage'
+import React, { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
 import { LuChartColumn, LuUsers, LuGamepad2, LuTarget, LuSettings } from 'react-icons/lu'
-import { storage } from '../firebase'
-import { apiJson } from '../api/httpClient'
+import { listGamesWithIcons } from '../api/games'
 import { SCHOOLS } from '../constants/schools'
 import { AppShell, PageHead, Tabs } from '../components/ui'
 import PersonalizationPanel from '../components/PersonalizationPanel'
@@ -23,11 +21,20 @@ const ADMIN_TABS = [
 /**
  * Casca do painel: abas, filtros compartilhados e a lista de jogos (usada por
  * três abas). Cada aba é dona dos próprios dados em pages/admin/*.
+ *
+ * Uma aba monta na primeira visita e depois só alterna com `hidden`: voltar a
+ * ela não refaz requests nem perde filtros/seleções. Nada carrega antes de ser
+ * visto pela primeira vez.
  */
 export default function Admin() {
   const [activeTab, setActiveTab] = useState('metrics')
+  const [visited, setVisited] = useState(() => new Set(['metrics']))
 
-  // Vivem aqui para sobreviver à troca de aba.
+  const selectTab = id => {
+    setActiveTab(id)
+    setVisited(prev => (prev.has(id) ? prev : new Set(prev).add(id)))
+  }
+
   const [selectedSchool, setSelectedSchool] = useState(SCHOOLS[1])
   const [sessionGameNames, setSessionGameNames] = useState([])
 
@@ -36,33 +43,27 @@ export default function Admin() {
 
   useEffect(() => {
     let cancelled = false
-    ;(async () => {
-      try {
-        const raw = await apiJson('/games', undefined, 'Erro ao carregar jogos.')
-        const withIcons = await Promise.all(
-          raw.map(async g => {
-            let iconUrl = ''
-            try {
-              iconUrl = await getDownloadURL(storageRef(storage, g.icon_url))
-            } catch {
-              /* sem ícone */
-            }
-            return { ...g, iconUrl }
-          })
-        )
-        if (!cancelled) setGames(withIcons)
-      } catch (err) {
+    listGamesWithIcons()
+      .then(list => {
+        if (!cancelled) setGames(list)
+      })
+      .catch(err => {
         if (!cancelled) toast.error(err.message)
-      } finally {
+      })
+      .finally(() => {
         if (!cancelled) setLoadingGames(false)
-      }
-    })()
+      })
     return () => {
       cancelled = true
     }
   }, [])
 
-  const removeGame = useCallback(id => setGames(prev => prev.filter(g => g.id !== id)), [])
+  const panel = (id, node) =>
+    visited.has(id) ? (
+      <div key={id} hidden={activeTab !== id}>
+        {node}
+      </div>
+    ) : null
 
   return (
     <AppShell width="xl" back={-1}>
@@ -80,16 +81,18 @@ export default function Admin() {
       <Tabs
         className="a2l-anim-in a2l-delay-1"
         value={activeTab}
-        onChange={setActiveTab}
+        onChange={selectTab}
         items={ADMIN_TABS}
       />
 
       <div style={{ paddingTop: 26 }} className="a2l-anim-in a2l-delay-2">
-        {activeTab === 'metrics' && <MetricsTab games={games} />}
-        {activeTab === 'students' && (
+        {panel('metrics', <MetricsTab games={games} />)}
+        {panel(
+          'students',
           <StudentsTab school={selectedSchool} onSchoolChange={setSelectedSchool} />
         )}
-        {activeTab === 'sessions' && (
+        {panel(
+          'sessions',
           <SessionsTab
             school={selectedSchool}
             onSchoolChange={setSelectedSchool}
@@ -98,10 +101,15 @@ export default function Admin() {
             onGameNamesChange={setSessionGameNames}
           />
         )}
-        {activeTab === 'games' && (
-          <GamesTab games={games} loading={loadingGames} onRemoved={removeGame} />
+        {panel(
+          'games',
+          <GamesTab
+            games={games}
+            loading={loadingGames}
+            onRemoved={id => setGames(prev => prev.filter(g => g.id !== id))}
+          />
         )}
-        {activeTab === 'personalization' && <PersonalizationPanel />}
+        {panel('personalization', <PersonalizationPanel />)}
       </div>
     </AppShell>
   )

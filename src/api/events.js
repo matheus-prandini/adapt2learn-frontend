@@ -3,8 +3,9 @@ import { apiFetch, jsonBody } from './httpClient'
 /**
  * Registra um evento de plataforma (login, cadastro, início de jogo…).
  *
- * É best-effort por design: analytics nunca pode quebrar o fluxo do aluno.
- * Falhas viram um `console.warn` e a Promise sempre resolve.
+ * É best-effort por design: analytics nunca pode quebrar nem atrasar o fluxo
+ * do aluno. Falhas viram um `console.warn`, a Promise sempre resolve e os
+ * chamadores NÃO devem aguardá-la antes de navegar (`keepalive` garante o envio).
  *
  * @param {string} eventType   ex.: 'login_success', 'game_start'
  * @param {object} [payload]   dados livres do evento
@@ -14,6 +15,8 @@ export async function logPlatformEvent(eventType, payload = {}, extra = {}) {
   try {
     await apiFetch('/events/platform', {
       method: 'POST',
+      // Sobrevive ao unload da página — chamadores não precisam esperar por isto.
+      keepalive: true,
       ...jsonBody({ event_type: eventType, payload, ...extra }),
     })
   } catch (err) {

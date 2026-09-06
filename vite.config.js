@@ -18,8 +18,12 @@ export default defineConfig(({ mode }) => {
     // Mesmo diretório que o CRA usava — firebase.json aponta para "build".
     build: {
       outDir: 'build',
-      // O chunk do Admin (MUI + Recharts) passa de 500 kB minificado, mas é
-      // carregado sob demanda só por professor/admin — o aviso seria ruído no CI.
+      // Sem isto o Vite emite sintaxe "baseline widely available" (class fields,
+      // `||=`), que iPads em iOS ≤14.4 e Chromes ≤84 rejeitam com tela branca —
+      // dispositivos comuns em escola. Rebaixa só a sintaxe (não faz polyfill).
+      target: ['chrome80', 'safari13.1', 'firefox78', 'edge80'],
+      // O chunk do Admin (MUI + Recharts + date pickers) passa de 500 kB minificado,
+      // mas é carregado sob demanda só por professor/admin — o aviso seria ruído no CI.
       chunkSizeWarningLimit: 800,
     },
 

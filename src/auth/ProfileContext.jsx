@@ -17,11 +17,15 @@ const ProfileContext = createContext(null)
  *   profile  — resposta de /me (null enquanto carrega ou se deslogado)
  *   loading  — true até termos user *e* profile (ou a certeza de que não há user)
  *   error    — ApiError se /me falhou (ex.: conta Firebase sem cadastro → 404)
+ *
+ * `loading` é DERIVADO dos dados, não de uma flag setada em efeito: há um
+ * render entre o Firebase resolver o usuário e o efeito de /me começar, e uma
+ * flag ainda falsa nesse render fazia o PrivateRoute com `roles` redirecionar
+ * professor/admin para "/" num F5.
  */
 export function ProfileProvider({ children }) {
   const [user, authLoading] = useAuthState(auth)
   const [profile, setProfile] = useState(null)
-  const [profileLoading, setProfileLoading] = useState(false)
   const [error, setError] = useState(null)
   const [refreshTick, setRefreshTick] = useState(0)
 
@@ -33,7 +37,6 @@ export function ProfileProvider({ children }) {
     }
 
     let cancelled = false
-    setProfileLoading(true)
     setError(null)
 
     fetchProfile()
@@ -45,20 +48,21 @@ export function ProfileProvider({ children }) {
         setProfile(null)
         setError(e)
       })
-      .finally(() => {
-        if (!cancelled) setProfileLoading(false)
-      })
 
     return () => {
       cancelled = true
     }
   }, [user, refreshTick])
 
-  const refresh = useCallback(() => setRefreshTick(t => t + 1), [])
+  // Limpa o erro já aqui para o render seguinte mostrar o Loader, não o erro antigo.
+  const refresh = useCallback(() => {
+    setError(null)
+    setRefreshTick(t => t + 1)
+  }, [])
   const signOut = useCallback(() => firebaseSignOut(auth), [])
 
-  // Num refresh com perfil já em mãos não voltamos ao Loader — só no primeiro carregamento.
-  const loading = authLoading || (!!user && profileLoading && !profile && !error)
+  // Com perfil em mãos um refresh não volta ao Loader — só o primeiro carregamento.
+  const loading = authLoading || (!!user && !profile && !error)
 
   const value = useMemo(
     () => ({
@@ -68,7 +72,6 @@ export function ProfileProvider({ children }) {
       error,
       refresh,
       signOut,
-      isAuthenticated: !!user,
       isTeacher: TEACHER_ROLES.includes(profile?.role),
       displayName: user?.displayName || profile?.name || '',
     }),

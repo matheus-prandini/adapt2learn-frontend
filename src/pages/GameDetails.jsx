@@ -55,6 +55,7 @@ export default function GameDetails() {
       setEditName(g.name)
       setEditHasOptions(g.has_options)
       setEditHasWarmup(g.has_warmup)
+      return g
     } catch (err) {
       toast.error(err.message)
     }
@@ -108,15 +109,15 @@ export default function GameDetails() {
     if (!gamePollVersion) return
     clearInterval(gamePollRef.current)
     gamePollRef.current = setInterval(async () => {
-      await fetchGame()
-      if (gameInfo?.active_version === gamePollVersion) {
+      const g = await fetchGame()
+      if (g?.active_version === gamePollVersion) {
         toast.success(`Versão ${gamePollVersion} ativa!`)
         clearInterval(gamePollRef.current)
         setGamePollVersion(null)
       }
     }, 5000)
     return () => clearInterval(gamePollRef.current)
-  }, [gamePollVersion, gameInfo, fetchGame])
+  }, [gamePollVersion, fetchGame])
 
   // Novo deploy
   const handleDeploy = async () => {

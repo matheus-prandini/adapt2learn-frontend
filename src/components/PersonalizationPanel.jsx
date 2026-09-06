@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { toast } from 'react-toastify'
 import { LuTarget, LuFlaskConical, LuFactory, LuSave, LuPlay } from 'react-icons/lu'
 import { apiFetch, parseJsonOrThrow } from '../api/httpClient'
@@ -22,6 +22,18 @@ export default function PersonalizationPanel() {
   const [genCommit, setGenCommit] = useState(true)
   const [genJob, setGenJob] = useState(null) // {status, report, error}
   const [generating, setGenerating] = useState(false)
+
+  // O polling da geração vive fora do React; sem isto, sair da aba deixava o
+  // setTimeout recursivo rodando por até 6 min e chamando setState no vazio.
+  const pollTimer = useRef(null)
+  const alive = useRef(true)
+  useEffect(() => {
+    alive.current = true
+    return () => {
+      alive.current = false
+      clearTimeout(pollTimer.current)
+    }
+  }, [])
 
   useEffect(() => {
     ;(async () => {
@@ -96,6 +108,7 @@ export default function PersonalizationPanel() {
       let tries = 0
       const MAX_TRIES = 90 // ~6 min (poll a cada 4s)
       const poll = async () => {
+        if (!alive.current) return
         tries += 1
         try {
           const r = await apiFetch(`/personalization/generate/${jobId}`)
@@ -122,9 +135,9 @@ export default function PersonalizationPanel() {
           )
           return
         }
-        setTimeout(poll, 4000)
+        pollTimer.current = setTimeout(poll, 4000)
       }
-      setTimeout(poll, 4000)
+      pollTimer.current = setTimeout(poll, 4000)
     } catch {
       toast.error('Falha ao disparar a geração.')
       setGenerating(false)

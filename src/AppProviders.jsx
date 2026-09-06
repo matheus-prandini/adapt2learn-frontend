@@ -1,18 +1,9 @@
-import React, { useMemo } from 'react'
-import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles'
+import React from 'react'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import ErrorBoundary from './components/ErrorBoundary'
 import { ThemeProvider, useTheme } from './theme/ThemeContext'
 import { ProfileProvider } from './auth/ProfileContext'
-import { createMuiTheme } from './theme/muiTheme'
-
-// Mantém o MUI (DatePicker, popovers) no mesmo modo do resto da plataforma.
-function MuiBridge({ children }) {
-  const { theme } = useTheme()
-  const muiTheme = useMemo(() => createMuiTheme(theme), [theme])
-  return <MuiThemeProvider theme={muiTheme}>{children}</MuiThemeProvider>
-}
 
 // Um único container de toasts para o app inteiro, no tema atual.
 function GlobalToasts() {
@@ -32,18 +23,20 @@ function GlobalToasts() {
 
 /**
  * Provedores globais, do mais externo ao mais interno:
- * tema → MUI → ErrorBoundary → perfil/sessão. Os toasts ficam fora do
- * ErrorBoundary para continuarem funcionando se a árvore cair.
+ * tema → ErrorBoundary → perfil/sessão. Os toasts ficam fora do ErrorBoundary
+ * para continuarem funcionando se a árvore cair.
+ *
+ * O ThemeProvider do MUI NÃO fica aqui: o único consumidor de MUI é o
+ * DatePicker do MetricsTab (lazy). Montá-lo na raiz colocava MUI + emotion no
+ * chunk inicial de todo aluno (+30 kB gzip).
  */
 export default function AppProviders({ children }) {
   return (
     <ThemeProvider>
-      <MuiBridge>
-        <ErrorBoundary>
-          <ProfileProvider>{children}</ProfileProvider>
-        </ErrorBoundary>
-        <GlobalToasts />
-      </MuiBridge>
+      <ErrorBoundary>
+        <ProfileProvider>{children}</ProfileProvider>
+      </ErrorBoundary>
+      <GlobalToasts />
     </ThemeProvider>
   )
 }

@@ -33,13 +33,14 @@ export default function Login() {
     try {
       await fetchProfile()
     } catch (err) {
-      await signOut(auth)
       const msg = err.status === 404 ? UNREGISTERED_MSG : err.message
-      setError(msg)
+      // Antes do signOut: depois dele não há token e o evento se perderia.
       await logPlatformEvent('login_failed', { method: methodName, message: msg })
+      await signOut(auth)
+      setError(msg)
       return
     }
-    await logPlatformEvent('login_success', { method: methodName })
+    logPlatformEvent('login_success', { method: methodName })
     navigate(destination, { replace: true })
   }
 

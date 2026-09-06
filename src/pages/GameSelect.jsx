@@ -1,11 +1,11 @@
 // src/pages/GameSelect.js
 import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getStorage, ref, getDownloadURL } from 'firebase/storage'
 import { LuGamepad2, LuPlay, LuRepeat, LuTarget, LuInbox } from 'react-icons/lu'
 import { toast } from 'react-toastify'
 import { apiJson, jsonBody } from '../api/httpClient'
 import { logPlatformEvent } from '../api/events'
+import { listGamesWithIcons } from '../api/games'
 import { useProfile } from '../auth/ProfileContext'
 import { listWordChallengesForSchool } from '../api/wordChallengesApi'
 import {
@@ -27,6 +27,7 @@ import {
 
 export default function GameSelect() {
   const { profile } = useProfile()
+  const schoolId = profile?.school_id
   const [docsList, setDocsList] = useState([])
   const [gamesList, setGamesList] = useState([])
   const [selectedGame, setSelectedGame] = useState(null)
@@ -38,45 +39,33 @@ export default function GameSelect() {
   const [loadingSession, setLoadingSession] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
-  const storage = getStorage()
 
   const selectedGameId = selectedGame ? getGameId(selectedGame) : ''
 
   useEffect(() => {
-    if (!profile?.school_id) return undefined
+    if (!schoolId) {
+      // Sem escola não há o que buscar — mas o Loader não pode ficar para sempre.
+      setLoading(false)
+      return undefined
+    }
     let cancelled = false
     ;(async () => {
       try {
-        const docs = await apiJson(
-          `/documents/school/${profile.school_id}`,
-          undefined,
-          'Falha ao carregar documentos'
-        )
+        // Três chamadas independentes: em paralelo, não em fila.
+        const [docs, games, wordItems] = await Promise.all([
+          apiJson(`/documents/school/${schoolId}`, undefined, 'Falha ao carregar documentos'),
+          listGamesWithIcons(),
+          listWordChallengesForSchool(schoolId).catch(wordErr => {
+            console.error(wordErr)
+            if (!cancelled)
+              setOptionsError('Não foi possível carregar opções de desafios de palavras.')
+            return []
+          }),
+        ])
         if (cancelled) return
         setDocsList(docs)
-
-        try {
-          const wordItems = await listWordChallengesForSchool(profile.school_id)
-          if (!cancelled) setWordChallengesList(wordItems)
-        } catch (wordErr) {
-          console.error(wordErr)
-          if (!cancelled)
-            setOptionsError('Não foi possível carregar opções de desafios de palavras.')
-        }
-
-        const games = await apiJson('/games', undefined, 'Falha ao carregar jogos')
-        if (cancelled) return
-
-        const withIcons = await Promise.all(
-          games.map(async g => {
-            let iconUrl = ''
-            if (g.icon_url) {
-              iconUrl = await getDownloadURL(ref(storage, g.icon_url))
-            }
-            return { ...g, iconUrl }
-          })
-        )
-        if (!cancelled) setGamesList(withIcons)
+        setGamesList(games)
+        setWordChallengesList(wordItems)
       } catch (err) {
         console.error(err)
         if (!cancelled) setError(err.message)
@@ -87,14 +76,12 @@ export default function GameSelect() {
     return () => {
       cancelled = true
     }
-  }, [profile?.school_id, storage])
+  }, [schoolId])
 
   const contentCatalog = useMemo(
     () => buildContentCatalog(docsList, wordChallengesList),
     [docsList, wordChallengesList]
   )
-
-  const schoolId = profile?.school_id
 
   // Escolas com restrição ativa (estudo em andamento) só exibem as subáreas
   // permitidas — e escondem disciplinas que ficariam sem nenhuma subárea.
@@ -126,6 +113,15 @@ export default function GameSelect() {
   }, [discipline, subarea, subareaOptions])
 
   if (loading) return <Loader label="Carregando os jogos…" />
+  if (!schoolId) {
+    return (
+      <AppShell width="md" back="/">
+        <Alert tone="error">
+          Seu perfil não tem uma escola vinculada. Fale com o administrador.
+        </Alert>
+      </AppShell>
+    )
+  }
   if (error) {
     return (
       <AppShell width="md" back="/">
@@ -151,7 +147,7 @@ export default function GameSelect() {
     try {
       const sessionNumber = await createSession(selectedGameId)
 
-      await logPlatformEvent(
+      logPlatformEvent(
         'game_start',
         { discipline, subarea, session_number: sessionNumber },
         { game_id: selectedGameId }

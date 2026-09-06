@@ -16,6 +16,7 @@ import {
 import { AuthShell, Card, Button, Field, Alert, SegmentedControl } from '../components/ui'
 import { apiJson, jsonBody } from '../api/httpClient'
 import { logPlatformEvent } from '../api/events'
+import { useProfile } from '../auth/ProfileContext'
 import { SCHOOLS, GRADE_OPTIONS } from '../constants/schools'
 
 const ROLE_OPTIONS = [
@@ -36,6 +37,8 @@ export default function Register() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
+  // O provider já buscou /me antes do cadastro existir (404); o refresh limpa isso.
+  const { refresh } = useProfile()
 
   // Campos comuns aos dois métodos. grade_level só vai para aluno.
   const buildSchoolPayload = () => ({
@@ -60,7 +63,8 @@ export default function Register() {
         await signOut(auth)
         throw err
       }
-      await logPlatformEvent('user_signup', { method: 'google' })
+      logPlatformEvent('user_signup', { method: 'google' })
+      refresh()
       navigate('/')
     } catch (err) {
       setError(err.message)
@@ -93,7 +97,8 @@ export default function Register() {
         await cred.user.delete()
         throw err
       }
-      await logPlatformEvent('user_signup', { method: 'email' })
+      logPlatformEvent('user_signup', { method: 'email' })
+      refresh()
       navigate('/')
     } catch (err) {
       setError(err.message)

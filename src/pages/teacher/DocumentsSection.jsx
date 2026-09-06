@@ -370,7 +370,7 @@ export default function DocumentsSection({ discipline = '', subarea = '', onCont
         confirmLabel="Remover"
         busy={deleting}
         onConfirm={confirmDeleteExample}
-        onCancel={() => !deleting && setPendingDelete(null)}
+        onCancel={() => setPendingDelete(null)}
       />
     </div>
   )

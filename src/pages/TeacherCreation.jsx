@@ -8,7 +8,7 @@ import { buildContentCatalog } from '../utils/contentOptions'
 import DocumentsSection from './teacher/DocumentsSection'
 import WordChallengesSection from './teacher/WordChallengesSection'
 import ContentContextFields from './teacher/ContentContextFields'
-import { AppShell, Card, Loader, PageHead, Tabs } from '../components/ui'
+import { AppShell, Card, Loader, PageHead, Tabs, Alert } from '../components/ui'
 
 const TABS = [
   { id: 'documents', label: 'Documentos', icon: <LuFolderOpen size={16} /> },
@@ -32,7 +32,10 @@ export default function TeacherCreation() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (!schoolId) return undefined
+    if (!schoolId) {
+      setLoading(false)
+      return undefined
+    }
     let cancelled = false
     ;(async () => {
       try {
@@ -110,8 +113,14 @@ export default function TeacherCreation() {
     return <Loader label="Carregando a área do professor…" />
   }
 
-  if (!profile) {
-    return null
+  if (!schoolId) {
+    return (
+      <AppShell width="md" back="/">
+        <Alert tone="error">
+          Seu perfil não tem uma escola vinculada. Fale com o administrador.
+        </Alert>
+      </AppShell>
+    )
   }
 
   return (

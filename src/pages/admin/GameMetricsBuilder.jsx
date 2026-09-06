@@ -12,7 +12,12 @@ const OPERATIONS = [
   { value: 'ratio', label: 'Proporção' },
 ]
 
-const newField = () => ({ id: crypto.randomUUID(), field: '', operation: 'count', condition: null })
+// randomUUID só existe em contexto seguro (https/localhost); o id é só chave local.
+const genId = () =>
+  globalThis.crypto?.randomUUID
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2) + Date.now().toString(36)
+const newField = () => ({ id: genId(), field: '', operation: 'count', condition: null })
 
 /**
  * Métricas customizadas por jogo: escolhe jogo → evento → campos do payload →

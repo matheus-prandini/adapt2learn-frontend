@@ -129,7 +129,7 @@ export default function GamesTab({ games, loading, onRemoved }) {
         confirmLabel="Excluir"
         busy={deleting}
         onConfirm={confirmDelete}
-        onCancel={() => !deleting && setPending(null)}
+        onCancel={() => setPending(null)}
       />
     </>
   )
