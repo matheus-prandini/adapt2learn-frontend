@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { LuBookOpen, LuCheck, LuSkipForward, LuLightbulb } from 'react-icons/lu'
+import { toast } from 'react-toastify'
 import { AppShell, Card, Button, Alert, Loader, PageHead, Badge } from '../components/ui'
 import { useProfile } from '../auth/ProfileContext'
 import { apiJson, jsonBody } from '../api/httpClient'
@@ -75,7 +76,7 @@ export default function Warmup() {
       redirectToGame()
     } catch (err) {
       console.error(err)
-      alert('Erro ao salvar aquecimento: ' + err.message)
+      toast.error('Erro ao salvar aquecimento: ' + err.message)
     } finally {
       setSaving(false)
     }

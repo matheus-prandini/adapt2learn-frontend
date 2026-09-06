@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { apiJson, jsonBody } from '../api/httpClient';
 import { useDropzone } from 'react-dropzone';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import { LuUpload, LuImage, LuFileArchive, LuGamepad2, LuPlus } from 'react-icons/lu';
 import { AppShell, Card, Button, Field, PageHead, Switch } from '../components/ui';
 
@@ -205,7 +204,6 @@ export default function NewGameForm() {
         </div>
       </Card>
 
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
     </AppShell>
   );
 }

@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react'
 import {
   LuUpload, LuFileText, LuSparkles, LuTrash2, LuInbox, LuRefreshCw,
 } from 'react-icons/lu'
+import { toast } from 'react-toastify'
 import { apiFetch, parseJsonOrThrow } from '../../api/httpClient'
-import { Card, Button, Field, Alert, Badge, EmptyState, Loader } from '../../components/ui'
+import { Card, Button, Field, Alert, Badge, EmptyState, Loader, ConfirmDialog } from '../../components/ui'
 
 const allowedExtensions = ['.txt', '.pdf']
 
@@ -25,6 +26,8 @@ export default function DocumentsSection({
   const [selectedDoc, setSelectedDoc] = useState(null)
   const [loading, setLoading] = useState(true)
   const [loadingEx, setLoadingEx] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState(null) // question_id aguardando confirmação
+  const [deleting, setDeleting] = useState(false)
 
   const loadDocs = async () => {
     const res = await apiFetch('/documents')
@@ -109,10 +112,10 @@ export default function DocumentsSection({
     }
   }
 
-  const deleteExample = async questionId => {
-    if (!selectedDoc) return
-    if (!window.confirm('Remover este exemplo definitivamente?')) return
-
+  const confirmDeleteExample = async () => {
+    if (!selectedDoc || !pendingDelete) return
+    const questionId = pendingDelete
+    setDeleting(true)
     try {
       const res = await apiFetch(
         `/documents/${selectedDoc.id}/examples/${questionId}?phase=session`,
@@ -120,9 +123,13 @@ export default function DocumentsSection({
       )
       if (res.status !== 204) throw new Error('Erro ao remover exemplo')
       setExamples(prev => prev.filter(e => e.question_id !== questionId))
+      setPendingDelete(null)
+      toast.success('Exemplo removido')
     } catch (err) {
       console.error(err)
-      alert(err.message || 'Erro ao remover exemplo')
+      toast.error(err.message || 'Erro ao remover exemplo')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -312,7 +319,7 @@ export default function DocumentsSection({
                         variant="ghost"
                         size="sm"
                         icon={<LuTrash2 size={14} />}
-                        onClick={() => deleteExample(ex.question_id)}
+                        onClick={() => setPendingDelete(ex.question_id)}
                         style={{ marginTop: 16, color: 'var(--a2l-danger)' }}
                       >
                         Excluir exemplo
@@ -325,6 +332,17 @@ export default function DocumentsSection({
           )}
         </section>
       )}
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        tone="danger"
+        title="Remover exemplo"
+        message="O exemplo será removido definitivamente deste documento."
+        confirmLabel="Remover"
+        busy={deleting}
+        onConfirm={confirmDeleteExample}
+        onCancel={() => !deleting && setPendingDelete(null)}
+      />
     </div>
   )
 }

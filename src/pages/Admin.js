@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { getDownloadURL, ref as storageRef } from 'firebase/storage';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import { LuChartColumn, LuUsers, LuGamepad2, LuTarget, LuSettings } from 'react-icons/lu';
 import { storage } from '../firebase';
 import { apiJson } from '../api/httpClient';
@@ -61,7 +60,6 @@ export default function Admin() {
 
   return (
     <AppShell width="xl" back={-1}>
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
 
       <PageHead
         className="a2l-anim-in"

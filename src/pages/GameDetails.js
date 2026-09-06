@@ -5,28 +5,11 @@ import { apiJson, jsonBody } from '../api/httpClient';
 import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
 import axios from 'axios';
 import { useDropzone } from 'react-dropzone';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import { LuPackage, LuUpload, LuPencil, LuCheck, LuX, LuImage } from 'react-icons/lu';
-import { AppShell, Card, Button, Badge, Loader, PageHead } from '../components/ui';
+import { AppShell, Card, Button, Badge, Loader, PageHead, ConfirmDialog } from '../components/ui';
 
 // Modal de confirmação para ativar versão
-function ConfirmModal({ isOpen, title, message, onConfirm, onCancel }) {
-  if (!isOpen) return null;
-  return (
-    <div className="a2l-overlay" role="dialog" aria-modal="true">
-      <div className="a2l-modal">
-        <h2 style={{ fontSize: 'var(--a2l-text-lg)' }}>{title}</h2>
-        <p style={{ color: 'var(--a2l-ink-500)', marginTop: 8 }}>{message}</p>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 22 }}>
-          <Button variant="secondary" onClick={onCancel}>Cancelar</Button>
-          <Button onClick={onConfirm} icon={<LuCheck size={16} />}>Confirmar</Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function GameDetails() {
   const { id: gameId } = useParams();
   const navigate = useNavigate();
@@ -251,11 +234,11 @@ export default function GameDetails() {
 
   return (
     <AppShell width="lg" back={-1}>
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
-      <ConfirmModal
-        isOpen={!!confirmingVersion}
-        title="Confirmar ativação"
-        message={`Deseja ativar a versão ${confirmingVersion}?`}
+      <ConfirmDialog
+        open={!!confirmingVersion}
+        title="Ativar versão"
+        message={`A versão ${confirmingVersion} passará a ser servida aos alunos. Deseja continuar?`}
+        confirmLabel="Ativar"
         onConfirm={onConfirmActivate}
         onCancel={() => setConfirmingVersion(null)}
       />

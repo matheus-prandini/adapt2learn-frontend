@@ -1,9 +1,9 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { LuPlus, LuEye, LuTrash2, LuInbox } from 'react-icons/lu'
 import { apiJson } from '../../api/httpClient'
-import { Button, Badge, Card, EmptyState, Loader } from '../../components/ui'
+import { Button, Badge, Card, EmptyState, Loader, ConfirmDialog } from '../../components/ui'
 import SectionTitle from './SectionTitle'
 
 const iconStyle = {
@@ -14,14 +14,21 @@ const iconStyle = {
 export default function GamesTab({ games, loading, onRemoved }) {
   const navigate = useNavigate()
 
-  const handleDelete = async id => {
-    if (!window.confirm('Deseja realmente excluir este jogo?')) return
+  const [pending, setPending] = useState(null) // jogo aguardando confirmação de exclusão
+  const [deleting, setDeleting] = useState(false)
+
+  const confirmDelete = async () => {
+    if (!pending) return
+    setDeleting(true)
     try {
-      await apiJson(`/games/${id}`, { method: 'DELETE' }, 'Falha ao excluir o jogo.')
-      onRemoved(id)
-      toast.success('Jogo excluído')
+      await apiJson(`/games/${pending.id}`, { method: 'DELETE' }, 'Falha ao excluir o jogo.')
+      onRemoved(pending.id)
+      toast.success(`Jogo "${pending.name}" excluído`)
+      setPending(null)
     } catch (err) {
       toast.error(err.message)
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -71,7 +78,7 @@ export default function GamesTab({ games, loading, onRemoved }) {
                       </Button>
                       <Button
                         variant="secondary" size="sm"
-                        onClick={() => handleDelete(g.id)}
+                        onClick={() => setPending(g)}
                         title="Excluir jogo" aria-label="Excluir jogo"
                         style={{ color: 'var(--a2l-danger)' }}
                       >
@@ -85,6 +92,17 @@ export default function GamesTab({ games, loading, onRemoved }) {
           </table>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!pending}
+        tone="danger"
+        title="Excluir jogo"
+        message={pending ? `"${pending.name}" será removido da plataforma. Esta ação não pode ser desfeita.` : ''}
+        confirmLabel="Excluir"
+        busy={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => !deleting && setPending(null)}
+      />
     </>
   )
 }

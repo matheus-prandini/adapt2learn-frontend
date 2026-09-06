@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getStorage, ref, getDownloadURL } from 'firebase/storage'
 import { LuGamepad2, LuPlay, LuRepeat, LuTarget, LuInbox } from 'react-icons/lu'
+import { toast } from 'react-toastify'
 import { apiJson, jsonBody } from '../api/httpClient'
 import { logPlatformEvent } from '../api/events'
 import { useProfile } from '../auth/ProfileContext'
@@ -156,7 +157,7 @@ export default function GameSelect() {
       }
     } catch (err) {
       console.error(err)
-      alert('Erro ao iniciar sessão: ' + err.message)
+      toast.error('Erro ao iniciar sessão: ' + err.message)
     } finally {
       setLoadingSession(false)
     }
