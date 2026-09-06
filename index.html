@@ -2,7 +2,7 @@
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#6C5CE7" />
     <meta name="description" content="Adapt2Learn — plataforma de aprendizagem adaptativa por meio de jogos educacionais." />
@@ -20,7 +20,7 @@
     <!--
       Resolve o tema antes do primeiro paint. Sem isto, uma pessoa com tema
       escuro salvo veria um flash branco enquanto o React monta.
-      Mantenha a chave em sincronia com THEME_STORAGE_KEY (src/theme/ThemeContext.js).
+      Mantenha a chave em sincronia com THEME_STORAGE_KEY (src/theme/ThemeContext.jsx).
     -->
     <script>
       (function () {
@@ -41,10 +41,8 @@
     </script>
   </head>
   <body>
-    <noscript>
-      Você precisa habilitar o JavaScript para usar esta aplicação.
-    </noscript>
-    <!-- É aqui que o React vai montar toda a UI -->
+    <noscript>Você precisa habilitar o JavaScript para usar esta aplicação.</noscript>
     <div id="root"></div>
+    <script type="module" src="/src/index.jsx"></script>
   </body>
 </html>

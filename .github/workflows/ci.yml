@@ -22,13 +22,12 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        env:
-          CI: true
-        run: npm test -- --watchAll=false
+        run: npm test
+
+      - name: Lint
+        run: npm run lint
 
       # public/games fica vazio aqui (o sync do GCS precisa de credenciais e
       # só roda no deploy); o build do app não depende dos jogos.
       - name: Build
-        env:
-          CI: false
         run: npm run build

@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
 import { storage } from '../firebase';
 import { apiJson, jsonBody } from '../api/httpClient';
-import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
+import { getDownloadURL, ref as storageRef } from 'firebase/storage';
 import axios from 'axios';
 import { useDropzone } from 'react-dropzone';
 import { toast } from 'react-toastify';
@@ -12,7 +12,6 @@ import { AppShell, Card, Button, Badge, Loader, PageHead, ConfirmDialog } from '
 // Modal de confirmação para ativar versão
 export default function GameDetails() {
   const { id: gameId } = useParams();
-  const navigate = useNavigate();
 
   // Estado principal
   const [gameInfo, setGameInfo] = useState(null);
@@ -32,7 +31,6 @@ export default function GameDetails() {
   // Polling
   const [confirmingVersion, setConfirmingVersion] = useState(null);
   const [buildOp, setBuildOp] = useState(null);
-  const [buildStatus, setBuildStatus] = useState('');
   const [listPollVersion, setListPollVersion] = useState(null);
   const listPollRef = useRef(null);
   const [gamePollVersion, setGamePollVersion] = useState(null);
@@ -48,7 +46,7 @@ export default function GameDetails() {
   const file = acceptedFiles[0] || null;
 
   // Buscar meta do jogo
-  const fetchGame = async () => {
+  const fetchGame = useCallback(async () => {
     try {
       const list = await apiJson('/games', undefined, 'Erro ao carregar jogo');
       const g = list.find(x => x.id === gameId);
@@ -60,7 +58,7 @@ export default function GameDetails() {
     } catch (err) {
       toast.error(err.message);
     }
-  };
+  }, [gameId]);
 
   // Buscar ícone
   useEffect(() => {
@@ -72,7 +70,7 @@ export default function GameDetails() {
   }, [gameInfo]);
 
   // Buscar histórico de deploys
-  const fetchDeploys = async () => {
+  const fetchDeploys = useCallback(async () => {
     try {
       const data = await apiJson(`/games/${gameId}/deploys`, undefined, 'Erro ao buscar deploys');
       setDeploys(data);
@@ -81,13 +79,13 @@ export default function GameDetails() {
       toast.error(err.message);
       return [];
     }
-  };
+  }, [gameId]);
 
   // Inicialização — o PrivateRoute já garantiu usuário autenticado.
   useEffect(() => {
     fetchGame();
     fetchDeploys();
-  }, [gameId]);
+  }, [fetchGame, fetchDeploys]);
 
   // Poll: novo deploy adicionado
   useEffect(() => {
@@ -103,7 +101,7 @@ export default function GameDetails() {
       }
     }, 5000);
     return () => clearInterval(listPollRef.current);
-  }, [listPollVersion]);
+  }, [listPollVersion, fetchDeploys]);
 
   // Poll: ativação
   useEffect(() => {
@@ -118,7 +116,7 @@ export default function GameDetails() {
       }
     }, 5000);
     return () => clearInterval(gamePollRef.current);
-  }, [gamePollVersion, gameInfo]);
+  }, [gamePollVersion, gameInfo, fetchGame]);
 
   // Novo deploy
   const handleDeploy = async () => {
@@ -156,7 +154,6 @@ export default function GameDetails() {
       const { operation_name } = await apiJson(`/games/${gameId}/activate/${version}`, { method: 'POST' }, 'Falha ao ativar');
       setGameInfo(p => ({ ...p, active_version: version }));
       setBuildOp(operation_name);
-      setBuildStatus('IN_PROGRESS');
       toast.info(`Versão ${version} ativada.`);
     } catch (err) {
       toast.error(err.message);
@@ -170,7 +167,6 @@ export default function GameDetails() {
       try {
         const data = await apiJson(`/builds/${buildOp}/status`, undefined, 'Erro na build');
         if (data.status !== 'IN_PROGRESS') {
-          setBuildStatus(data.build_status);
           clearInterval(iv);
           setBuildOp(null);
           await fetchDeploys();
@@ -183,7 +179,7 @@ export default function GameDetails() {
       }
     }, 5000);
     return () => clearInterval(iv);
-  }, [buildOp]);
+  }, [buildOp, fetchDeploys, fetchGame]);
 
   // Edição de infos
   const handleEditToggle = () => setIsEditing(!isEditing);
@@ -203,7 +199,7 @@ export default function GameDetails() {
         await axios.put(iconUploadUrl, newIconFile, {
           headers: { 'Content-Type': mime_type },
           onUploadProgress: evt =>
-            setProgress(Math.round((evt.loaded * 100) / evt.total)),
+            setUploadProgress(Math.round((evt.loaded * 100) / evt.total)),
         });
 
         iconPath = object_path;

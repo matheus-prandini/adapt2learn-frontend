@@ -40,7 +40,7 @@ export default class ErrorBoundary extends React.Component {
               Recarregar
             </Button>
           </div>
-          {process.env.NODE_ENV === 'development' && (
+          {import.meta.env.DEV && (
             <pre className="a2l-pre" style={{ textAlign: 'left', marginTop: 20, maxHeight: 240 }}>
               {String(this.state.error?.stack || this.state.error)}
             </pre>

@@ -1,6 +1,6 @@
 // src/pages/Warmup.js
 import React, { useState, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { LuBookOpen, LuCheck, LuSkipForward, LuLightbulb } from 'react-icons/lu'
 import { toast } from 'react-toastify'
 import { AppShell, Card, Button, Alert, Loader, PageHead, Badge } from '../components/ui'
@@ -13,7 +13,6 @@ export default function Warmup() {
   const [saving, setSaving]   = useState(false)
   const [example, setExample] = useState(null)
   const [error, setError]     = useState('')
-  const navigate   = useNavigate()
   const { search } = useLocation()
 
   // parâmetros da URL

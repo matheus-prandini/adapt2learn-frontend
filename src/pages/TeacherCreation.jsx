@@ -18,6 +18,7 @@ const TABS = [
 export default function TeacherCreation() {
   // Papel já validado pelo PrivateRoute roles={TEACHER_ROLES}.
   const { profile } = useProfile()
+  const schoolId = profile?.school_id
   const [games, setGames] = useState([])
   const [docsList, setDocsList] = useState([])
   const [wordChallengesList, setWordChallengesList] = useState([])
@@ -31,13 +32,13 @@ export default function TeacherCreation() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (!profile?.school_id) return undefined
+    if (!schoolId) return undefined
     let cancelled = false
     ;(async () => {
       try {
         const [gamesList, docs] = await Promise.all([
           apiJson('/games', undefined, 'Não foi possível carregar jogos.'),
-          apiJson(`/documents/school/${profile.school_id}`, undefined, 'Não foi possível carregar documentos.'),
+          apiJson(`/documents/school/${schoolId}`, undefined, 'Não foi possível carregar documentos.'),
         ])
         if (cancelled) return
         setGames(gamesList)
@@ -45,7 +46,7 @@ export default function TeacherCreation() {
         setDocsList(docs)
 
         try {
-          const wordItems = await listWordChallengesForSchool(profile.school_id)
+          const wordItems = await listWordChallengesForSchool(schoolId)
           if (!cancelled) setWordChallengesList(wordItems)
         } catch (wordErr) {
           console.error(wordErr)
@@ -58,16 +59,16 @@ export default function TeacherCreation() {
       }
     })()
     return () => { cancelled = true }
-  }, [profile?.school_id, navigate])
+  }, [schoolId, navigate])
 
   const refreshContentCatalog = useCallback(async () => {
-    if (!profile?.school_id) return
+    if (!schoolId) return
 
     setLoadingContentOptions(true)
     try {
       const [docs, wordItems] = await Promise.all([
-        apiJson(`/documents/school/${profile.school_id}`, undefined, 'Não foi possível carregar documentos.'),
-        listWordChallengesForSchool(profile.school_id),
+        apiJson(`/documents/school/${schoolId}`, undefined, 'Não foi possível carregar documentos.'),
+        listWordChallengesForSchool(schoolId),
       ])
       setDocsList(docs)
       setWordChallengesList(wordItems)
@@ -76,7 +77,7 @@ export default function TeacherCreation() {
     } finally {
       setLoadingContentOptions(false)
     }
-  }, [profile?.school_id])
+  }, [schoolId])
 
   const contentCatalog = buildContentCatalog(docsList, wordChallengesList)
   const disciplineOptions = contentCatalog.disciplines
@@ -141,7 +142,7 @@ export default function TeacherCreation() {
           )}
           {activeTab === 'words' && (
             <WordChallengesSection
-              schoolId={profile.school_id}
+              schoolId={schoolId}
               discipline={discipline}
               subarea={subarea}
               onContentChanged={refreshContentCatalog}

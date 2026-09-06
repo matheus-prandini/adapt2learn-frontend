@@ -34,7 +34,7 @@ export default function PersonalizationPanel() {
         setSubarea(cfg.subarea || 'Geometria Plana')
         setActiveSince(cfg.active_since || '2026-01-01')
         setTestUids((cfg.test_uids || []).join(', '))
-      } catch (e) {
+      } catch {
         toast.error('Falha ao carregar a config de personalização.')
       } finally {
         setLoading(false)
@@ -59,7 +59,7 @@ export default function PersonalizationPanel() {
         `Personalização ${enabled ? 'ATIVADA' : 'desativada'}` +
           (test_uids.length ? ` (só ${test_uids.length} de teste)` : ' (coorte inteira)')
       )
-    } catch (e) {
+    } catch {
       toast.error('Falha ao salvar a config.')
     } finally {
       setSaving(false)
@@ -73,7 +73,7 @@ export default function PersonalizationPanel() {
       const res = await apiFetch('/personalization/preview')
       const data = await parseJsonOrThrow(res)
       setPreview(data)
-    } catch (e) {
+    } catch {
       toast.error('Falha ao rodar o dry-run.')
     } finally {
       setPreviewing(false)
@@ -113,7 +113,7 @@ export default function PersonalizationPanel() {
             toast.error('Geração falhou: ' + (j.error || ''))
             return
           }
-        } catch (e) {
+        } catch {
           /* transitório — segue tentando */
         }
         if (tries >= MAX_TRIES) {
@@ -125,7 +125,7 @@ export default function PersonalizationPanel() {
         setTimeout(poll, 4000)
       }
       setTimeout(poll, 4000)
-    } catch (e) {
+    } catch {
       toast.error('Falha ao disparar a geração.')
       setGenerating(false)
     }
