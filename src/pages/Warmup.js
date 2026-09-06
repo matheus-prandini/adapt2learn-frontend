@@ -1,32 +1,30 @@
 // src/pages/Warmup.js
 import React, { useState, useEffect } from 'react'
-import { auth } from '../firebase'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useAuthState } from 'react-firebase-hooks/auth'
 import { LuBookOpen, LuCheck, LuSkipForward, LuLightbulb } from 'react-icons/lu'
 import { AppShell, Card, Button, Alert, Loader, PageHead, Badge } from '../components/ui'
-import { API_BASE_URL } from '../api/config';
+import { useProfile } from '../auth/ProfileContext'
+import { apiJson, jsonBody } from '../api/httpClient'
 
 export default function Warmup() {
-  const [profile, setProfile]       = useState(null)
-  const [user, loadingAuth]         = useAuthState(auth)
-  const [loading, setLoading]       = useState(true)
-  const [saving, setSaving]         = useState(false)
-  const [example, setExample]       = useState(null)
-  const [error, setError]           = useState('')
-  const navigate                    = useNavigate()
-  const { search }                  = useLocation()
+  const { profile } = useProfile()
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving]   = useState(false)
+  const [example, setExample] = useState(null)
+  const [error, setError]     = useState('')
+  const navigate   = useNavigate()
+  const { search } = useLocation()
 
   // parâmetros da URL
-  const params         = new URLSearchParams(search)
-  const discipline     = params.get('discipline')     || ''
-  const subarea        = params.get('subarea')        || ''
-  const sessionNumber  = params.get('session_number') || ''
-  const gameId         = params.get('game_id')        || ''
-  const gamePath       = params.get('game_path')      || ''
+  const params        = new URLSearchParams(search)
+  const discipline    = params.get('discipline')     || ''
+  const subarea       = params.get('subarea')        || ''
+  const sessionNumber = params.get('session_number') || ''
+  const gameId        = params.get('game_id')        || ''
+  const gamePath      = params.get('game_path')      || ''
 
-  // Redireciona para o jogo
-  const redirectToGame = async () => {
+  // Redireciona para o jogo (bundle externo — navegação completa, não SPA)
+  const redirectToGame = () => {
     if (!profile) return
     const qs = new URLSearchParams({
       user_id:        profile.uid,
@@ -39,76 +37,42 @@ export default function Warmup() {
     window.location.href = `/${gamePath}/?${qs}`
   }
 
-  // Carrega perfil e warmup
   useEffect(() => {
-    if (loadingAuth) return
-    if (!user) {
-      navigate('/login')
-      return
-    }
-
+    let cancelled = false
     ;(async () => {
       try {
-        const token = await user.getIdToken()
-
-        // busca profile
-        const meRes = await fetch(`${API_BASE_URL}/me`, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-        if (!meRes.ok) throw new Error('Falha ao carregar perfil')
-        const pr = await meRes.json()
-        setProfile(pr)
-
-        // busca exemplo de warmup
-        const url = new URL(`${API_BASE_URL}/warmup_example`, window.location.origin)
-        url.searchParams.set('discipline', discipline)
-        url.searchParams.set('subarea', subarea)
-        url.searchParams.set('session_number', sessionNumber)
-
-        const res = await fetch(url.toString(), {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-        if (!res.ok) throw new Error(`Status ${res.status}`)
-        const ex = await res.json()
-        setExample(ex)
+        const qs = new URLSearchParams({ discipline, subarea, session_number: sessionNumber })
+        const ex = await apiJson(`/warmup_example?${qs}`, undefined, 'Não foi possível carregar o aquecimento.')
+        if (!cancelled) setExample(ex)
       } catch (err) {
         console.error(err)
-        setError('Não foi possível carregar o aquecimento.')
+        if (!cancelled) setError('Não foi possível carregar o aquecimento.')
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     })()
-  }, [user, loadingAuth, discipline, subarea, sessionNumber, navigate])
+    return () => { cancelled = true }
+  }, [discipline, subarea, sessionNumber])
 
-  if (loadingAuth || loading) {
-    return <Loader label="Preparando seu aquecimento…" />
-  }
+  if (loading) return <Loader label="Preparando seu aquecimento…" />
 
   const onFinish = async () => {
     if (!example || !profile) return
     setSaving(true)
     try {
-      const token = await user.getIdToken()
-      const body = [{
-        example_id:     example.example_id,
-        session_number: Number(sessionNumber),
-        messages: [
-          { role: 'system',    content: ''                },
-          { role: 'user',      content: example.question },
-          { role: 'assistant', content: ''                }
-        ]
-      }]
-      const res = await fetch(`${API_BASE_URL}/warmup_responses`, {
-        method:  'POST',
-        headers: {
-          'Content-Type':  'application/json',
-          Authorization:   `Bearer ${token}`
-        },
-        body: JSON.stringify(body)
-      })
-      if (!res.ok) throw new Error(`Status ${res.status}`)
-
-      await redirectToGame()
+      await apiJson('/warmup_responses', {
+        method: 'POST',
+        ...jsonBody([{
+          example_id:     example.example_id,
+          session_number: Number(sessionNumber),
+          messages: [
+            { role: 'system',    content: ''               },
+            { role: 'user',      content: example.question },
+            { role: 'assistant', content: ''               },
+          ],
+        }]),
+      }, 'Erro ao salvar aquecimento.')
+      redirectToGame()
     } catch (err) {
       console.error(err)
       alert('Erro ao salvar aquecimento: ' + err.message)
@@ -143,29 +107,17 @@ export default function Warmup() {
                   {discipline && <Badge tone="brand">{discipline}</Badge>}
                   {subarea && <Badge tone="mint">{subarea}</Badge>}
                 </div>
-                <p
-                  style={{
-                    fontFamily: 'var(--a2l-font-display)',
-                    fontSize: 'var(--a2l-text-lg)',
-                    lineHeight: 1.6,
-                    color: 'var(--a2l-ink-900)',
-                    fontWeight: 600,
-                  }}
-                >
+                <p style={{
+                  fontFamily: 'var(--a2l-font-display)', fontSize: 'var(--a2l-text-lg)',
+                  lineHeight: 1.6, color: 'var(--a2l-ink-900)', fontWeight: 600,
+                }}>
                   {example.question}
                 </p>
               </div>
             </div>
           </Card>
 
-          <Button
-            size="lg"
-            variant="accent"
-            icon={<LuCheck size={18} />}
-            onClick={onFinish}
-            loading={saving}
-            disabled={saving}
-          >
+          <Button size="lg" variant="accent" icon={<LuCheck size={18} />} onClick={onFinish} loading={saving} disabled={saving}>
             {saving ? 'Salvando…' : 'Concluir e jogar'}
           </Button>
         </div>

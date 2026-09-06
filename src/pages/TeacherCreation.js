@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LuFolderOpen, LuType, LuPencilRuler } from 'react-icons/lu'
-import { apiFetch, parseJsonOrThrow } from '../api/httpClient'
+import { apiJson } from '../api/httpClient'
+import { useProfile } from '../auth/ProfileContext'
 import { listWordChallengesForSchool } from '../api/wordChallengesApi'
 import { buildContentCatalog } from '../utils/contentOptions'
 import DocumentsSection from './teacher/DocumentsSection'
@@ -15,7 +16,8 @@ const TABS = [
 ]
 
 export default function TeacherCreation() {
-  const [profile, setProfile] = useState(null)
+  // Papel já validado pelo PrivateRoute roles={TEACHER_ROLES}.
+  const { profile } = useProfile()
   const [games, setGames] = useState([])
   const [docsList, setDocsList] = useState([])
   const [wordChallengesList, setWordChallengesList] = useState([])
@@ -29,56 +31,44 @@ export default function TeacherCreation() {
   const navigate = useNavigate()
 
   useEffect(() => {
+    if (!profile?.school_id) return undefined
+    let cancelled = false
     ;(async () => {
       try {
-        const [meRes, gamesRes] = await Promise.all([
-          apiFetch('/me'),
-          apiFetch('/games'),
+        const [gamesList, docs] = await Promise.all([
+          apiJson('/games', undefined, 'Não foi possível carregar jogos.'),
+          apiJson(`/documents/school/${profile.school_id}`, undefined, 'Não foi possível carregar documentos.'),
         ])
-        const me = await parseJsonOrThrow(meRes, 'Não foi possível carregar o perfil.')
-        const gamesList = await parseJsonOrThrow(gamesRes, 'Não foi possível carregar jogos.')
-
-        if (!['teacher', 'admin'].includes(me.role)) {
-          navigate('/')
-          return
-        }
-
-        setProfile(me)
+        if (cancelled) return
         setGames(gamesList)
         if (gamesList.length === 1) setGameId(gamesList[0].id)
-
-        const docsRes = await apiFetch(`/documents/school/${me.school_id}`)
-        const docs = await parseJsonOrThrow(docsRes, 'Não foi possível carregar documentos.')
         setDocsList(docs)
 
         try {
-          const wordItems = await listWordChallengesForSchool(me.school_id)
-          setWordChallengesList(wordItems)
+          const wordItems = await listWordChallengesForSchool(profile.school_id)
+          if (!cancelled) setWordChallengesList(wordItems)
         } catch (wordErr) {
           console.error(wordErr)
         }
       } catch (err) {
         console.error(err)
-        navigate('/')
+        if (!cancelled) navigate('/')
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     })()
-  }, [navigate])
+    return () => { cancelled = true }
+  }, [profile?.school_id, navigate])
 
   const refreshContentCatalog = useCallback(async () => {
     if (!profile?.school_id) return
 
     setLoadingContentOptions(true)
     try {
-      const [docsRes, wordItems] = await Promise.all([
-        apiFetch(`/documents/school/${profile.school_id}`),
+      const [docs, wordItems] = await Promise.all([
+        apiJson(`/documents/school/${profile.school_id}`, undefined, 'Não foi possível carregar documentos.'),
         listWordChallengesForSchool(profile.school_id),
       ])
-      const docs = await parseJsonOrThrow(
-        docsRes,
-        'Não foi possível carregar documentos.'
-      )
       setDocsList(docs)
       setWordChallengesList(wordItems)
     } catch (err) {

@@ -3,7 +3,9 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getStorage, ref, getDownloadURL } from 'firebase/storage'
 import { LuGamepad2, LuPlay, LuRepeat, LuTarget, LuInbox } from 'react-icons/lu'
-import { apiFetch, parseJsonOrThrow } from '../api/httpClient'
+import { apiJson, jsonBody } from '../api/httpClient'
+import { logPlatformEvent } from '../api/events'
+import { useProfile } from '../auth/ProfileContext'
 import { listWordChallengesForSchool } from '../api/wordChallengesApi'
 import {
   buildContentCatalog,
@@ -16,7 +18,7 @@ import {
 } from '../components/ui'
 
 export default function GameSelect() {
-  const [profile, setProfile] = useState(null)
+  const { profile } = useProfile()
   const [docsList, setDocsList] = useState([])
   const [gamesList, setGamesList] = useState([])
   const [selectedGame, setSelectedGame] = useState(null)
@@ -33,26 +35,24 @@ export default function GameSelect() {
   const selectedGameId = selectedGame ? getGameId(selectedGame) : ''
 
   useEffect(() => {
+    if (!profile?.school_id) return undefined
+    let cancelled = false
     ;(async () => {
       try {
-        const meRes = await apiFetch('/me')
-        const pr = await parseJsonOrThrow(meRes, 'Falha ao carregar perfil')
-        setProfile(pr)
-
-        const docsRes = await apiFetch(`/documents/school/${pr.school_id}`)
-        const docs = await parseJsonOrThrow(docsRes, 'Falha ao carregar documentos')
+        const docs = await apiJson(`/documents/school/${profile.school_id}`, undefined, 'Falha ao carregar documentos')
+        if (cancelled) return
         setDocsList(docs)
 
         try {
-          const wordItems = await listWordChallengesForSchool(pr.school_id)
-          setWordChallengesList(wordItems)
+          const wordItems = await listWordChallengesForSchool(profile.school_id)
+          if (!cancelled) setWordChallengesList(wordItems)
         } catch (wordErr) {
           console.error(wordErr)
-          setOptionsError('Não foi possível carregar opções de desafios de palavras.')
+          if (!cancelled) setOptionsError('Não foi possível carregar opções de desafios de palavras.')
         }
 
-        const gamesRes = await apiFetch('/games')
-        const games = await parseJsonOrThrow(gamesRes, 'Falha ao carregar jogos')
+        const games = await apiJson('/games', undefined, 'Falha ao carregar jogos')
+        if (cancelled) return
 
         const withIcons = await Promise.all(
           games.map(async g => {
@@ -63,15 +63,16 @@ export default function GameSelect() {
             return { ...g, iconUrl }
           })
         )
-        setGamesList(withIcons)
+        if (!cancelled) setGamesList(withIcons)
       } catch (err) {
         console.error(err)
-        setError(err.message)
+        if (!cancelled) setError(err.message)
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     })()
-  }, [])
+    return () => { cancelled = true }
+  }, [profile?.school_id, storage])
 
   const contentCatalog = useMemo(
     () => buildContentCatalog(docsList, wordChallengesList),
@@ -119,15 +120,10 @@ export default function GameSelect() {
   }
 
   async function createSession(gameId) {
-    const res = await apiFetch('/sessions', {
+    const { session_number } = await apiJson('/sessions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ game_id: gameId, discipline, subarea }),
-    })
-    if (!res.ok) {
-      throw new Error(`Não foi possível criar sessão (status ${res.status})`)
-    }
-    const { session_number } = await res.json()
+      ...jsonBody({ game_id: gameId, discipline, subarea }),
+    }, 'Não foi possível criar a sessão.')
     return session_number
   }
 
@@ -136,19 +132,11 @@ export default function GameSelect() {
     try {
       const sessionNumber = await createSession(selectedGameId)
 
-      await apiFetch('/events/platform', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event_type: 'game_start',
-          game_id: selectedGameId,
-          payload: {
-            discipline,
-            subarea,
-            session_number: sessionNumber,
-          },
-        }),
-      })
+      await logPlatformEvent(
+        'game_start',
+        { discipline, subarea, session_number: sessionNumber },
+        { game_id: selectedGameId }
+      )
 
       const useWarmup = selectedGame.has_warmup && profile.group !== 'grupo3'
       const params = new URLSearchParams({

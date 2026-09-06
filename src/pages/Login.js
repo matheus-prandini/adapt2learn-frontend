@@ -1,16 +1,15 @@
 // src/pages/Login.js
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { auth, googleProvider } from '../firebase';
-import {
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  signOut
-} from 'firebase/auth';
+import { signInWithEmailAndPassword, signInWithPopup, signOut } from 'firebase/auth';
 import { FcGoogle } from 'react-icons/fc';
 import { LuLock, LuMail, LuLogIn } from 'react-icons/lu';
 import { AuthShell, Card, Button, Field, Alert, SegmentedControl } from '../components/ui';
-import { API_BASE_URL } from '../api/config';
+import { fetchProfile } from '../api/profile';
+import { logPlatformEvent } from '../api/events';
+
+const UNREGISTERED_MSG = 'Usuário não cadastrado. Faça o registro primeiro.';
 
 export default function Login() {
   const [method, setMethod]     = useState('google');
@@ -19,50 +18,40 @@ export default function Login() {
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const checkProfile = async (token) => {
-    const res = await fetch(`${API_BASE_URL}/me`, {
-      headers: { Authorization: 'Bearer ' + token }
-    });
-    return res.ok;
-  };
+  // Volta para onde a pessoa tentou entrar (ex.: /report?session=… vindo de um jogo).
+  const from = location.state?.from;
+  const destination = from ? `${from.pathname}${from.search || ''}` : '/';
 
-  // função utilitária para logar eventos de login
-  async function logLoginEvent(token, status, method, message = null) {
+  /**
+   * Após autenticar no Firebase, confirma que a conta existe no backend.
+   * Sem cadastro (404) desloga e orienta ao registro — mesmo comportamento de
+   * antes, agora distinguindo "não cadastrado" de "backend indisponível".
+   */
+  async function completeSignIn(methodName) {
     try {
-      await fetch(`${API_BASE_URL}/events/platform`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + token
-        },
-        body: JSON.stringify({
-          event_type: status === "success" ? "login_success" : "login_failed",
-          payload: { method, message }
-        })
-      });
+      await fetchProfile();
     } catch (err) {
-      console.error("Erro ao logar evento de login:", err);
+      await signOut(auth);
+      const msg = err.status === 404 ? UNREGISTERED_MSG : err.message;
+      setError(msg);
+      await logPlatformEvent('login_failed', { method: methodName, message: msg });
+      return;
     }
+    await logPlatformEvent('login_success', { method: methodName });
+    navigate(destination, { replace: true });
   }
 
   async function handleGoogleSignIn() {
     setError(''); setLoading(true);
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const token = await result.user.getIdToken();
-      if (!await checkProfile(token)) {
-        await signOut(auth);
-        setError('Usuário não cadastrado. Faça o registro primeiro.');
-        await logLoginEvent(token, "failed", "google", "Usuário não cadastrado");
-        return;
-      }
-      await logLoginEvent(token, "success", "google");
-      navigate('/');
+      await signInWithPopup(auth, googleProvider);
+      await completeSignIn('google');
     } catch (err) {
       setError('Erro ao entrar com Google: ' + err.message);
-      // sem token válido ainda, não dá pra enviar no header → envia sem token
-      await logLoginEvent("", "failed", "google", err.message);
+      // Sem usuário autenticado o evento não tem como ser enviado; fica no console.
+      await logPlatformEvent('login_failed', { method: 'google', message: err.message });
     } finally {
       setLoading(false);
     }
@@ -72,19 +61,11 @@ export default function Login() {
     e.preventDefault();
     setError(''); setLoading(true);
     try {
-      const cred = await signInWithEmailAndPassword(auth, email, password);
-      const token = await cred.user.getIdToken();
-      if (!await checkProfile(token)) {
-        await signOut(auth);
-        setError('Usuário não cadastrado. Faça o registro primeiro.');
-        await logLoginEvent(token, "failed", "email", "Usuário não cadastrado");
-        return;
-      }
-      await logLoginEvent(token, "success", "email");
-      navigate('/');
+      await signInWithEmailAndPassword(auth, email, password);
+      await completeSignIn('email');
     } catch (err) {
       setError('Erro ao entrar: ' + err.message);
-      await logLoginEvent("", "failed", "email", err.message);
+      await logPlatformEvent('login_failed', { method: 'email', message: err.message });
     } finally {
       setLoading(false);
     }
@@ -125,9 +106,7 @@ export default function Login() {
           <form onSubmit={handleEmailSignIn} className="a2l-stack" style={{ gap: 16 }}>
             <Field label={<><LuMail size={14} /> E-mail</>} required>
               <input
-                type="email"
-                required
-                autoComplete="email"
+                type="email" required autoComplete="email"
                 placeholder="voce@escola.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
@@ -136,9 +115,7 @@ export default function Login() {
 
             <Field label={<><LuLock size={14} /> Senha</>} required>
               <input
-                type="password"
-                required
-                autoComplete="current-password"
+                type="password" required autoComplete="current-password"
                 placeholder="••••••••"
                 value={password}
                 onChange={e => setPassword(e.target.value)}

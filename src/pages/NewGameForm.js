@@ -1,16 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth } from '../firebase';
 import axios from 'axios';
-import { useAuthState } from 'react-firebase-hooks/auth';
+import { apiJson, jsonBody } from '../api/httpClient';
 import { useDropzone } from 'react-dropzone';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { LuUpload, LuImage, LuFileArchive, LuGamepad2, LuPlus } from 'react-icons/lu';
-import { AppShell, Card, Button, Field, Loader, PageHead, Switch } from '../components/ui';
+import { AppShell, Card, Button, Field, PageHead, Switch } from '../components/ui';
 
 export default function NewGameForm() {
-  const [user, loadingAuth] = useAuthState(auth);
   const [name, setName] = useState('');
   const [iconFile, setIconFile] = useState(null);
   const [gameFile, setGameFile] = useState(null);
@@ -63,10 +61,6 @@ export default function NewGameForm() {
     }
   });
 
-  if (loadingAuth) {
-    return <Loader />;
-  }
-
   const handleSubmit = async e => {
     e.preventDefault();
     if (!name || !iconFile || !gameFile) {
@@ -77,61 +71,37 @@ export default function NewGameForm() {
     setProgress(0);
 
     try {
-      const token = await auth.currentUser.getIdToken();
-
       // 1) Criar o jogo
-      const createRes = await fetch('/api/games', {
+      const { id: gameId } = await apiJson('/games', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ name, has_options: hasOptions, has_warmup: hasWarmup })
-      });
-      if (!createRes.ok) throw new Error('Erro ao criar jogo');
-      const { id: gameId } = await createRes.json();
+        ...jsonBody({ name, has_options: hasOptions, has_warmup: hasWarmup }),
+      }, 'Erro ao criar jogo');
 
       // 2) Upload do ícone
-      const iconUrlRes = await fetch(
-        `/api/games/${gameId}/icon/upload-url?filename=${encodeURIComponent(iconFile.name)}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+      const { upload_url: iconUploadUrl, object_path, mime_type } = await apiJson(
+        `/games/${gameId}/icon/upload-url?filename=${encodeURIComponent(iconFile.name)}`,
+        undefined, 'Erro ao obter URL do ícone'
       );
-      if (!iconUrlRes.ok) throw new Error('Erro ao obter URL do ícone');
-      const { upload_url: iconUploadUrl, object_path, mime_type } = await iconUrlRes.json();
       await axios.put(iconUploadUrl, iconFile, {
         headers: { 'Content-Type': mime_type },
         onUploadProgress: evt => setProgress(Math.round((evt.loaded * 100) / evt.total))
       });
-      const patchRes = await fetch(`/api/games/${gameId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ icon_url: object_path })
-      });
-      if (!patchRes.ok) throw new Error('Erro ao atualizar ícone');
+      await apiJson(`/games/${gameId}`, {
+        method: 'PATCH', ...jsonBody({ icon_url: object_path }),
+      }, 'Erro ao atualizar ícone');
 
       // 3) Deploy do ZIP
-      const deployUrlRes = await fetch(
-        `/api/games/${gameId}/deploys/upload-url?filename=${encodeURIComponent(gameFile.name)}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+      const { upload_url: zipUploadUrl, version } = await apiJson(
+        `/games/${gameId}/deploys/upload-url?filename=${encodeURIComponent(gameFile.name)}`,
+        undefined, 'Erro ao obter URL de deploy'
       );
-      if (!deployUrlRes.ok) throw new Error('Erro ao obter URL de deploy');
-      const { upload_url: zipUploadUrl, version } = await deployUrlRes.json();
       await axios.put(zipUploadUrl, gameFile, {
         headers: { 'Content-Type': gameFile.type },
         onUploadProgress: evt => setProgress(Math.round((evt.loaded * 100) / evt.total))
       });
-      const regRes = await fetch(`/api/games/${gameId}/deploys/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ version, download_url: zipUploadUrl, notes: '' })
-      });
-      if (!regRes.ok) throw new Error('Erro ao registrar deploy');
+      await apiJson(`/games/${gameId}/deploys/register`, {
+        method: 'POST', ...jsonBody({ version, download_url: zipUploadUrl, notes: '' }),
+      }, 'Erro ao registrar deploy');
 
       toast.success('Jogo criado com sucesso!');
       navigate('/admin');

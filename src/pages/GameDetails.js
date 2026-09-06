@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { auth } from '../firebase';
 import { storage } from '../firebase';
+import { apiJson, jsonBody } from '../api/httpClient';
 import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
 import axios from 'axios';
 import { useDropzone } from 'react-dropzone';
@@ -67,11 +67,9 @@ export default function GameDetails() {
   // Buscar meta do jogo
   const fetchGame = async () => {
     try {
-      const token = await auth.currentUser.getIdToken();
-      const res = await fetch('/api/games', { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) throw new Error('Erro ao carregar jogo');
-      const list = await res.json();
+      const list = await apiJson('/games', undefined, 'Erro ao carregar jogo');
       const g = list.find(x => x.id === gameId);
+      if (!g) throw new Error('Jogo não encontrado.');
       setGameInfo(g);
       setEditName(g.name);
       setEditHasOptions(g.has_options);
@@ -93,10 +91,7 @@ export default function GameDetails() {
   // Buscar histórico de deploys
   const fetchDeploys = async () => {
     try {
-      const token = await auth.currentUser.getIdToken();
-      const res = await fetch(`/api/games/${gameId}/deploys`, { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) throw new Error('Erro ao buscar deploys');
-      const data = await res.json();
+      const data = await apiJson(`/games/${gameId}/deploys`, undefined, 'Erro ao buscar deploys');
       setDeploys(data);
       return data;
     } catch (err) {
@@ -105,12 +100,10 @@ export default function GameDetails() {
     }
   };
 
-  // Inicialização
+  // Inicialização — o PrivateRoute já garantiu usuário autenticado.
   useEffect(() => {
-    const unsub = auth.onAuthStateChanged(u => {
-      if (u) { fetchGame(); fetchDeploys(); }
-    });
-    return () => unsub();
+    fetchGame();
+    fetchDeploys();
   }, [gameId]);
 
   // Poll: novo deploy adicionado
@@ -149,22 +142,17 @@ export default function GameDetails() {
     if (!file) return toast.warn('Selecione um .zip válido.');
     setLoading(true); setUploadProgress(0);
     try {
-      const token = await auth.currentUser.getIdToken();
-      const urlRes = await fetch(
-        `/api/games/${gameId}/deploys/upload-url?filename=${encodeURIComponent(file.name)}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+      const { upload_url, version } = await apiJson(
+        `/games/${gameId}/deploys/upload-url?filename=${encodeURIComponent(file.name)}`,
+        undefined, 'Não foi possível obter URL de upload'
       );
-      if (!urlRes.ok) throw new Error('Não foi possível obter URL');
-      const { upload_url, version } = await urlRes.json();
       await axios.put(upload_url, file, {
         headers: { 'Content-Type': 'application/zip' },
         onUploadProgress: evt => setUploadProgress(Math.round((evt.loaded * 100) / evt.total))
       });
-      const regRes = await fetch(`/api/games/${gameId}/deploys/register`, {
-        method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type':'application/json' },
-        body: JSON.stringify({ version, download_url: upload_url, notes })
-      });
-      if (!regRes.ok) throw new Error('Falha ao registrar deploy');
+      await apiJson(`/games/${gameId}/deploys/register`, {
+        method: 'POST', ...jsonBody({ version, download_url: upload_url, notes }),
+      }, 'Falha ao registrar deploy');
       toast.info('Deploy registrado!');
       setListPollVersion(version);
       setNotes('');
@@ -182,10 +170,7 @@ export default function GameDetails() {
     const version = confirmingVersion;
     setConfirmingVersion(null);
     try {
-      const token = await auth.currentUser.getIdToken();
-      const res = await fetch(`/api/games/${gameId}/activate/${version}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) throw new Error('Falha ao ativar');
-      const { operation_name } = await res.json();
+      const { operation_name } = await apiJson(`/games/${gameId}/activate/${version}`, { method: 'POST' }, 'Falha ao ativar');
       setGameInfo(p => ({ ...p, active_version: version }));
       setBuildOp(operation_name);
       setBuildStatus('IN_PROGRESS');
@@ -200,10 +185,7 @@ export default function GameDetails() {
     if (!buildOp) return;
     const iv = setInterval(async () => {
       try {
-        const token = await auth.currentUser.getIdToken();
-        const res = await fetch(`/api/builds/${buildOp}/status`, { headers:{ Authorization:`Bearer ${token}` } });
-        if (!res.ok) throw new Error('Erro na build');
-        const data = await res.json();
+        const data = await apiJson(`/builds/${buildOp}/status`, undefined, 'Erro na build');
         if (data.status !== 'IN_PROGRESS') {
           setBuildStatus(data.build_status);
           clearInterval(iv);
@@ -224,19 +206,15 @@ export default function GameDetails() {
   const handleEditToggle = () => setIsEditing(!isEditing);
   const handleSaveInfo = async () => {
     try {
-      const token = await auth.currentUser.getIdToken();
       let iconPath = gameInfo.icon_url;
 
       // Se tiver novo ícone, sobe pelo endpoint de upload
       if (newIconFile) {
         // 1) Pede URL de upload
-        const iconUrlRes = await fetch(
-          `/api/games/${gameId}/icon/upload-url?filename=${encodeURIComponent(newIconFile.name)}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+        const { upload_url: iconUploadUrl, object_path, mime_type } = await apiJson(
+          `/games/${gameId}/icon/upload-url?filename=${encodeURIComponent(newIconFile.name)}`,
+          undefined, 'Erro ao obter URL do ícone'
         );
-        if (!iconUrlRes.ok) throw new Error('Erro ao obter URL do ícone');
-
-        const { upload_url: iconUploadUrl, object_path, mime_type } = await iconUrlRes.json();
 
         // 2) Upload direto para o storage via PUT
         await axios.put(iconUploadUrl, newIconFile, {
@@ -249,21 +227,15 @@ export default function GameDetails() {
       }
 
       // Atualiza os outros campos
-      const res = await fetch(`/api/games/${gameId}`, {
+      await apiJson(`/games/${gameId}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+        ...jsonBody({
           name: editName,
           has_options: editHasOptions,
           has_warmup: editHasWarmup,
           icon_url: iconPath,
         }),
-      });
-
-      if (!res.ok) throw new Error('Falha ao salvar informações');
+      }, 'Falha ao salvar informações');
       toast.success('Informações atualizadas');
       setIsEditing(false);
       setNewIconFile(null);

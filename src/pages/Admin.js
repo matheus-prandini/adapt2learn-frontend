@@ -47,13 +47,11 @@ export default function Admin() {
     color: colors.ink[900],
   };
   const [user, loadingAuth] = useAuthState(auth);
-  const [profile, setProfile] = useState(null);
   const [students, setStudents] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [gamesList, setGamesList] = useState([]);
   const [selectedSchool, setSelectedSchool] = useState(SCHOOLS[1]);
   const [selectedGame, setSelectedGame] = useState([]);
-  const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [loadingGames, setLoadingGames] = useState(false);
@@ -145,25 +143,6 @@ export default function Admin() {
       toast.error(err.message);
     }
   };
-
-  // Load profile and guard
-  useEffect(() => {
-    if (loadingAuth) return;
-    if (!user) return navigate('/login');
-    (async () => {
-      try {
-        const token = await user.getIdToken();
-        const res = await fetch('/api/me', { headers: { Authorization: `Bearer ${token}` } });
-        const data = await res.json();
-        if (!['teacher', 'admin'].includes(data.role)) navigate('/');
-        setProfile(data);
-      } catch {
-        navigate('/');
-      } finally {
-        setLoadingProfile(false);
-      }
-    })();
-  }, [user, loadingAuth]);
 
   // Fetch students
   useEffect(() => {
@@ -285,7 +264,8 @@ export default function Admin() {
     }
   };
 
-  if (loadingAuth || loadingProfile) return <Loader label="Carregando painel administrativo…" />;
+  // Auth e papel já validados pelo PrivateRoute; user aqui só alimenta getIdToken até o split.
+  if (loadingAuth) return <Loader label="Carregando painel administrativo…" />;
 
   return (
     <AppShell width="xl" back={-1}>

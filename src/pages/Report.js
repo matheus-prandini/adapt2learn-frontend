@@ -1,14 +1,12 @@
 // src/pages/Report.js
 import React, { useState, useEffect } from 'react'
-import { auth } from '../firebase'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useAuthState } from 'react-firebase-hooks/auth'
 import {
   LuCheck, LuX, LuTarget, LuTimer, LuListChecks, LuLightbulb, LuChevronDown,
-  LuMessageSquareHeart, LuTrophy, LuBrain,
+  LuMessageSquareHeart, LuTrophy, LuBrain, LuRefreshCw,
 } from 'react-icons/lu'
-import { AppShell, Card, Button, Loader, PageHead, Badge, EmptyState, Stat } from '../components/ui'
-import { API_BASE_URL } from '../api/config';
+import { AppShell, Card, Button, Loader, PageHead, Badge, EmptyState, Stat, Alert } from '../components/ui'
+import { apiJson, jsonBody } from '../api/httpClient'
 
 /** Anel de precisão: leitura imediata do resultado, sem depender de libs. */
 function AccuracyRing({ value }) {
@@ -125,8 +123,9 @@ function QuestionCard({ q, tone, expanded, onToggle }) {
 }
 
 export default function Report() {
-  const [user, loadingAuth] = useAuthState(auth)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [reloadTick, setReloadTick] = useState(0)
   const [report, setReport] = useState(null)
   const [correctList, setCorrectList] = useState([])
   const [wrongList, setWrongList] = useState([])
@@ -142,47 +141,46 @@ export default function Report() {
   const sessionNumber = params.get('session_number') || ''
 
   useEffect(() => {
-    if (loadingAuth) return
-    if (!user) {
-      navigate('/login')
-      return
-    }
-
+    let cancelled = false
+    setLoading(true)
+    setError('')
     ;(async () => {
       try {
-        const token = await user.getIdToken()
-        const res = await fetch(
-          `${API_BASE_URL}/evaluate_responses`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              school_id: schoolId,
-              discipline,
-              subarea,
-              session_number: sessionNumber,
-            }),
-          }
-        )
-        if (!res.ok) throw new Error(`Status ${res.status}`)
-        const json = await res.json()
-
+        const json = await apiJson('/evaluate_responses', {
+          method: 'POST',
+          ...jsonBody({ school_id: schoolId, discipline, subarea, session_number: sessionNumber }),
+        }, 'Não foi possível carregar seus resultados.')
+        if (cancelled) return
         setReport(json.report ?? null)
         setCorrectList(Array.isArray(json.correct_list) ? json.correct_list : [])
         setWrongList(Array.isArray(json.wrong_list) ? json.wrong_list : [])
       } catch (err) {
         console.error('Failed to load report', err)
+        // Antes o erro era engolido e a tela mostrava "0 questões, 0%" como se
+        // fosse um resultado válido — para um aluno, pior que uma mensagem.
+        if (!cancelled) setError(err.message)
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     })()
-  }, [user, loadingAuth, navigate, schoolId, discipline, subarea, sessionNumber])
+    return () => { cancelled = true }
+  }, [schoolId, discipline, subarea, sessionNumber, reloadTick])
 
-  if (loadingAuth || loading) {
+  if (loading) {
     return <Loader label="Analisando seus resultados…" />
+  }
+
+  if (error) {
+    return (
+      <AppShell width="md" back="/" backLabel="Painel">
+        <div className="a2l-stack a2l-anim-in" style={{ gap: 16 }}>
+          <Alert tone="error">{error}</Alert>
+          <Button icon={<LuRefreshCw size={16} />} onClick={() => setReloadTick(t => t + 1)}>
+            Tentar de novo
+          </Button>
+        </div>
+      </AppShell>
+    )
   }
 
   // Métricas para o resumo
@@ -206,7 +204,7 @@ export default function Report() {
     : 'Sessão concluída!'
 
   return (
-    <AppShell width="lg" back="/dashboard" backLabel="Painel">
+    <AppShell width="lg" back="/" backLabel="Painel">
       <PageHead
         className="a2l-anim-in"
         eyebrow={<><LuTrophy size={13} /> Resultado da sessão</>}

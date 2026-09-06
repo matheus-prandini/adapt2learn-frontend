@@ -1,65 +1,23 @@
 // src/pages/Dashboard.js
-import React, { useState, useEffect } from 'react';
-import { useNavigate }           from 'react-router-dom';
-import { auth }                  from '../firebase';
-import { useAuthState }          from 'react-firebase-hooks/auth';
-import { signOut }               from 'firebase/auth';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   LuGamepad2, LuPencilRuler, LuSettings, LuLogOut, LuArrowRight, LuSparkles,
 } from 'react-icons/lu';
-import { AppShell, UserChip, Card, Button, Loader, PageHead, Badge } from '../components/ui';
-import { API_BASE_URL } from '../api/config';
+import { AppShell, UserChip, Card, Button, PageHead, Badge } from '../components/ui';
+import { useProfile } from '../auth/ProfileContext';
 
 const ROLE_LABEL = { student: 'Aluno(a)', teacher: 'Professor(a)', admin: 'Administrador(a)' };
 
 export default function Dashboard() {
-  const [user, loadingAuth]       = useAuthState(auth);
-  const [username, setUsername]   = useState('');
-  const [profile, setProfile]     = useState(null);
-  const [loadingProfile, setLoadingProfile] = useState(true);
-  const navigate                  = useNavigate();
+  // Perfil e sessão vêm do ProfileProvider; o PrivateRoute já garantiu ambos.
+  const { profile, displayName, isTeacher, signOut } = useProfile();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!user) {
-      setLoadingProfile(false);
-      return;
-    }
-
-    (async () => {
-      try {
-        const token = await user.getIdToken();
-        const res   = await fetch(`${API_BASE_URL}/me`, {
-          headers: { Authorization: 'Bearer ' + token }
-        });
-        if (!res.ok) throw new Error('Falha ao carregar perfil');
-
-        const data = await res.json();
-        setProfile(data);
-
-        const firebaseName = user.displayName;
-        const backendName  = data.name;
-        setUsername(firebaseName || backendName || '');
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoadingProfile(false);
-      }
-    })();
-  }, [user]);
-
-  if (loadingAuth || loadingProfile) {
-    return <Loader label="Preparando seu painel…" />;
-  }
-  if (!user) {
-    navigate('/login');
-    return <Loader label="Redirecionando ao login…" />;
-  }
-
-  const isTeacher = ['teacher', 'admin'].includes(profile?.role);
-  const firstName = (username || 'Amigo').split(' ')[0];
+  const firstName = (displayName || 'Amigo').split(' ')[0];
 
   const handleLogout = async () => {
-    await signOut(auth);
+    await signOut();
     navigate('/login');
   };
 
@@ -68,7 +26,7 @@ export default function Dashboard() {
       width="lg"
       actions={
         <>
-          <UserChip name={username} role={ROLE_LABEL[profile?.role]} />
+          <UserChip name={displayName} role={ROLE_LABEL[profile?.role]} />
           <Button variant="ghost" size="sm" onClick={handleLogout} aria-label="Sair" title="Sair">
             <LuLogOut size={17} />
           </Button>
@@ -85,8 +43,7 @@ export default function Dashboard() {
 
       {/* Ação principal: jogar. Ocupa a largura toda e domina a hierarquia. */}
       <Card
-        hero
-        interactive
+        hero interactive
         className="a2l-anim-in a2l-delay-1"
         onClick={() => navigate('/select')}
         style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 20, flexWrap: 'wrap' }}

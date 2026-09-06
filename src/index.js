@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import App from './App';
 import { ThemeProvider, useTheme } from './theme/ThemeContext';
+import { ProfileProvider } from './auth/ProfileContext';
 import { createMuiTheme } from './theme/muiTheme';
 import './styles/global.css';
 
@@ -18,7 +19,9 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <ThemeProvider>
     <MuiBridge>
-      <BrowserRouter><App/></BrowserRouter>
+      <ProfileProvider>
+        <BrowserRouter><App/></BrowserRouter>
+      </ProfileProvider>
     </MuiBridge>
   </ThemeProvider>
 );
