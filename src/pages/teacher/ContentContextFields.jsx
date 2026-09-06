@@ -21,11 +21,9 @@ export default function ContentContextFields({
   subareaOptions,
   loadingOptions,
 }) {
-  const showSubareaSelect =
-    discipline && subareaOptions.length > 0 && !subareaIsCustom
+  const showSubareaSelect = discipline && subareaOptions.length > 0 && !subareaIsCustom
 
-  const subareaSelectValue =
-    subarea && subareaOptions.includes(subarea) ? subarea : ''
+  const subareaSelectValue = subarea && subareaOptions.includes(subarea) ? subarea : ''
 
   return (
     <Card as="section" quiet style={{ marginBottom: 20, padding: 20 }}>
@@ -45,7 +43,9 @@ export default function ContentContextFields({
           <select value={gameId} onChange={e => onGameChange(e.target.value)}>
             <option value="">Selecione um jogo…</option>
             {games.map(g => (
-              <option key={g.id} value={g.id}>{g.name}</option>
+              <option key={g.id} value={g.id}>
+                {g.name}
+              </option>
             ))}
           </select>
         </Field>
@@ -58,7 +58,9 @@ export default function ContentContextFields({
           >
             <option value="">Selecione…</option>
             {disciplineOptions.map(d => (
-              <option key={d} value={d}>{d}</option>
+              <option key={d} value={d}>
+                {d}
+              </option>
             ))}
           </select>
         </Field>
@@ -80,7 +82,9 @@ export default function ContentContextFields({
               >
                 <option value="">Selecione…</option>
                 {subareaOptions.map(s => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
                 ))}
                 <option value={NEW_SUBAREA_VALUE}>+ Nova subárea…</option>
               </select>

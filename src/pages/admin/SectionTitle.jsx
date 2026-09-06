@@ -5,8 +5,13 @@ export default function SectionTitle({ children, action, style }) {
   return (
     <div
       style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        gap: 12, marginBottom: 14, flexWrap: 'wrap', ...style,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 12,
+        marginBottom: 14,
+        flexWrap: 'wrap',
+        ...style,
       }}
     >
       <h3 style={{ fontSize: 'var(--a2l-text-lg)' }}>{children}</h3>

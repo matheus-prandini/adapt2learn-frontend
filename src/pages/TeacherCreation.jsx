@@ -38,7 +38,11 @@ export default function TeacherCreation() {
       try {
         const [gamesList, docs] = await Promise.all([
           apiJson('/games', undefined, 'Não foi possível carregar jogos.'),
-          apiJson(`/documents/school/${schoolId}`, undefined, 'Não foi possível carregar documentos.'),
+          apiJson(
+            `/documents/school/${schoolId}`,
+            undefined,
+            'Não foi possível carregar documentos.'
+          ),
         ])
         if (cancelled) return
         setGames(gamesList)
@@ -58,7 +62,9 @@ export default function TeacherCreation() {
         if (!cancelled) setLoading(false)
       }
     })()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [schoolId, navigate])
 
   const refreshContentCatalog = useCallback(async () => {
@@ -67,7 +73,11 @@ export default function TeacherCreation() {
     setLoadingContentOptions(true)
     try {
       const [docs, wordItems] = await Promise.all([
-        apiJson(`/documents/school/${schoolId}`, undefined, 'Não foi possível carregar documentos.'),
+        apiJson(
+          `/documents/school/${schoolId}`,
+          undefined,
+          'Não foi possível carregar documentos.'
+        ),
         listWordChallengesForSchool(schoolId),
       ])
       setDocsList(docs)
@@ -108,7 +118,11 @@ export default function TeacherCreation() {
     <AppShell width="xl" back="/" backLabel="Painel">
       <PageHead
         className="a2l-anim-in"
-        eyebrow={<><LuPencilRuler size={13} /> Área do professor</>}
+        eyebrow={
+          <>
+            <LuPencilRuler size={13} /> Área do professor
+          </>
+        }
         title="Área de criação"
         subtitle="Cadastre conteúdo para os jogos: documentos com questões de matemática ou desafios de palavra + imagem."
       />

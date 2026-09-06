@@ -4,7 +4,11 @@ export function Label({ children, required, optional, htmlFor }) {
   return (
     <label className="a2l-label" htmlFor={htmlFor}>
       {children}
-      {required && <span className="a2l-label__req" aria-hidden="true">*</span>}
+      {required && (
+        <span className="a2l-label__req" aria-hidden="true">
+          *
+        </span>
+      )}
       {optional && <span className="a2l-label__opt">(opcional)</span>}
     </label>
   )
@@ -25,17 +29,19 @@ export default function Field({
   const control = React.isValidElement(children)
     ? React.cloneElement(children, {
         id: children.props.id || id,
-        className: [
-          'a2l-input',
-          error ? 'a2l-input--invalid' : '',
-          children.props.className || '',
-        ].filter(Boolean).join(' '),
+        className: ['a2l-input', error ? 'a2l-input--invalid' : '', children.props.className || '']
+          .filter(Boolean)
+          .join(' '),
       })
     : children
 
   return (
     <div className={`a2l-field ${className}`} style={style}>
-      {label && <Label htmlFor={id} required={required} optional={optional}>{label}</Label>}
+      {label && (
+        <Label htmlFor={id} required={required} optional={optional}>
+          {label}
+        </Label>
+      )}
       {control}
       {error ? (
         <span className="a2l-hint a2l-hint--error">{error}</span>

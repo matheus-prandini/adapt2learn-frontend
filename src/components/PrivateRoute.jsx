@@ -23,13 +23,13 @@ export default function PrivateRoute({ roles, children }) {
       <AuthShell>
         <Card hero>
           <Alert tone="error" style={{ marginBottom: 18 }}>
-            {unregistered
-              ? 'Sua conta ainda não está cadastrada na plataforma.'
-              : error.message}
+            {unregistered ? 'Sua conta ainda não está cadastrada na plataforma.' : error.message}
           </Alert>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             {!unregistered && (
-              <Button icon={<LuRefreshCw size={16} />} onClick={refresh}>Tentar de novo</Button>
+              <Button icon={<LuRefreshCw size={16} />} onClick={refresh}>
+                Tentar de novo
+              </Button>
             )}
             <Button variant="secondary" icon={<LuLogOut size={16} />} onClick={signOut}>
               Sair

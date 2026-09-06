@@ -7,7 +7,13 @@ import { Card, EmptyState, Loader } from '../../components/ui'
 import SchoolSelect from './SchoolSelect'
 import SectionTitle from './SectionTitle'
 
-export default function SessionsTab({ school, onSchoolChange, games, gameNames, onGameNamesChange }) {
+export default function SessionsTab({
+  school,
+  onSchoolChange,
+  games,
+  gameNames,
+  onGameNamesChange,
+}) {
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(false)
 
@@ -30,7 +36,9 @@ export default function SessionsTab({ school, onSchoolChange, games, gameNames, 
         if (!cancelled) setLoading(false)
       }
     })()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [school, gameNames])
 
   const gameOptions = games.map(g => ({ value: g.name, label: g.name }))
@@ -73,7 +81,11 @@ export default function SessionsTab({ school, onSchoolChange, games, gameNames, 
             <tbody>
               {sessions.map(s => (
                 <tr key={s.session_id}>
-                  <td style={{ fontFamily: 'var(--a2l-font-mono)', fontSize: 'var(--a2l-text-sm)' }}>{s.session_id}</td>
+                  <td
+                    style={{ fontFamily: 'var(--a2l-font-mono)', fontSize: 'var(--a2l-text-sm)' }}
+                  >
+                    {s.session_id}
+                  </td>
                   <td>{s.game_name}</td>
                   <td>{s.user_name}</td>
                   <td>{new Date(s.created_at).toLocaleString('pt-BR')}</td>

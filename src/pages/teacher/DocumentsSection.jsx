@@ -1,10 +1,17 @@
 import React, { useState, useEffect } from 'react'
-import {
-  LuUpload, LuFileText, LuSparkles, LuTrash2, LuInbox, LuRefreshCw,
-} from 'react-icons/lu'
+import { LuUpload, LuFileText, LuSparkles, LuTrash2, LuInbox, LuRefreshCw } from 'react-icons/lu'
 import { toast } from 'react-toastify'
 import { apiFetch, parseJsonOrThrow } from '../../api/httpClient'
-import { Card, Button, Field, Alert, Badge, EmptyState, Loader, ConfirmDialog } from '../../components/ui'
+import {
+  Card,
+  Button,
+  Field,
+  Alert,
+  Badge,
+  EmptyState,
+  Loader,
+  ConfirmDialog,
+} from '../../components/ui'
 
 const allowedExtensions = ['.txt', '.pdf']
 
@@ -14,11 +21,7 @@ function isAllowedDocumentFile(f) {
   return allowedExtensions.some(ext => lower.endsWith(ext))
 }
 
-export default function DocumentsSection({
-  discipline = '',
-  subarea = '',
-  onContentChanged,
-}) {
+export default function DocumentsSection({ discipline = '', subarea = '', onContentChanged }) {
   const [file, setFile] = useState(null)
   const [status, setStatus] = useState('')
   const [docs, setDocs] = useState([])
@@ -91,9 +94,7 @@ export default function DocumentsSection({
     setExamples([])
     setLoadingEx(true)
     try {
-      const res = await apiFetch(
-        `/documents/${doc.id}/examples?phase=session`
-      )
+      const res = await apiFetch(`/documents/${doc.id}/examples?phase=session`)
       const data = await parseJsonOrThrow(res, 'Não foi possível carregar exemplos.')
       const formatted = data.map(item => ({
         question_id: item.id,
@@ -167,12 +168,21 @@ export default function DocumentsSection({
       <section>
         <h3 style={{ fontSize: 'var(--a2l-text-lg)', marginBottom: 6 }}>Enviar documento</h3>
         <p className="a2l-hint" style={{ marginBottom: 16 }}>
-          Envie PDF ou TXT para gerar questões de matemática. O processamento acontece em segundo plano.
+          Envie PDF ou TXT para gerar questões de matemática. O processamento acontece em segundo
+          plano.
         </p>
 
         <Card quiet as="form" onSubmit={handleUpload} style={{ padding: 20 }}>
           {contextReady ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                flexWrap: 'wrap',
+                marginBottom: 16,
+              }}
+            >
               <span className="a2l-eyebrow-sm">Enviando para</span>
               <Badge tone="brand">{discipline}</Badge>
               <Badge tone="mint">{subarea}</Badge>
@@ -202,7 +212,11 @@ export default function DocumentsSection({
             Enviar documento
           </Button>
 
-          {!!status && <p className="a2l-hint" style={{ marginTop: 12 }}>{status}</p>}
+          {!!status && (
+            <p className="a2l-hint" style={{ marginTop: 12 }}>
+              {status}
+            </p>
+          )}
         </Card>
       </section>
 
@@ -230,15 +244,21 @@ export default function DocumentsSection({
                 style={{ padding: 16 }}
               >
                 <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                  <span className="a2l-icon-chip a2l-icon-chip--neutral" style={{ width: 34, height: 34, borderRadius: 11 }}>
+                  <span
+                    className="a2l-icon-chip a2l-icon-chip--neutral"
+                    style={{ width: 34, height: 34, borderRadius: 11 }}
+                  >
                     <LuFileText size={17} />
                   </span>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div
                       style={{
-                        fontFamily: 'var(--a2l-font-display)', fontWeight: 700,
-                        color: 'var(--a2l-ink-900)', overflow: 'hidden',
-                        textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        fontFamily: 'var(--a2l-font-display)',
+                        fontWeight: 700,
+                        color: 'var(--a2l-ink-900)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
                       }}
                       title={d.filename}
                     >
@@ -261,9 +281,18 @@ export default function DocumentsSection({
 
       {selectedDoc && (
         <section className="a2l-anim-in">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              flexWrap: 'wrap',
+              marginBottom: 14,
+            }}
+          >
             <h3 style={{ fontSize: 'var(--a2l-text-lg)', flex: 1, minWidth: 200 }}>
-              Exemplos de <span style={{ color: 'var(--a2l-brand-600)' }}>{selectedDoc.filename}</span>
+              Exemplos de{' '}
+              <span style={{ color: 'var(--a2l-brand-600)' }}>{selectedDoc.filename}</span>
             </h3>
             <Button
               variant="soft"

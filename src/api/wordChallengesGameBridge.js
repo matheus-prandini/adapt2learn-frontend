@@ -2,17 +2,13 @@
  * Helpers para jogos (iframe) consumirem Word Challenges em runtime.
  * Parâmetros vêm da query string ao iniciar o jogo (school_id, discipline, subarea, session_number).
  */
-import {
-  fetchNextWordChallenge,
-  submitWordChallengeResponse,
-} from './wordChallengesApi'
+import { fetchNextWordChallenge, submitWordChallengeResponse } from './wordChallengesApi'
 
 /**
  * @param {URLSearchParams | string} search
  */
 export function parseWordChallengeGameParams(search) {
-  const params =
-    typeof search === 'string' ? new URLSearchParams(search) : search
+  const params = typeof search === 'string' ? new URLSearchParams(search) : search
 
   return {
     school_id: params.get('school_id') || '',

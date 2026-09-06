@@ -1,6 +1,4 @@
-import React, {
-  createContext, useCallback, useContext, useEffect, useMemo, useState,
-} from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
 export const THEME_STORAGE_KEY = 'a2l-theme'
 
@@ -22,9 +20,11 @@ function readStoredPreference() {
 }
 
 function systemPrefersDark() {
-  return typeof window !== 'undefined'
-    && typeof window.matchMedia === 'function'
-    && window.matchMedia(DARK_QUERY).matches
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia(DARK_QUERY).matches
+  )
 }
 
 export function ThemeProvider({ children }) {

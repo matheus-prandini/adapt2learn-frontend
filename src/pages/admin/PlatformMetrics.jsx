@@ -1,7 +1,16 @@
 import React, { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
 } from 'recharts'
 import { apiJson } from '../../api/httpClient'
 import { Stat, EmptyState, Loader } from '../../components/ui'
@@ -13,10 +22,20 @@ function SimpleTable({ columns, rows, rowKey, empty }) {
   return (
     <div className="a2l-table-wrap">
       <table className="a2l-table">
-        <thead><tr>{columns.map(c => <th key={c.key}>{c.label}</th>)}</tr></thead>
+        <thead>
+          <tr>
+            {columns.map(c => (
+              <th key={c.key}>{c.label}</th>
+            ))}
+          </tr>
+        </thead>
         <tbody>
           {rows.map(r => (
-            <tr key={r[rowKey]}>{columns.map(c => <td key={c.key}>{r[c.key]}</td>)}</tr>
+            <tr key={r[rowKey]}>
+              {columns.map(c => (
+                <td key={c.key}>{r[c.key]}</td>
+              ))}
+            </tr>
           ))}
         </tbody>
       </table>
@@ -41,7 +60,11 @@ export default function PlatformMetrics({ range }) {
         const params = new URLSearchParams()
         if (range.from) params.set('date_from', range.from.toISOString())
         if (range.to) params.set('date_to', range.to.toISOString())
-        const result = await apiJson(`/metrics/overview?${params}`, undefined, 'Erro ao carregar métricas.')
+        const result = await apiJson(
+          `/metrics/overview?${params}`,
+          undefined,
+          'Erro ao carregar métricas.'
+        )
         if (!cancelled) setData(result || {})
       } catch (err) {
         if (!cancelled) toast.error(err.message)
@@ -49,7 +72,9 @@ export default function PlatformMetrics({ range }) {
         if (!cancelled) setLoading(false)
       }
     })()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [range])
 
   if (loading && !data) return <Loader label="Carregando métricas…" />
@@ -61,7 +86,10 @@ export default function PlatformMetrics({ range }) {
   const pct = v => `${((v ?? 0) * 100).toFixed(1)}%`
 
   return (
-    <div className="a2l-stack" style={{ gap: 32, opacity: loading ? 0.6 : 1, transition: 'opacity 150ms' }}>
+    <div
+      className="a2l-stack"
+      style={{ gap: 32, opacity: loading ? 0.6 : 1, transition: 'opacity 150ms' }}
+    >
       <div className="a2l-grid a2l-grid--stats">
         <Stat label="Usuários ativos" value={d.users?.active_unique ?? 0} />
         <Stat label="Novos usuários" tone="mint" value={d.users?.new_users ?? 0} />
@@ -82,11 +110,21 @@ export default function PlatformMetrics({ range }) {
               <YAxis {...chart.yAxis} />
               <Tooltip {...chart.tooltip} />
               <Legend {...chart.legend} />
-              <Line type="monotone" dataKey="events" stroke={chart.palette[0]} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+              <Line
+                type="monotone"
+                dataKey="events"
+                stroke={chart.palette[0]}
+                strokeWidth={2.5}
+                dot={{ r: 3 }}
+                activeDot={{ r: 5 }}
+              />
             </LineChart>
           </ResponsiveContainer>
         ) : (
-          <EmptyState title="Sem dados de tendência" description="Ajuste o período e clique em Aplicar." />
+          <EmptyState
+            title="Sem dados de tendência"
+            description="Ajuste o período e clique em Aplicar."
+          />
         )}
       </section>
 

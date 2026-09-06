@@ -27,12 +27,27 @@ export function Progress({ value = 0, label }) {
   return (
     <div>
       {label && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--a2l-text-xs)', color: 'var(--a2l-ink-500)', marginBottom: 6, fontWeight: 600 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            fontSize: 'var(--a2l-text-xs)',
+            color: 'var(--a2l-ink-500)',
+            marginBottom: 6,
+            fontWeight: 600,
+          }}
+        >
           <span>{label}</span>
           <span>{pct}%</span>
         </div>
       )}
-      <div className="a2l-progress" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+      <div
+        className="a2l-progress"
+        role="progressbar"
+        aria-valuenow={pct}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
         <div className="a2l-progress__bar" style={{ width: `${pct}%` }} />
       </div>
     </div>

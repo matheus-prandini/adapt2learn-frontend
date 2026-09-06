@@ -27,6 +27,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Format check
+        run: npm run format:check
+
       # public/games fica vazio aqui (o sync do GCS precisa de credenciais e
       # só roda no deploy); o build do app não depende dos jogos.
       - name: Build

@@ -1,28 +1,28 @@
 // src/pages/Login.js
-import React, { useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { auth, googleProvider } from '../firebase';
-import { signInWithEmailAndPassword, signInWithPopup, signOut } from 'firebase/auth';
-import { FcGoogle } from 'react-icons/fc';
-import { LuLock, LuMail, LuLogIn } from 'react-icons/lu';
-import { AuthShell, Card, Button, Field, Alert, SegmentedControl } from '../components/ui';
-import { fetchProfile } from '../api/profile';
-import { logPlatformEvent } from '../api/events';
+import React, { useState } from 'react'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
+import { auth, googleProvider } from '../firebase'
+import { signInWithEmailAndPassword, signInWithPopup, signOut } from 'firebase/auth'
+import { FcGoogle } from 'react-icons/fc'
+import { LuLock, LuMail, LuLogIn } from 'react-icons/lu'
+import { AuthShell, Card, Button, Field, Alert, SegmentedControl } from '../components/ui'
+import { fetchProfile } from '../api/profile'
+import { logPlatformEvent } from '../api/events'
 
-const UNREGISTERED_MSG = 'Usuário não cadastrado. Faça o registro primeiro.';
+const UNREGISTERED_MSG = 'Usuário não cadastrado. Faça o registro primeiro.'
 
 export default function Login() {
-  const [method, setMethod]     = useState('google');
-  const [email, setEmail]       = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError]       = useState('');
-  const [loading, setLoading]   = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
+  const [method, setMethod] = useState('google')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
+  const location = useLocation()
 
   // Volta para onde a pessoa tentou entrar (ex.: /report?session=… vindo de um jogo).
-  const from = location.state?.from;
-  const destination = from ? `${from.pathname}${from.search || ''}` : '/';
+  const from = location.state?.from
+  const destination = from ? `${from.pathname}${from.search || ''}` : '/'
 
   /**
    * Após autenticar no Firebase, confirma que a conta existe no backend.
@@ -31,43 +31,45 @@ export default function Login() {
    */
   async function completeSignIn(methodName) {
     try {
-      await fetchProfile();
+      await fetchProfile()
     } catch (err) {
-      await signOut(auth);
-      const msg = err.status === 404 ? UNREGISTERED_MSG : err.message;
-      setError(msg);
-      await logPlatformEvent('login_failed', { method: methodName, message: msg });
-      return;
+      await signOut(auth)
+      const msg = err.status === 404 ? UNREGISTERED_MSG : err.message
+      setError(msg)
+      await logPlatformEvent('login_failed', { method: methodName, message: msg })
+      return
     }
-    await logPlatformEvent('login_success', { method: methodName });
-    navigate(destination, { replace: true });
+    await logPlatformEvent('login_success', { method: methodName })
+    navigate(destination, { replace: true })
   }
 
   async function handleGoogleSignIn() {
-    setError(''); setLoading(true);
+    setError('')
+    setLoading(true)
     try {
-      await signInWithPopup(auth, googleProvider);
-      await completeSignIn('google');
+      await signInWithPopup(auth, googleProvider)
+      await completeSignIn('google')
     } catch (err) {
-      setError('Erro ao entrar com Google: ' + err.message);
+      setError('Erro ao entrar com Google: ' + err.message)
       // Sem usuário autenticado o evento não tem como ser enviado; fica no console.
-      await logPlatformEvent('login_failed', { method: 'google', message: err.message });
+      await logPlatformEvent('login_failed', { method: 'google', message: err.message })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   }
 
   async function handleEmailSignIn(e) {
-    e.preventDefault();
-    setError(''); setLoading(true);
+    e.preventDefault()
+    setError('')
+    setLoading(true)
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      await completeSignIn('email');
+      await signInWithEmailAndPassword(auth, email, password)
+      await completeSignIn('email')
     } catch (err) {
-      setError('Erro ao entrar: ' + err.message);
-      await logPlatformEvent('login_failed', { method: 'email', message: err.message });
+      setError('Erro ao entrar: ' + err.message)
+      await logPlatformEvent('login_failed', { method: 'email', message: err.message })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   }
 
@@ -104,18 +106,36 @@ export default function Login() {
           </Button>
         ) : (
           <form onSubmit={handleEmailSignIn} className="a2l-stack" style={{ gap: 16 }}>
-            <Field label={<><LuMail size={14} /> E-mail</>} required>
+            <Field
+              label={
+                <>
+                  <LuMail size={14} /> E-mail
+                </>
+              }
+              required
+            >
               <input
-                type="email" required autoComplete="email"
+                type="email"
+                required
+                autoComplete="email"
                 placeholder="voce@escola.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
               />
             </Field>
 
-            <Field label={<><LuLock size={14} /> Senha</>} required>
+            <Field
+              label={
+                <>
+                  <LuLock size={14} /> Senha
+                </>
+              }
+              required
+            >
               <input
-                type="password" required autoComplete="current-password"
+                type="password"
+                required
+                autoComplete="current-password"
                 placeholder="••••••••"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
@@ -128,12 +148,23 @@ export default function Login() {
           </form>
         )}
 
-        {error && <Alert tone="error" className="a2l-anim-in" style={{ marginTop: 18 }}>{error}</Alert>}
+        {error && (
+          <Alert tone="error" className="a2l-anim-in" style={{ marginTop: 18 }}>
+            {error}
+          </Alert>
+        )}
 
-        <p style={{ marginTop: 22, textAlign: 'center', fontSize: 'var(--a2l-text-base)', color: 'var(--a2l-ink-500)' }}>
+        <p
+          style={{
+            marginTop: 22,
+            textAlign: 'center',
+            fontSize: 'var(--a2l-text-base)',
+            color: 'var(--a2l-ink-500)',
+          }}
+        >
           Não tem conta? <Link to="/register">Cadastre-se</Link>
         </p>
       </Card>
     </AuthShell>
-  );
+  )
 }

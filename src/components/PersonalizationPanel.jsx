@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
-import {
-  LuTarget, LuFlaskConical, LuFactory, LuSave, LuPlay,
-} from 'react-icons/lu'
+import { LuTarget, LuFlaskConical, LuFactory, LuSave, LuPlay } from 'react-icons/lu'
 import { apiFetch, parseJsonOrThrow } from '../api/httpClient'
 import { Card, Button, Field, Alert, Badge, Switch, Loader, Stat } from './ui'
 
@@ -47,7 +45,7 @@ export default function PersonalizationPanel() {
     try {
       const test_uids = testUids
         .split(',')
-        .map((s) => s.trim())
+        .map(s => s.trim())
         .filter(Boolean)
       const res = await apiFetch('/personalization/config', {
         method: 'PUT',
@@ -118,8 +116,10 @@ export default function PersonalizationPanel() {
         }
         if (tries >= MAX_TRIES) {
           setGenerating(false)
-          setGenJob((prev) => ({ ...(prev || {}), status: 'timeout' }))
-          toast.warn('Job ainda "started" após ~6 min — pode ter sido interrompido (Cloud Run). Prefira a CLI.')
+          setGenJob(prev => ({ ...(prev || {}), status: 'timeout' }))
+          toast.warn(
+            'Job ainda "started" após ~6 min — pode ter sido interrompido (Cloud Run). Prefira a CLI.'
+          )
           return
         }
         setTimeout(poll, 4000)
@@ -134,11 +134,16 @@ export default function PersonalizationPanel() {
   if (loading) return <Loader label="Carregando configuração…" />
 
   return (
-    <div className="a2l-stack" style={{ gap: 20, maxWidth: 760, margin: '0 auto', textAlign: 'left' }}>
+    <div
+      className="a2l-stack"
+      style={{ gap: 20, maxWidth: 760, margin: '0 auto', textAlign: 'left' }}
+    >
       {/* ---- Configuração ---- */}
       <Card hero>
         <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 14 }}>
-          <span className="a2l-icon-chip a2l-icon-chip--solid"><LuTarget size={19} /></span>
+          <span className="a2l-icon-chip a2l-icon-chip--solid">
+            <LuTarget size={19} />
+          </span>
           <div>
             <h3 style={{ fontSize: 'var(--a2l-text-lg)' }}>Personalização adaptativa</h3>
             <p className="a2l-hint" style={{ marginTop: 4 }}>
@@ -148,14 +153,18 @@ export default function PersonalizationPanel() {
         </div>
 
         <Alert tone="info" style={{ marginBottom: 20 }}>
-          A coorte são <strong>apenas os alunos matriculados</strong> (roster <code>study_participants</code>).
-          A randomização é <strong>estratificada por turma</strong> e imutável. Controle = comportamento
-          atual; qualquer erro cai no comportamento atual (fallback).
+          A coorte são <strong>apenas os alunos matriculados</strong> (roster{' '}
+          <code>study_participants</code>). A randomização é{' '}
+          <strong>estratificada por turma</strong> e imutável. Controle = comportamento atual;
+          qualquer erro cai no comportamento atual (fallback).
         </Alert>
 
         <div
           style={{
-            display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            padding: '14px 16px',
             background: enabled ? 'var(--a2l-success-bg)' : 'var(--a2l-surface-2)',
             border: `1px solid ${enabled ? 'var(--a2l-success-br)' : 'var(--a2l-line)'}`,
             borderRadius: 'var(--a2l-radius)',
@@ -163,7 +172,7 @@ export default function PersonalizationPanel() {
             transition: 'all var(--a2l-normal) var(--a2l-ease)',
           }}
         >
-          <Switch checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+          <Switch checked={enabled} onChange={e => setEnabled(e.target.checked)} />
           <div style={{ flex: 1 }}>
             <div style={{ fontFamily: 'var(--a2l-font-display)', fontWeight: 700 }}>
               {enabled ? 'Personalização ativada' : 'Personalização desativada'}
@@ -179,7 +188,7 @@ export default function PersonalizationPanel() {
 
         <div className="a2l-stack" style={{ gap: 16 }}>
           <Field label="Subárea do estudo">
-            <input value={subarea} onChange={(e) => setSubarea(e.target.value)} />
+            <input value={subarea} onChange={e => setSubarea(e.target.value)} />
           </Field>
 
           <Field
@@ -188,7 +197,7 @@ export default function PersonalizationPanel() {
           >
             <input
               value={activeSince}
-              onChange={(e) => setActiveSince(e.target.value)}
+              onChange={e => setActiveSince(e.target.value)}
               placeholder="2026-06-01"
             />
           </Field>
@@ -201,13 +210,18 @@ export default function PersonalizationPanel() {
             <textarea
               placeholder="vírgula-separados — vazio = coorte inteira"
               value={testUids}
-              onChange={(e) => setTestUids(e.target.value)}
+              onChange={e => setTestUids(e.target.value)}
               rows={2}
             />
           </Field>
         </div>
 
-        <Button onClick={save} loading={saving} icon={<LuSave size={17} />} style={{ marginTop: 18 }}>
+        <Button
+          onClick={save}
+          loading={saving}
+          icon={<LuSave size={17} />}
+          style={{ marginTop: 18 }}
+        >
           {saving ? 'Salvando…' : 'Salvar configuração'}
         </Button>
       </Card>
@@ -215,7 +229,9 @@ export default function PersonalizationPanel() {
       {/* ---- Dry-run / preview ---- */}
       <Card>
         <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 14 }}>
-          <span className="a2l-icon-chip a2l-icon-chip--mint"><LuFlaskConical size={19} /></span>
+          <span className="a2l-icon-chip a2l-icon-chip--mint">
+            <LuFlaskConical size={19} />
+          </span>
           <div>
             <h4 style={{ fontSize: 'var(--a2l-text-md)' }}>Dry-run (preview)</h4>
             <p className="a2l-hint" style={{ marginTop: 4 }}>
@@ -225,22 +241,44 @@ export default function PersonalizationPanel() {
           </div>
         </div>
 
-        <Button variant="accent" onClick={runPreview} loading={previewing} icon={<LuPlay size={16} />}>
+        <Button
+          variant="accent"
+          onClick={runPreview}
+          loading={previewing}
+          icon={<LuPlay size={16} />}
+        >
           {previewing ? 'Rodando…' : 'Rodar dry-run'}
         </Button>
 
         {preview && (
           <div className="a2l-anim-in" style={{ marginTop: 20 }}>
             <div className="a2l-grid a2l-grid--stats" style={{ marginBottom: 16 }}>
-              <Stat label="Coorte (roster)" value={preview.n_participants} foot={`${preview.n_assigned} já atribuídos`} />
-              <Stat label="Ativos" tone="mint" value={preview.n_active} foot={`desde ${preview.active_since}`} />
-              <Stat label="Controle" tone="neutral" value={preview.projected_split?.control ?? '—'} />
-              <Stat label="Adaptativo" tone="success" value={preview.projected_split?.adaptive ?? '—'} />
+              <Stat
+                label="Coorte (roster)"
+                value={preview.n_participants}
+                foot={`${preview.n_assigned} já atribuídos`}
+              />
+              <Stat
+                label="Ativos"
+                tone="mint"
+                value={preview.n_active}
+                foot={`desde ${preview.active_since}`}
+              />
+              <Stat
+                label="Controle"
+                tone="neutral"
+                value={preview.projected_split?.control ?? '—'}
+              />
+              <Stat
+                label="Adaptativo"
+                tone="success"
+                value={preview.projected_split?.adaptive ?? '—'}
+              />
             </div>
 
             <Alert tone={preview.enabled ? 'success' : 'warning'}>
-              Receberiam personalização: <strong>{preview.n_would_get_personalization}</strong> · master
-              switch <strong>{preview.enabled ? 'LIGADO' : 'desligado'}</strong>
+              Receberiam personalização: <strong>{preview.n_would_get_personalization}</strong> ·
+              master switch <strong>{preview.enabled ? 'LIGADO' : 'desligado'}</strong>
               {!preview.enabled && ' — ligue o toggle acima para aplicar de fato.'}
             </Alert>
 
@@ -248,16 +286,22 @@ export default function PersonalizationPanel() {
               <div className="a2l-table-wrap" style={{ marginTop: 16 }}>
                 <table className="a2l-table">
                   <thead>
-                    <tr><th>Turma</th><th>Controle</th><th>Adaptativo</th></tr>
+                    <tr>
+                      <th>Turma</th>
+                      <th>Controle</th>
+                      <th>Adaptativo</th>
+                    </tr>
                   </thead>
                   <tbody>
-                    {Object.entries(preview.by_turma).sort().map(([t, c]) => (
-                      <tr key={t}>
-                        <td style={{ fontWeight: 600 }}>{t}</td>
-                        <td>{c.control}</td>
-                        <td>{c.adaptive}</td>
-                      </tr>
-                    ))}
+                    {Object.entries(preview.by_turma)
+                      .sort()
+                      .map(([t, c]) => (
+                        <tr key={t}>
+                          <td style={{ fontWeight: 600 }}>{t}</td>
+                          <td>{c.control}</td>
+                          <td>{c.adaptive}</td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               </div>
@@ -269,12 +313,16 @@ export default function PersonalizationPanel() {
       {/* ---- Estágio 1: geração de itens novos ---- */}
       <Card>
         <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 14 }}>
-          <span className="a2l-icon-chip a2l-icon-chip--sun"><LuFactory size={19} /></span>
+          <span className="a2l-icon-chip a2l-icon-chip--sun">
+            <LuFactory size={19} />
+          </span>
           <div>
             <h4 style={{ fontSize: 'var(--a2l-text-md)' }}>Gerar itens novos (Estágio 1)</h4>
             <p className="a2l-hint" style={{ marginTop: 4 }}>
-              Pré-preenche o pool com itens novos (ex.: tier <code>hard</code>, que está vazio) via LLM,
-              <strong> fora do caminho do aluno</strong>. Requer <code>OPENAI_API_KEY</code> no backend.
+              Pré-preenche o pool com itens novos (ex.: tier <code>hard</code>, que está vazio) via
+              LLM,
+              <strong> fora do caminho do aluno</strong>. Requer <code>OPENAI_API_KEY</code> no
+              backend.
             </p>
           </div>
         </div>
@@ -285,13 +333,13 @@ export default function PersonalizationPanel() {
               type="number"
               min={1}
               value={genTarget}
-              onChange={(e) => setGenTarget(e.target.value)}
+              onChange={e => setGenTarget(e.target.value)}
             />
           </Field>
 
           <Switch
             checked={genCommit}
-            onChange={(e) => setGenCommit(e.target.checked)}
+            onChange={e => setGenCommit(e.target.checked)}
             label="Persistir no pool"
             hint="Desmarque para rodada seca / QA."
           />
@@ -310,8 +358,8 @@ export default function PersonalizationPanel() {
         <Alert tone="warning" style={{ marginTop: 16 }}>
           Em Cloud Run com <code>min-instances 0</code>, o job roda em background e pode ser{' '}
           <strong>interrompido</strong> (CPU throttled após a resposta). Para um lote grande e
-          confiável, prefira a CLI (<code>python -m app.experiments.pregenerate_pool --commit</code>) ou
-          mantenha uma instância quente durante a geração.
+          confiável, prefira a CLI (<code>python -m app.experiments.pregenerate_pool --commit</code>
+          ) ou mantenha uma instância quente durante a geração.
         </Alert>
 
         {genJob && (
@@ -320,9 +368,11 @@ export default function PersonalizationPanel() {
               <span className="a2l-eyebrow-sm">Status</span>
               <Badge
                 tone={
-                  genJob.status === 'done' ? 'success'
-                  : genJob.status === 'error' ? 'danger'
-                  : 'brand'
+                  genJob.status === 'done'
+                    ? 'success'
+                    : genJob.status === 'error'
+                      ? 'danger'
+                      : 'brand'
                 }
               >
                 {genJob.status}
@@ -331,9 +381,13 @@ export default function PersonalizationPanel() {
                 <span className="a2l-spinner a2l-spinner--sm" aria-hidden="true" />
               )}
             </div>
-            {genJob.report && <pre className="a2l-pre">{JSON.stringify(genJob.report, null, 2)}</pre>}
+            {genJob.report && (
+              <pre className="a2l-pre">{JSON.stringify(genJob.report, null, 2)}</pre>
+            )}
             {genJob.error && (
-              <Alert tone="error" style={{ marginTop: 10 }}>Erro: {genJob.error}</Alert>
+              <Alert tone="error" style={{ marginTop: 10 }}>
+                Erro: {genJob.error}
+              </Alert>
             )}
           </div>
         )}

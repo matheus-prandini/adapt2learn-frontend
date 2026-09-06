@@ -7,8 +7,12 @@ import { Button, Badge, Card, EmptyState, Loader, ConfirmDialog } from '../../co
 import SectionTitle from './SectionTitle'
 
 const iconStyle = {
-  width: 34, height: 34, borderRadius: 10, objectFit: 'cover',
-  border: '1px solid var(--a2l-line)', display: 'block',
+  width: 34,
+  height: 34,
+  borderRadius: 10,
+  objectFit: 'cover',
+  border: '1px solid var(--a2l-line)',
+  display: 'block',
 }
 
 export default function GamesTab({ games, loading, onRemoved }) {
@@ -67,19 +71,39 @@ export default function GamesTab({ games, loading, onRemoved }) {
               {games.map(g => (
                 <tr key={g.id}>
                   <td>{g.iconUrl && <img src={g.iconUrl} alt="" style={iconStyle} />}</td>
-                  <td style={{ fontFamily: 'var(--a2l-font-mono)', fontSize: 'var(--a2l-text-sm)' }}>{g.id}</td>
+                  <td
+                    style={{ fontFamily: 'var(--a2l-font-mono)', fontSize: 'var(--a2l-text-sm)' }}
+                  >
+                    {g.id}
+                  </td>
                   <td style={{ fontWeight: 600 }}>{g.name}</td>
-                  <td><Badge tone={g.has_warmup ? 'success' : 'neutral'}>{g.has_warmup ? 'Sim' : 'Não'}</Badge></td>
-                  <td><Badge tone={g.has_options ? 'success' : 'neutral'}>{g.has_options ? 'Sim' : 'Não'}</Badge></td>
+                  <td>
+                    <Badge tone={g.has_warmup ? 'success' : 'neutral'}>
+                      {g.has_warmup ? 'Sim' : 'Não'}
+                    </Badge>
+                  </td>
+                  <td>
+                    <Badge tone={g.has_options ? 'success' : 'neutral'}>
+                      {g.has_options ? 'Sim' : 'Não'}
+                    </Badge>
+                  </td>
                   <td>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <Button variant="secondary" size="sm" onClick={() => navigate(`/admin/games/${g.id}`)} title="Ver detalhes" aria-label="Ver detalhes">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => navigate(`/admin/games/${g.id}`)}
+                        title="Ver detalhes"
+                        aria-label="Ver detalhes"
+                      >
                         <LuEye size={15} />
                       </Button>
                       <Button
-                        variant="secondary" size="sm"
+                        variant="secondary"
+                        size="sm"
                         onClick={() => setPending(g)}
-                        title="Excluir jogo" aria-label="Excluir jogo"
+                        title="Excluir jogo"
+                        aria-label="Excluir jogo"
                         style={{ color: 'var(--a2l-danger)' }}
                       >
                         <LuTrash2 size={15} />
@@ -97,7 +121,11 @@ export default function GamesTab({ games, loading, onRemoved }) {
         open={!!pending}
         tone="danger"
         title="Excluir jogo"
-        message={pending ? `"${pending.name}" será removido da plataforma. Esta ação não pode ser desfeita.` : ''}
+        message={
+          pending
+            ? `"${pending.name}" será removido da plataforma. Esta ação não pode ser desfeita.`
+            : ''
+        }
         confirmLabel="Excluir"
         busy={deleting}
         onConfirm={confirmDelete}

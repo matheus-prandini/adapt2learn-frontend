@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
-import {
-  LuWand, LuPencilLine, LuRefreshCw, LuImageOff, LuInbox, LuPlus,
-} from 'react-icons/lu'
+import { LuWand, LuPencilLine, LuRefreshCw, LuImageOff, LuInbox, LuPlus } from 'react-icons/lu'
 import {
   listWordChallenges,
   createWordChallenges,
@@ -9,7 +7,13 @@ import {
 } from '../../api/wordChallengesApi'
 import { sortWordChallengesByDateDesc } from '../../api/wordChallengeNormalize'
 import {
-  Card, Button, Field, Alert, Badge, EmptyState, SegmentedControl,
+  Card,
+  Button,
+  Field,
+  Alert,
+  Badge,
+  EmptyState,
+  SegmentedControl,
 } from '../../components/ui'
 
 function parseWordsInput(text) {
@@ -20,12 +24,7 @@ function parseWordsInput(text) {
     .slice(0, 30)
 }
 
-export default function WordChallengesSection({
-  schoolId,
-  discipline,
-  subarea,
-  onContentChanged,
-}) {
+export default function WordChallengesSection({ schoolId, discipline, subarea, onContentChanged }) {
   const [mode, setMode] = useState('manual')
   const [wordsText, setWordsText] = useState('')
   const [count, setCount] = useState(5)
@@ -39,10 +38,7 @@ export default function WordChallengesSection({
   const filtersReady = schoolId && discipline && subarea
 
   const listParams = useMemo(
-    () =>
-      filtersReady
-        ? { school_id: schoolId, discipline, subarea }
-        : null,
+    () => (filtersReady ? { school_id: schoolId, discipline, subarea } : null),
     [filtersReady, schoolId, discipline, subarea]
   )
 
@@ -135,7 +131,15 @@ export default function WordChallengesSection({
           Criar desafios (palavra + imagem)
         </h3>
         {filtersReady ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              flexWrap: 'wrap',
+              marginBottom: 16,
+            }}
+          >
             <span className="a2l-eyebrow-sm">Contexto</span>
             <Badge tone="brand">{discipline}</Badge>
             <Badge tone="mint">{subarea}</Badge>
@@ -219,18 +223,33 @@ export default function WordChallengesSection({
             {creating ? 'Gerando…' : 'Criar desafios'}
           </Button>
 
-          {!!status && <p className="a2l-hint" style={{ marginTop: 12 }}>{status}</p>}
+          {!!status && (
+            <p className="a2l-hint" style={{ marginTop: 12 }}>
+              {status}
+            </p>
+          )}
         </Card>
       </section>
 
       <section>
         <div
           style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            gap: 12, marginBottom: 14, flexWrap: 'wrap',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            marginBottom: 14,
+            flexWrap: 'wrap',
           }}
         >
-          <h3 style={{ fontSize: 'var(--a2l-text-lg)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <h3
+            style={{
+              fontSize: 'var(--a2l-text-lg)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+            }}
+          >
             Desafios cadastrados
             <Badge tone="neutral">{challenges.length}</Badge>
           </h3>
@@ -288,8 +307,11 @@ export default function WordChallengesSection({
                 ) : (
                   <div
                     style={{
-                      height: 130, display: 'grid', placeItems: 'center',
-                      background: 'linear-gradient(160deg, var(--a2l-brand-50), var(--a2l-mint-50))',
+                      height: 130,
+                      display: 'grid',
+                      placeItems: 'center',
+                      background:
+                        'linear-gradient(160deg, var(--a2l-brand-50), var(--a2l-mint-50))',
                       color: 'var(--a2l-ink-400)',
                     }}
                   >
@@ -299,8 +321,10 @@ export default function WordChallengesSection({
                 <div style={{ padding: 14 }}>
                   <strong
                     style={{
-                      display: 'block', fontFamily: 'var(--a2l-font-display)',
-                      fontSize: 'var(--a2l-text-md)', color: 'var(--a2l-ink-900)',
+                      display: 'block',
+                      fontFamily: 'var(--a2l-font-display)',
+                      fontSize: 'var(--a2l-text-md)',
+                      color: 'var(--a2l-ink-900)',
                     }}
                   >
                     {c.word || '—'}
@@ -313,11 +337,15 @@ export default function WordChallengesSection({
                   {c.pedagogical_badges?.length > 0 ? (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 10 }}>
                       {c.pedagogical_badges.map(badge => (
-                        <Badge key={badge.key} tone="brand">{badge.text}</Badge>
+                        <Badge key={badge.key} tone="brand">
+                          {badge.text}
+                        </Badge>
                       ))}
                     </div>
                   ) : c.pedagogical_summary ? (
-                    <p className="a2l-hint" style={{ marginTop: 8 }}>{c.pedagogical_summary}</p>
+                    <p className="a2l-hint" style={{ marginTop: 8 }}>
+                      {c.pedagogical_summary}
+                    </p>
                   ) : null}
                 </div>
               </Card>

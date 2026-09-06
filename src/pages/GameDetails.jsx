@@ -1,231 +1,250 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
-import { storage } from '../firebase';
-import { apiJson, jsonBody } from '../api/httpClient';
-import { getDownloadURL, ref as storageRef } from 'firebase/storage';
-import axios from 'axios';
-import { useDropzone } from 'react-dropzone';
-import { toast } from 'react-toastify';
-import { LuPackage, LuUpload, LuPencil, LuCheck, LuX, LuImage } from 'react-icons/lu';
-import { AppShell, Card, Button, Badge, Loader, PageHead, ConfirmDialog } from '../components/ui';
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { useParams } from 'react-router-dom'
+import { storage } from '../firebase'
+import { apiJson, jsonBody } from '../api/httpClient'
+import { getDownloadURL, ref as storageRef } from 'firebase/storage'
+import axios from 'axios'
+import { useDropzone } from 'react-dropzone'
+import { toast } from 'react-toastify'
+import { LuPackage, LuUpload, LuPencil, LuCheck, LuX, LuImage } from 'react-icons/lu'
+import { AppShell, Card, Button, Badge, Loader, PageHead, ConfirmDialog } from '../components/ui'
 
 // Modal de confirmação para ativar versão
 export default function GameDetails() {
-  const { id: gameId } = useParams();
+  const { id: gameId } = useParams()
 
   // Estado principal
-  const [gameInfo, setGameInfo] = useState(null);
-  const [iconUrl, setIconUrl] = useState(null);
-  const [deploys, setDeploys] = useState([]);
-  const [notes, setNotes] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [gameInfo, setGameInfo] = useState(null)
+  const [iconUrl, setIconUrl] = useState(null)
+  const [deploys, setDeploys] = useState([])
+  const [notes, setNotes] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
 
   // Modo de edição
-  const [isEditing, setIsEditing] = useState(false);
-  const [editName, setEditName] = useState('');
-  const [editHasOptions, setEditHasOptions] = useState(false);
-  const [editHasWarmup, setEditHasWarmup] = useState(false);
-  const [newIconFile, setNewIconFile] = useState(null);
+  const [isEditing, setIsEditing] = useState(false)
+  const [editName, setEditName] = useState('')
+  const [editHasOptions, setEditHasOptions] = useState(false)
+  const [editHasWarmup, setEditHasWarmup] = useState(false)
+  const [newIconFile, setNewIconFile] = useState(null)
 
   // Polling
-  const [confirmingVersion, setConfirmingVersion] = useState(null);
-  const [buildOp, setBuildOp] = useState(null);
-  const [listPollVersion, setListPollVersion] = useState(null);
-  const listPollRef = useRef(null);
-  const [gamePollVersion, setGamePollVersion] = useState(null);
-  const gamePollRef = useRef(null);
+  const [confirmingVersion, setConfirmingVersion] = useState(null)
+  const [buildOp, setBuildOp] = useState(null)
+  const [listPollVersion, setListPollVersion] = useState(null)
+  const listPollRef = useRef(null)
+  const [gamePollVersion, setGamePollVersion] = useState(null)
+  const gamePollRef = useRef(null)
 
   // Dropzone para .zip
   const { getRootProps, getInputProps, isDragActive, acceptedFiles } = useDropzone({
     accept: { 'application/zip': ['.zip'] },
     multiple: false,
     maxSize: 200 * 1024 * 1024,
-    onDropRejected: errs => errs.forEach(e => toast.error(e.errors[0].message))
-  });
-  const file = acceptedFiles[0] || null;
+    onDropRejected: errs => errs.forEach(e => toast.error(e.errors[0].message)),
+  })
+  const file = acceptedFiles[0] || null
 
   // Buscar meta do jogo
   const fetchGame = useCallback(async () => {
     try {
-      const list = await apiJson('/games', undefined, 'Erro ao carregar jogo');
-      const g = list.find(x => x.id === gameId);
-      if (!g) throw new Error('Jogo não encontrado.');
-      setGameInfo(g);
-      setEditName(g.name);
-      setEditHasOptions(g.has_options);
-      setEditHasWarmup(g.has_warmup);
+      const list = await apiJson('/games', undefined, 'Erro ao carregar jogo')
+      const g = list.find(x => x.id === gameId)
+      if (!g) throw new Error('Jogo não encontrado.')
+      setGameInfo(g)
+      setEditName(g.name)
+      setEditHasOptions(g.has_options)
+      setEditHasWarmup(g.has_warmup)
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err.message)
     }
-  }, [gameId]);
+  }, [gameId])
 
   // Buscar ícone
   useEffect(() => {
     if (gameInfo?.icon_url) {
       getDownloadURL(storageRef(storage, gameInfo.icon_url))
         .then(url => setIconUrl(url))
-        .catch(() => {});
+        .catch(() => {})
     }
-  }, [gameInfo]);
+  }, [gameInfo])
 
   // Buscar histórico de deploys
   const fetchDeploys = useCallback(async () => {
     try {
-      const data = await apiJson(`/games/${gameId}/deploys`, undefined, 'Erro ao buscar deploys');
-      setDeploys(data);
-      return data;
+      const data = await apiJson(`/games/${gameId}/deploys`, undefined, 'Erro ao buscar deploys')
+      setDeploys(data)
+      return data
     } catch (err) {
-      toast.error(err.message);
-      return [];
+      toast.error(err.message)
+      return []
     }
-  }, [gameId]);
+  }, [gameId])
 
   // Inicialização — o PrivateRoute já garantiu usuário autenticado.
   useEffect(() => {
-    fetchGame();
-    fetchDeploys();
-  }, [fetchGame, fetchDeploys]);
+    fetchGame()
+    fetchDeploys()
+  }, [fetchGame, fetchDeploys])
 
   // Poll: novo deploy adicionado
   useEffect(() => {
-    if (!listPollVersion) return;
-    clearInterval(listPollRef.current);
+    if (!listPollVersion) return
+    clearInterval(listPollRef.current)
     listPollRef.current = setInterval(async () => {
-      const data = await fetchDeploys();
+      const data = await fetchDeploys()
       if (data.some(d => d.version === listPollVersion)) {
-        toast.success(`Deploy ${listPollVersion} adicionado!`);
-        clearInterval(listPollRef.current);
-        setListPollVersion(null);
-        setGamePollVersion(listPollVersion);
+        toast.success(`Deploy ${listPollVersion} adicionado!`)
+        clearInterval(listPollRef.current)
+        setListPollVersion(null)
+        setGamePollVersion(listPollVersion)
       }
-    }, 5000);
-    return () => clearInterval(listPollRef.current);
-  }, [listPollVersion, fetchDeploys]);
+    }, 5000)
+    return () => clearInterval(listPollRef.current)
+  }, [listPollVersion, fetchDeploys])
 
   // Poll: ativação
   useEffect(() => {
-    if (!gamePollVersion) return;
-    clearInterval(gamePollRef.current);
+    if (!gamePollVersion) return
+    clearInterval(gamePollRef.current)
     gamePollRef.current = setInterval(async () => {
-      await fetchGame();
+      await fetchGame()
       if (gameInfo?.active_version === gamePollVersion) {
-        toast.success(`Versão ${gamePollVersion} ativa!`);
-        clearInterval(gamePollRef.current);
-        setGamePollVersion(null);
+        toast.success(`Versão ${gamePollVersion} ativa!`)
+        clearInterval(gamePollRef.current)
+        setGamePollVersion(null)
       }
-    }, 5000);
-    return () => clearInterval(gamePollRef.current);
-  }, [gamePollVersion, gameInfo, fetchGame]);
+    }, 5000)
+    return () => clearInterval(gamePollRef.current)
+  }, [gamePollVersion, gameInfo, fetchGame])
 
   // Novo deploy
   const handleDeploy = async () => {
-    if (!file) return toast.warn('Selecione um .zip válido.');
-    setLoading(true); setUploadProgress(0);
+    if (!file) return toast.warn('Selecione um .zip válido.')
+    setLoading(true)
+    setUploadProgress(0)
     try {
       const { upload_url, version } = await apiJson(
         `/games/${gameId}/deploys/upload-url?filename=${encodeURIComponent(file.name)}`,
-        undefined, 'Não foi possível obter URL de upload'
-      );
+        undefined,
+        'Não foi possível obter URL de upload'
+      )
       await axios.put(upload_url, file, {
         headers: { 'Content-Type': 'application/zip' },
-        onUploadProgress: evt => setUploadProgress(Math.round((evt.loaded * 100) / evt.total))
-      });
-      await apiJson(`/games/${gameId}/deploys/register`, {
-        method: 'POST', ...jsonBody({ version, download_url: upload_url, notes }),
-      }, 'Falha ao registrar deploy');
-      toast.info('Deploy registrado!');
-      setListPollVersion(version);
-      setNotes('');
+        onUploadProgress: evt => setUploadProgress(Math.round((evt.loaded * 100) / evt.total)),
+      })
+      await apiJson(
+        `/games/${gameId}/deploys/register`,
+        {
+          method: 'POST',
+          ...jsonBody({ version, download_url: upload_url, notes }),
+        },
+        'Falha ao registrar deploy'
+      )
+      toast.info('Deploy registrado!')
+      setListPollVersion(version)
+      setNotes('')
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err.message)
     } finally {
-      setLoading(false);
-      setUploadProgress(0);
+      setLoading(false)
+      setUploadProgress(0)
     }
-  };
+  }
 
   // Ativar manual
-  const confirmActivate = v => setConfirmingVersion(v);
+  const confirmActivate = v => setConfirmingVersion(v)
   const onConfirmActivate = async () => {
-    const version = confirmingVersion;
-    setConfirmingVersion(null);
+    const version = confirmingVersion
+    setConfirmingVersion(null)
     try {
-      const { operation_name } = await apiJson(`/games/${gameId}/activate/${version}`, { method: 'POST' }, 'Falha ao ativar');
-      setGameInfo(p => ({ ...p, active_version: version }));
-      setBuildOp(operation_name);
-      toast.info(`Versão ${version} ativada.`);
+      const { operation_name } = await apiJson(
+        `/games/${gameId}/activate/${version}`,
+        { method: 'POST' },
+        'Falha ao ativar'
+      )
+      setGameInfo(p => ({ ...p, active_version: version }))
+      setBuildOp(operation_name)
+      toast.info(`Versão ${version} ativada.`)
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err.message)
     }
-  };
+  }
 
   // Poll build status
   useEffect(() => {
-    if (!buildOp) return;
+    if (!buildOp) return
     const iv = setInterval(async () => {
       try {
-        const data = await apiJson(`/builds/${buildOp}/status`, undefined, 'Erro na build');
+        const data = await apiJson(`/builds/${buildOp}/status`, undefined, 'Erro na build')
         if (data.status !== 'IN_PROGRESS') {
-          clearInterval(iv);
-          setBuildOp(null);
-          await fetchDeploys();
-          await fetchGame();
-          toast.success(`Build ${data.build_status}`);
+          clearInterval(iv)
+          setBuildOp(null)
+          await fetchDeploys()
+          await fetchGame()
+          toast.success(`Build ${data.build_status}`)
         }
       } catch {
-        clearInterval(iv);
-        setBuildOp(null);
+        clearInterval(iv)
+        setBuildOp(null)
       }
-    }, 5000);
-    return () => clearInterval(iv);
-  }, [buildOp, fetchDeploys, fetchGame]);
+    }, 5000)
+    return () => clearInterval(iv)
+  }, [buildOp, fetchDeploys, fetchGame])
 
   // Edição de infos
-  const handleEditToggle = () => setIsEditing(!isEditing);
+  const handleEditToggle = () => setIsEditing(!isEditing)
   const handleSaveInfo = async () => {
     try {
-      let iconPath = gameInfo.icon_url;
+      let iconPath = gameInfo.icon_url
 
       // Se tiver novo ícone, sobe pelo endpoint de upload
       if (newIconFile) {
         // 1) Pede URL de upload
-        const { upload_url: iconUploadUrl, object_path, mime_type } = await apiJson(
+        const {
+          upload_url: iconUploadUrl,
+          object_path,
+          mime_type,
+        } = await apiJson(
           `/games/${gameId}/icon/upload-url?filename=${encodeURIComponent(newIconFile.name)}`,
-          undefined, 'Erro ao obter URL do ícone'
-        );
+          undefined,
+          'Erro ao obter URL do ícone'
+        )
 
         // 2) Upload direto para o storage via PUT
         await axios.put(iconUploadUrl, newIconFile, {
           headers: { 'Content-Type': mime_type },
-          onUploadProgress: evt =>
-            setUploadProgress(Math.round((evt.loaded * 100) / evt.total)),
-        });
+          onUploadProgress: evt => setUploadProgress(Math.round((evt.loaded * 100) / evt.total)),
+        })
 
-        iconPath = object_path;
+        iconPath = object_path
       }
 
       // Atualiza os outros campos
-      await apiJson(`/games/${gameId}`, {
-        method: 'PATCH',
-        ...jsonBody({
-          name: editName,
-          has_options: editHasOptions,
-          has_warmup: editHasWarmup,
-          icon_url: iconPath,
-        }),
-      }, 'Falha ao salvar informações');
-      toast.success('Informações atualizadas');
-      setIsEditing(false);
-      setNewIconFile(null);
-      await fetchGame();
+      await apiJson(
+        `/games/${gameId}`,
+        {
+          method: 'PATCH',
+          ...jsonBody({
+            name: editName,
+            has_options: editHasOptions,
+            has_warmup: editHasWarmup,
+            icon_url: iconPath,
+          }),
+        },
+        'Falha ao salvar informações'
+      )
+      toast.success('Informações atualizadas')
+      setIsEditing(false)
+      setNewIconFile(null)
+      await fetchGame()
     } catch (e) {
-      toast.error(e.message);
+      toast.error(e.message)
     }
-  };
+  }
 
   if (gameInfo === null) {
-    return <Loader />;
+    return <Loader />
   }
 
   return (
@@ -241,7 +260,11 @@ export default function GameDetails() {
 
       <PageHead
         className="a2l-anim-in"
-        eyebrow={<><LuPackage size={13} /> Administração</>}
+        eyebrow={
+          <>
+            <LuPackage size={13} /> Administração
+          </>
+        }
         title="Detalhes do jogo"
         subtitle="Informações, histórico de versões e publicação de novos builds."
       />
@@ -252,11 +275,17 @@ export default function GameDetails() {
         {gameInfo ? (
           <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
             {newIconFile ? (
-              <img src={URL.createObjectURL(newIconFile)} alt="Pré-visualização do ícone" style={styles.icon} />
+              <img
+                src={URL.createObjectURL(newIconFile)}
+                alt="Pré-visualização do ícone"
+                style={styles.icon}
+              />
             ) : iconUrl ? (
               <img src={iconUrl} alt="Ícone do jogo" style={styles.icon} />
             ) : (
-              <div style={styles.iconPlaceholder}><LuImage size={24} /></div>
+              <div style={styles.iconPlaceholder}>
+                <LuImage size={24} />
+              </div>
             )}
 
             <div style={{ flex: '1 1 260px', minWidth: 0 }}>
@@ -268,7 +297,15 @@ export default function GameDetails() {
                   </div>
                   <div style={styles.infoRow}>
                     <dt style={styles.infoKey}>ID</dt>
-                    <dd style={{ ...styles.infoVal, fontFamily: 'var(--a2l-font-mono)', fontSize: 'var(--a2l-text-sm)' }}>{gameId}</dd>
+                    <dd
+                      style={{
+                        ...styles.infoVal,
+                        fontFamily: 'var(--a2l-font-mono)',
+                        fontSize: 'var(--a2l-text-sm)',
+                      }}
+                    >
+                      {gameId}
+                    </dd>
                   </div>
                   <div style={styles.infoRow}>
                     <dt style={styles.infoKey}>Opções</dt>
@@ -299,14 +336,28 @@ export default function GameDetails() {
                 <div className="a2l-stack" style={{ gap: 14 }}>
                   <div className="a2l-field">
                     <span className="a2l-label">Nome</span>
-                    <input className="a2l-input" value={editName} onChange={e => setEditName(e.target.value)} />
+                    <input
+                      className="a2l-input"
+                      value={editName}
+                      onChange={e => setEditName(e.target.value)}
+                    />
                   </div>
                   <label className="a2l-option" style={{ maxWidth: 320 }}>
-                    <input className="a2l-check" type="checkbox" checked={editHasOptions} onChange={e => setEditHasOptions(e.target.checked)} />
+                    <input
+                      className="a2l-check"
+                      type="checkbox"
+                      checked={editHasOptions}
+                      onChange={e => setEditHasOptions(e.target.checked)}
+                    />
                     Precisa de opções
                   </label>
                   <label className="a2l-option" style={{ maxWidth: 320 }}>
-                    <input className="a2l-check" type="checkbox" checked={editHasWarmup} onChange={e => setEditHasWarmup(e.target.checked)} />
+                    <input
+                      className="a2l-check"
+                      type="checkbox"
+                      checked={editHasWarmup}
+                      onChange={e => setEditHasWarmup(e.target.checked)}
+                    />
                     Possui aquecimento
                   </label>
                   <div className="a2l-field">
@@ -358,13 +409,19 @@ export default function GameDetails() {
             <tbody>
               {deploys.map(d => (
                 <tr key={d.id}>
-                  <td style={{ fontFamily: 'var(--a2l-font-mono)', fontSize: 'var(--a2l-text-sm)' }}>{d.version}</td>
+                  <td
+                    style={{ fontFamily: 'var(--a2l-font-mono)', fontSize: 'var(--a2l-text-sm)' }}
+                  >
+                    {d.version}
+                  </td>
                   <td>{new Date(d.deployed_at).toLocaleString('pt-BR')}</td>
                   <td>{d.deployed_by_name || d.deployed_by}</td>
                   <td>{d.notes || '–'}</td>
                   <td>
                     {gameInfo.active_version === d.version ? (
-                      <Badge tone="success" icon={<LuCheck size={12} />}>Ativa</Badge>
+                      <Badge tone="success" icon={<LuCheck size={12} />}>
+                        Ativa
+                      </Badge>
                     ) : (
                       <Button variant="soft" size="sm" onClick={() => confirmActivate(d.version)}>
                         Ativar
@@ -375,7 +432,10 @@ export default function GameDetails() {
               ))}
               {!deploys.length && (
                 <tr>
-                  <td colSpan={5} style={{ padding: 28, textAlign: 'center', color: 'var(--a2l-ink-400)' }}>
+                  <td
+                    colSpan={5}
+                    style={{ padding: 28, textAlign: 'center', color: 'var(--a2l-ink-400)' }}
+                  >
                     Nenhum deploy encontrado.
                   </td>
                 </tr>
@@ -435,25 +495,39 @@ export default function GameDetails() {
         </Button>
       </Card>
     </AppShell>
-  );
+  )
 }
 
 const styles = {
   icon: {
-    width: 76, height: 76, borderRadius: 'var(--a2l-radius-md)',
-    objectFit: 'cover', border: '1px solid var(--a2l-line)', flex: 'none',
+    width: 76,
+    height: 76,
+    borderRadius: 'var(--a2l-radius-md)',
+    objectFit: 'cover',
+    border: '1px solid var(--a2l-line)',
+    flex: 'none',
   },
   iconPlaceholder: {
-    width: 76, height: 76, borderRadius: 'var(--a2l-radius-md)',
-    background: 'var(--a2l-surface-2)', border: '1px solid var(--a2l-line)',
-    display: 'grid', placeItems: 'center', color: 'var(--a2l-ink-400)', flex: 'none',
+    width: 76,
+    height: 76,
+    borderRadius: 'var(--a2l-radius-md)',
+    background: 'var(--a2l-surface-2)',
+    border: '1px solid var(--a2l-line)',
+    display: 'grid',
+    placeItems: 'center',
+    color: 'var(--a2l-ink-400)',
+    flex: 'none',
   },
   infoList: { margin: 0, display: 'flex', flexDirection: 'column', gap: 10 },
   infoRow: { display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' },
   infoKey: {
-    minWidth: 120, fontFamily: 'var(--a2l-font-display)', fontWeight: 700,
-    fontSize: 'var(--a2l-text-xs)', textTransform: 'uppercase',
-    letterSpacing: '0.05em', color: 'var(--a2l-ink-500)',
+    minWidth: 120,
+    fontFamily: 'var(--a2l-font-display)',
+    fontWeight: 700,
+    fontSize: 'var(--a2l-text-xs)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    color: 'var(--a2l-ink-500)',
   },
   infoVal: { margin: 0, color: 'var(--a2l-ink-900)', fontWeight: 600 },
-};
+}

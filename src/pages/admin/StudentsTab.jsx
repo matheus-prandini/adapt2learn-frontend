@@ -28,7 +28,9 @@ export default function StudentsTab({ school, onSchoolChange }) {
         if (!cancelled) setLoading(false)
       }
     })()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [school])
 
   return (
@@ -48,7 +50,11 @@ export default function StudentsTab({ school, onSchoolChange }) {
         <div className="a2l-table-wrap">
           <table className="a2l-table">
             <thead>
-              <tr><th>Nome</th><th>E-mail</th><th>Grupo / Série</th></tr>
+              <tr>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Grupo / Série</th>
+              </tr>
             </thead>
             <tbody>
               {students.map(s => (

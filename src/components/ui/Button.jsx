@@ -31,7 +31,9 @@ export default function Button({
     block ? 'a2l-btn--block' : '',
     !children ? 'a2l-btn--icon' : '',
     className,
-  ].filter(Boolean).join(' ')
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   return (
     <button className={cls} disabled={disabled || loading} {...rest}>

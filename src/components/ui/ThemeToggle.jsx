@@ -37,9 +37,7 @@ export default function ThemeToggle({ className = '' }) {
   const active = OPTIONS.find(o => o.id === preference) || OPTIONS[2]
   // O ícone mostra o tema em vigor, não a preferência — com 'system' o usuário
   // precisa ver se está claro ou escuro agora.
-  const CurrentIcon = preference === 'system'
-    ? LuMonitor
-    : theme === 'dark' ? LuMoon : LuSun
+  const CurrentIcon = preference === 'system' ? LuMonitor : theme === 'dark' ? LuMoon : LuSun
 
   return (
     <div ref={wrapRef} className={`a2l-theme-toggle ${className}`}>
@@ -74,7 +72,14 @@ export default function ThemeToggle({ className = '' }) {
         onClick={() => setOpen(v => !v)}
       >
         <svg width="8" height="8" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="m6 9 6 6 6-6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       </button>
 

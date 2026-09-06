@@ -25,7 +25,10 @@ export default class ErrorBoundary extends React.Component {
     return (
       <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 24 }}>
         <Card hero style={{ maxWidth: 480, width: '100%', textAlign: 'center' }}>
-          <span className="a2l-icon-chip a2l-icon-chip--lg a2l-icon-chip--danger" style={{ margin: '0 auto 16px' }}>
+          <span
+            className="a2l-icon-chip a2l-icon-chip--lg a2l-icon-chip--danger"
+            style={{ margin: '0 auto 16px' }}
+          >
             <LuTriangleAlert size={26} />
           </span>
           <h2 style={{ fontSize: 'var(--a2l-text-xl)' }}>Algo deu errado</h2>
@@ -36,7 +39,11 @@ export default class ErrorBoundary extends React.Component {
             <Button icon={<LuArrowLeft size={16} />} onClick={() => window.location.assign('/')}>
               Voltar ao início
             </Button>
-            <Button variant="secondary" icon={<LuRefreshCw size={16} />} onClick={() => window.location.reload()}>
+            <Button
+              variant="secondary"
+              icon={<LuRefreshCw size={16} />}
+              onClick={() => window.location.reload()}
+            >
               Recarregar
             </Button>
           </div>

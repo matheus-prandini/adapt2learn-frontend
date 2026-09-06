@@ -8,7 +8,8 @@ import react from '@vitejs/plugin-react'
 // sai do Node (server-to-server) não há preflight nem CORS.
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const apiTarget = env.DEV_PROXY_API_TARGET || 'https://adapt2learn-895112363610.us-central1.run.app'
+  const apiTarget =
+    env.DEV_PROXY_API_TARGET || 'https://adapt2learn-895112363610.us-central1.run.app'
   const gamesTarget = env.DEV_PROXY_GAMES_TARGET || 'https://adapt2learn-api.web.app'
 
   return {

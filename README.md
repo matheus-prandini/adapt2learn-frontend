@@ -19,24 +19,24 @@ O login (Google ou e-mail) funciona contra o backend real; veja
 
 ## Scripts
 
-| comando              | o que faz                                   |
-| -------------------- | ------------------------------------------- |
-| `npm start` / `dev`  | servidor de desenvolvimento com proxy       |
-| `npm run build`      | build de produção em `build/`               |
-| `npm run preview`    | serve o `build/` localmente                 |
-| `npm test`           | testes (Vitest)                             |
-| `npm run test:watch` | testes em modo watch                        |
-| `npm run lint`       | ESLint (inclui regras de hooks)             |
-| `npm run format`     | Prettier em todo o repositório              |
+| comando              | o que faz                             |
+| -------------------- | ------------------------------------- |
+| `npm start` / `dev`  | servidor de desenvolvimento com proxy |
+| `npm run build`      | build de produção em `build/`         |
+| `npm run preview`    | serve o `build/` localmente           |
+| `npm test`           | testes (Vitest)                       |
+| `npm run test:watch` | testes em modo watch                  |
+| `npm run lint`       | ESLint (inclui regras de hooks)       |
+| `npm run format`     | Prettier em todo o repositório        |
 
 ## Como as chamadas de API funcionam
 
 Em produção o Firebase Hosting reescreve (`firebase.json`):
 
-| rota        | destino                            |
-| ----------- | ---------------------------------- |
-| `/api/**`   | Cloud Run (serviço `adapt2learn`)  |
-| `/games/**` | Cloud Function `serveGame`         |
+| rota        | destino                           |
+| ----------- | --------------------------------- |
+| `/api/**`   | Cloud Run (serviço `adapt2learn`) |
+| `/games/**` | Cloud Function `serveGame`        |
 
 No dev server esses rewrites não existem. Sem tratamento, `/api/...` cairia no
 Vite e voltaria o `index.html`, e chamar o Cloud Run direto do browser é

@@ -19,9 +19,15 @@ export default function Card({
     quiet ? 'a2l-card--quiet' : '',
     flush ? 'a2l-card--flush' : '',
     className,
-  ].filter(Boolean).join(' ')
+  ]
+    .filter(Boolean)
+    .join(' ')
 
-  return <Tag className={cls} {...rest}>{children}</Tag>
+  return (
+    <Tag className={cls} {...rest}>
+      {children}
+    </Tag>
+  )
 }
 
 export function CardHeader({ icon, title, subtitle, action, tone = 'brand' }) {

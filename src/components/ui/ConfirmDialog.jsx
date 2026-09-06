@@ -11,7 +11,7 @@ export default function ConfirmDialog({
   message,
   confirmLabel = 'Confirmar',
   cancelLabel = 'Cancelar',
-  tone = 'primary',       // 'primary' | 'danger'
+  tone = 'primary', // 'primary' | 'danger'
   busy = false,
   onConfirm,
   onCancel,
@@ -42,15 +42,27 @@ export default function ConfirmDialog({
         aria-labelledby="a2l-confirm-title"
         aria-describedby={message ? 'a2l-confirm-message' : undefined}
       >
-        <h2 id="a2l-confirm-title" style={{ fontSize: 'var(--a2l-text-lg)' }}>{title}</h2>
+        <h2 id="a2l-confirm-title" style={{ fontSize: 'var(--a2l-text-lg)' }}>
+          {title}
+        </h2>
         {message && (
-          <p id="a2l-confirm-message" style={{ color: 'var(--a2l-ink-500)', marginTop: 8, lineHeight: 1.55 }}>
+          <p
+            id="a2l-confirm-message"
+            style={{ color: 'var(--a2l-ink-500)', marginTop: 8, lineHeight: 1.55 }}
+          >
             {message}
           </p>
         )}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 22 }}>
-          <Button variant="secondary" onClick={onCancel} disabled={busy}>{cancelLabel}</Button>
-          <Button variant={tone === 'danger' ? 'danger' : 'primary'} onClick={onConfirm} loading={busy} autoFocus>
+          <Button variant="secondary" onClick={onCancel} disabled={busy}>
+            {cancelLabel}
+          </Button>
+          <Button
+            variant={tone === 'danger' ? 'danger' : 'primary'}
+            onClick={onConfirm}
+            loading={busy}
+            autoFocus
+          >
             {confirmLabel}
           </Button>
         </div>

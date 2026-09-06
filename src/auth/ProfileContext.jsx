@@ -1,6 +1,4 @@
-import React, {
-  createContext, useCallback, useContext, useEffect, useMemo, useState,
-} from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useAuthState } from 'react-firebase-hooks/auth'
 import { signOut as firebaseSignOut } from 'firebase/auth'
 import { auth } from '../firebase'
@@ -39,15 +37,21 @@ export function ProfileProvider({ children }) {
     setError(null)
 
     fetchProfile()
-      .then(p => { if (!cancelled) setProfile(p) })
+      .then(p => {
+        if (!cancelled) setProfile(p)
+      })
       .catch(e => {
         if (cancelled) return
         setProfile(null)
         setError(e)
       })
-      .finally(() => { if (!cancelled) setProfileLoading(false) })
+      .finally(() => {
+        if (!cancelled) setProfileLoading(false)
+      })
 
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [user, refreshTick])
 
   const refresh = useCallback(() => setRefreshTick(t => t + 1), [])
@@ -56,17 +60,20 @@ export function ProfileProvider({ children }) {
   // Num refresh com perfil já em mãos não voltamos ao Loader — só no primeiro carregamento.
   const loading = authLoading || (!!user && profileLoading && !profile && !error)
 
-  const value = useMemo(() => ({
-    user,
-    profile,
-    loading,
-    error,
-    refresh,
-    signOut,
-    isAuthenticated: !!user,
-    isTeacher: TEACHER_ROLES.includes(profile?.role),
-    displayName: user?.displayName || profile?.name || '',
-  }), [user, profile, loading, error, refresh, signOut])
+  const value = useMemo(
+    () => ({
+      user,
+      profile,
+      loading,
+      error,
+      refresh,
+      signOut,
+      isAuthenticated: !!user,
+      isTeacher: TEACHER_ROLES.includes(profile?.role),
+      displayName: user?.displayName || profile?.name || '',
+    }),
+    [user, profile, loading, error, refresh, signOut]
+  )
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>
 }

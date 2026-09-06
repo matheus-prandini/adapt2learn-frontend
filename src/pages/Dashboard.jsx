@@ -1,25 +1,30 @@
 // src/pages/Dashboard.js
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
-  LuGamepad2, LuPencilRuler, LuSettings, LuLogOut, LuArrowRight, LuSparkles,
-} from 'react-icons/lu';
-import { AppShell, UserChip, Card, Button, PageHead, Badge } from '../components/ui';
-import { useProfile } from '../auth/ProfileContext';
+  LuGamepad2,
+  LuPencilRuler,
+  LuSettings,
+  LuLogOut,
+  LuArrowRight,
+  LuSparkles,
+} from 'react-icons/lu'
+import { AppShell, UserChip, Card, Button, PageHead, Badge } from '../components/ui'
+import { useProfile } from '../auth/ProfileContext'
 
-const ROLE_LABEL = { student: 'Aluno(a)', teacher: 'Professor(a)', admin: 'Administrador(a)' };
+const ROLE_LABEL = { student: 'Aluno(a)', teacher: 'Professor(a)', admin: 'Administrador(a)' }
 
 export default function Dashboard() {
   // Perfil e sessão vêm do ProfileProvider; o PrivateRoute já garantiu ambos.
-  const { profile, displayName, isTeacher, signOut } = useProfile();
-  const navigate = useNavigate();
+  const { profile, displayName, isTeacher, signOut } = useProfile()
+  const navigate = useNavigate()
 
-  const firstName = (displayName || 'Amigo').split(' ')[0];
+  const firstName = (displayName || 'Amigo').split(' ')[0]
 
   const handleLogout = async () => {
-    await signOut();
-    navigate('/login');
-  };
+    await signOut()
+    navigate('/login')
+  }
 
   return (
     <AppShell
@@ -35,7 +40,11 @@ export default function Dashboard() {
     >
       <PageHead
         className="a2l-anim-in"
-        eyebrow={<><LuSparkles size={13} /> Seu painel</>}
+        eyebrow={
+          <>
+            <LuSparkles size={13} /> Seu painel
+          </>
+        }
         hero
         title={`Olá, ${firstName}!`}
         subtitle="Escolha por onde continuar hoje."
@@ -43,10 +52,17 @@ export default function Dashboard() {
 
       {/* Ação principal: jogar. Ocupa a largura toda e domina a hierarquia. */}
       <Card
-        hero interactive
+        hero
+        interactive
         className="a2l-anim-in a2l-delay-1"
         onClick={() => navigate('/select')}
-        style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 20, flexWrap: 'wrap' }}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 20,
+          marginBottom: 20,
+          flexWrap: 'wrap',
+        }}
       >
         <span className="a2l-icon-chip a2l-icon-chip--lg a2l-icon-chip--solid">
           <LuGamepad2 size={26} />
@@ -68,22 +84,38 @@ export default function Dashboard() {
       {isTeacher && (
         <div className="a2l-grid a2l-grid--2 a2l-anim-in a2l-delay-2">
           <Card interactive onClick={() => navigate('/creation')}>
-            <span className="a2l-icon-chip a2l-icon-chip--mint"><LuPencilRuler size={20} /></span>
+            <span className="a2l-icon-chip a2l-icon-chip--mint">
+              <LuPencilRuler size={20} />
+            </span>
             <h3 style={{ fontSize: 'var(--a2l-text-lg)', marginTop: 14 }}>Área de criação</h3>
-            <p style={{ color: 'var(--a2l-ink-500)', marginTop: 6, fontSize: 'var(--a2l-text-base)' }}>
+            <p
+              style={{
+                color: 'var(--a2l-ink-500)',
+                marginTop: 6,
+                fontSize: 'var(--a2l-text-base)',
+              }}
+            >
               Envie documentos e monte desafios de palavras para suas turmas.
             </p>
           </Card>
 
           <Card interactive onClick={() => navigate('/admin')}>
-            <span className="a2l-icon-chip a2l-icon-chip--sun"><LuSettings size={20} /></span>
+            <span className="a2l-icon-chip a2l-icon-chip--sun">
+              <LuSettings size={20} />
+            </span>
             <h3 style={{ fontSize: 'var(--a2l-text-lg)', marginTop: 14 }}>Administração</h3>
-            <p style={{ color: 'var(--a2l-ink-500)', marginTop: 6, fontSize: 'var(--a2l-text-base)' }}>
+            <p
+              style={{
+                color: 'var(--a2l-ink-500)',
+                marginTop: 6,
+                fontSize: 'var(--a2l-text-base)',
+              }}
+            >
               Métricas de uso, alunos, sessões e configuração dos jogos.
             </p>
           </Card>
         </div>
       )}
     </AppShell>
-  );
+  )
 }

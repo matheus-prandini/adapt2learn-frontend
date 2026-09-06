@@ -2,10 +2,29 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
-  LuCheck, LuX, LuTarget, LuTimer, LuListChecks, LuLightbulb, LuChevronDown,
-  LuMessageSquareHeart, LuTrophy, LuBrain, LuRefreshCw,
+  LuCheck,
+  LuX,
+  LuTarget,
+  LuTimer,
+  LuListChecks,
+  LuLightbulb,
+  LuChevronDown,
+  LuMessageSquareHeart,
+  LuTrophy,
+  LuBrain,
+  LuRefreshCw,
 } from 'react-icons/lu'
-import { AppShell, Card, Button, Loader, PageHead, Badge, EmptyState, Stat, Alert } from '../components/ui'
+import {
+  AppShell,
+  Card,
+  Button,
+  Loader,
+  PageHead,
+  Badge,
+  EmptyState,
+  Stat,
+  Alert,
+} from '../components/ui'
 import { apiJson, jsonBody } from '../api/httpClient'
 
 /** Anel de precisão: leitura imediata do resultado, sem depender de libs. */
@@ -14,8 +33,12 @@ function AccuracyRing({ value }) {
   return (
     <div
       style={{
-        width: 132, height: 132, borderRadius: '50%', flex: 'none',
-        display: 'grid', placeItems: 'center',
+        width: 132,
+        height: 132,
+        borderRadius: '50%',
+        flex: 'none',
+        display: 'grid',
+        placeItems: 'center',
         background: `conic-gradient(var(--a2l-mint-500) ${pct * 3.6}deg, var(--a2l-line-soft) 0deg)`,
         transition: 'background 700ms var(--a2l-ease)',
       }}
@@ -24,23 +47,36 @@ function AccuracyRing({ value }) {
     >
       <div
         style={{
-          width: 104, height: 104, borderRadius: '50%',
+          width: 104,
+          height: 104,
+          borderRadius: '50%',
           background: 'var(--a2l-surface)',
-          display: 'grid', placeItems: 'center',
+          display: 'grid',
+          placeItems: 'center',
           boxShadow: 'var(--a2l-inset)',
         }}
       >
         <div style={{ textAlign: 'center' }}>
           <div
             style={{
-              fontFamily: 'var(--a2l-font-display)', fontWeight: 800,
-              fontSize: 'var(--a2l-text-2xl)', letterSpacing: '-0.04em',
-              color: 'var(--a2l-ink-900)', lineHeight: 1,
+              fontFamily: 'var(--a2l-font-display)',
+              fontWeight: 800,
+              fontSize: 'var(--a2l-text-2xl)',
+              letterSpacing: '-0.04em',
+              color: 'var(--a2l-ink-900)',
+              lineHeight: 1,
             }}
           >
             {pct}%
           </div>
-          <div style={{ fontSize: 'var(--a2l-text-xs)', color: 'var(--a2l-ink-500)', fontWeight: 600, marginTop: 3 }}>
+          <div
+            style={{
+              fontSize: 'var(--a2l-text-xs)',
+              color: 'var(--a2l-ink-500)',
+              fontWeight: 600,
+              marginTop: 3,
+            }}
+          >
             precisão
           </div>
         </div>
@@ -60,7 +96,9 @@ function QuestionCard({ q, tone, expanded, onToggle }) {
         padding: 16,
         cursor: 'pointer',
         borderColor: expanded
-          ? (isCorrect ? 'var(--a2l-success-br)' : 'var(--a2l-danger-br)')
+          ? isCorrect
+            ? 'var(--a2l-success-br)'
+            : 'var(--a2l-danger-br)'
           : 'var(--a2l-line)',
         boxShadow: expanded ? 'var(--a2l-shadow)' : 'var(--a2l-shadow-xs)',
         transition: 'all var(--a2l-normal) var(--a2l-ease)',
@@ -79,7 +117,9 @@ function QuestionCard({ q, tone, expanded, onToggle }) {
         <LuChevronDown
           size={17}
           style={{
-            flex: 'none', color: 'var(--a2l-ink-400)', marginTop: 4,
+            flex: 'none',
+            color: 'var(--a2l-ink-400)',
+            marginTop: 4,
             transform: expanded ? 'rotate(180deg)' : 'none',
             transition: 'transform var(--a2l-normal) var(--a2l-ease)',
           }}
@@ -89,14 +129,18 @@ function QuestionCard({ q, tone, expanded, onToggle }) {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12, paddingLeft: 38 }}>
         <Badge tone={isCorrect ? 'success' : 'danger'}>Você: {q.chosen_answer}</Badge>
         {!isCorrect && <Badge tone="success">Correta: {q.correct_answer}</Badge>}
-        <Badge tone="neutral" icon={<LuTimer size={12} />}>{q.time_to_answer.toFixed(1)}s</Badge>
+        <Badge tone="neutral" icon={<LuTimer size={12} />}>
+          {q.time_to_answer.toFixed(1)}s
+        </Badge>
       </div>
 
       {expanded && q.math_reasoning && (
         <div
           className="a2l-anim-in"
           style={{
-            marginTop: 14, marginLeft: 38, padding: 14,
+            marginTop: 14,
+            marginLeft: 38,
+            padding: 14,
             background: 'var(--a2l-surface-2)',
             border: '1px solid var(--a2l-line)',
             borderRadius: 'var(--a2l-radius)',
@@ -107,10 +151,16 @@ function QuestionCard({ q, tone, expanded, onToggle }) {
         >
           <div
             style={{
-              display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6,
-              fontFamily: 'var(--a2l-font-display)', fontWeight: 700,
-              fontSize: 'var(--a2l-text-xs)', textTransform: 'uppercase',
-              letterSpacing: '0.06em', color: 'var(--a2l-brand-600)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              marginBottom: 6,
+              fontFamily: 'var(--a2l-font-display)',
+              fontWeight: 700,
+              fontSize: 'var(--a2l-text-xs)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              color: 'var(--a2l-brand-600)',
             }}
           >
             <LuBrain size={13} /> Raciocínio
@@ -135,9 +185,9 @@ export default function Report() {
 
   // Extrai parâmetros da URL
   const params = new URLSearchParams(search)
-  const schoolId      = params.get('school_id')   || ''
-  const discipline    = params.get('discipline')  || ''
-  const subarea       = params.get('subarea')     || ''
+  const schoolId = params.get('school_id') || ''
+  const discipline = params.get('discipline') || ''
+  const subarea = params.get('subarea') || ''
   const sessionNumber = params.get('session_number') || ''
 
   useEffect(() => {
@@ -146,10 +196,19 @@ export default function Report() {
     setError('')
     ;(async () => {
       try {
-        const json = await apiJson('/evaluate_responses', {
-          method: 'POST',
-          ...jsonBody({ school_id: schoolId, discipline, subarea, session_number: sessionNumber }),
-        }, 'Não foi possível carregar seus resultados.')
+        const json = await apiJson(
+          '/evaluate_responses',
+          {
+            method: 'POST',
+            ...jsonBody({
+              school_id: schoolId,
+              discipline,
+              subarea,
+              session_number: sessionNumber,
+            }),
+          },
+          'Não foi possível carregar seus resultados.'
+        )
         if (cancelled) return
         setReport(json.report ?? null)
         setCorrectList(Array.isArray(json.correct_list) ? json.correct_list : [])
@@ -163,7 +222,9 @@ export default function Report() {
         if (!cancelled) setLoading(false)
       }
     })()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [schoolId, discipline, subarea, sessionNumber, reloadTick])
 
   if (loading) {
@@ -184,13 +245,14 @@ export default function Report() {
   }
 
   // Métricas para o resumo
-  const total    = correctList.length + wrongList.length
+  const total = correctList.length + wrongList.length
   const accuracy = total > 0 ? Math.round((correctList.length / total) * 100) : 0
-  const avgTime  = total > 0
-    ? (([...correctList, ...wrongList]
-        .reduce((sum, q) => sum + q.time_to_answer, 0) / total) || 0
-      ).toFixed(2)
-    : '0.00'
+  const avgTime =
+    total > 0
+      ? (
+          [...correctList, ...wrongList].reduce((sum, q) => sum + q.time_to_answer, 0) / total || 0
+        ).toFixed(2)
+      : '0.00'
 
   // Alterna expansão de cards
   const toggleExpand = idx => {
@@ -199,15 +261,17 @@ export default function Report() {
 
   // Mensagem de reforço proporcional ao desempenho — encorajadora sem ser boba.
   const headline =
-    accuracy >= 80 ? 'Excelente sessão!'
-    : accuracy >= 50 ? 'Bom trabalho!'
-    : 'Sessão concluída!'
+    accuracy >= 80 ? 'Excelente sessão!' : accuracy >= 50 ? 'Bom trabalho!' : 'Sessão concluída!'
 
   return (
     <AppShell width="lg" back="/" backLabel="Painel">
       <PageHead
         className="a2l-anim-in"
-        eyebrow={<><LuTrophy size={13} /> Resultado da sessão</>}
+        eyebrow={
+          <>
+            <LuTrophy size={13} /> Resultado da sessão
+          </>
+        }
         hero
         title={headline}
         subtitle="Veja o que você acertou, onde dá para melhorar e o raciocínio por trás de cada questão."
@@ -219,14 +283,29 @@ export default function Report() {
           <AccuracyRing value={accuracy} />
           <div className="a2l-grid a2l-grid--stats" style={{ flex: '1 1 320px' }}>
             <Stat icon={<LuListChecks size={13} />} label="Questões" value={total} />
-            <Stat icon={<LuCheck size={13} />} tone="success" label="Acertos" value={correctList.length} />
+            <Stat
+              icon={<LuCheck size={13} />}
+              tone="success"
+              label="Acertos"
+              value={correctList.length}
+            />
             <Stat icon={<LuX size={13} />} tone="danger" label="Erros" value={wrongList.length} />
-            <Stat icon={<LuTimer size={13} />} tone="sun" label="Tempo médio" value={`${avgTime}s`} foot="por questão" />
+            <Stat
+              icon={<LuTimer size={13} />}
+              tone="sun"
+              label="Tempo médio"
+              value={`${avgTime}s`}
+              foot="por questão"
+            />
           </div>
         </div>
         {(discipline || subarea) && (
           <div style={{ display: 'flex', gap: 8, marginTop: 20, flexWrap: 'wrap' }}>
-            {discipline && <Badge tone="brand" icon={<LuTarget size={12} />}>{discipline}</Badge>}
+            {discipline && (
+              <Badge tone="brand" icon={<LuTarget size={12} />}>
+                {discipline}
+              </Badge>
+            )}
             {subarea && <Badge tone="mint">{subarea}</Badge>}
             {sessionNumber && <Badge tone="neutral">Sessão {sessionNumber}</Badge>}
           </div>
@@ -235,14 +314,32 @@ export default function Report() {
 
       {report?.insights?.length > 0 && (
         <section className="a2l-anim-in a2l-delay-2" style={{ marginBottom: 28 }}>
-          <h2 style={{ fontSize: 'var(--a2l-text-lg)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <h2
+            style={{
+              fontSize: 'var(--a2l-text-lg)',
+              marginBottom: 14,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
             <LuLightbulb size={19} style={{ color: 'var(--a2l-sun-600)' }} />
             Pontos de evolução
           </h2>
           <div className="a2l-grid a2l-grid--wide">
             {report.insights.map((ins, idx) => (
-              <Card key={idx} quiet style={{ padding: 18, borderLeft: '4px solid var(--a2l-sun-500)' }}>
-                <p style={{ fontFamily: 'var(--a2l-font-display)', fontWeight: 700, color: 'var(--a2l-ink-900)' }}>
+              <Card
+                key={idx}
+                quiet
+                style={{ padding: 18, borderLeft: '4px solid var(--a2l-sun-500)' }}
+              >
+                <p
+                  style={{
+                    fontFamily: 'var(--a2l-font-display)',
+                    fontWeight: 700,
+                    color: 'var(--a2l-ink-900)',
+                  }}
+                >
                   {ins.error_pattern}
                 </p>
                 <p style={{ marginTop: 8, color: 'var(--a2l-ink-600)', lineHeight: 1.6 }}>
@@ -256,7 +353,15 @@ export default function Report() {
       )}
 
       <section className="a2l-anim-in a2l-delay-3" style={{ marginBottom: 28 }}>
-        <h2 style={{ fontSize: 'var(--a2l-text-lg)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <h2
+          style={{
+            fontSize: 'var(--a2l-text-lg)',
+            marginBottom: 14,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
           <LuCheck size={19} style={{ color: 'var(--a2l-success)' }} />
           Questões corretas
           <Badge tone="success">{correctList.length}</Badge>
@@ -285,7 +390,15 @@ export default function Report() {
       </section>
 
       <section className="a2l-anim-in a2l-delay-4" style={{ marginBottom: 28 }}>
-        <h2 style={{ fontSize: 'var(--a2l-text-lg)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <h2
+          style={{
+            fontSize: 'var(--a2l-text-lg)',
+            marginBottom: 14,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
           <LuX size={19} style={{ color: 'var(--a2l-danger)' }} />
           Questões para revisar
           <Badge tone="danger">{wrongList.length}</Badge>

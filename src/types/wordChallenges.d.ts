@@ -58,9 +58,7 @@ export interface CreateWordChallengesAiBody {
   grade_level?: string
 }
 
-export type CreateWordChallengesBody =
-  | CreateWordChallengesManualBody
-  | CreateWordChallengesAiBody
+export type CreateWordChallengesBody = CreateWordChallengesManualBody | CreateWordChallengesAiBody
 
 export interface SubmitWordChallengeResponseBody {
   challenge_id: string

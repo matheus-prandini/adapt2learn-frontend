@@ -15,7 +15,14 @@ import {
   hasSubareaRestriction,
 } from '../utils/contentOptions'
 import {
-  AppShell, Card, Button, Field, Alert, Loader, PageHead, EmptyState,
+  AppShell,
+  Card,
+  Button,
+  Field,
+  Alert,
+  Loader,
+  PageHead,
+  EmptyState,
 } from '../components/ui'
 
 export default function GameSelect() {
@@ -40,7 +47,11 @@ export default function GameSelect() {
     let cancelled = false
     ;(async () => {
       try {
-        const docs = await apiJson(`/documents/school/${profile.school_id}`, undefined, 'Falha ao carregar documentos')
+        const docs = await apiJson(
+          `/documents/school/${profile.school_id}`,
+          undefined,
+          'Falha ao carregar documentos'
+        )
         if (cancelled) return
         setDocsList(docs)
 
@@ -49,7 +60,8 @@ export default function GameSelect() {
           if (!cancelled) setWordChallengesList(wordItems)
         } catch (wordErr) {
           console.error(wordErr)
-          if (!cancelled) setOptionsError('Não foi possível carregar opções de desafios de palavras.')
+          if (!cancelled)
+            setOptionsError('Não foi possível carregar opções de desafios de palavras.')
         }
 
         const games = await apiJson('/games', undefined, 'Falha ao carregar jogos')
@@ -72,7 +84,9 @@ export default function GameSelect() {
         if (!cancelled) setLoading(false)
       }
     })()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [profile?.school_id, storage])
 
   const contentCatalog = useMemo(
@@ -121,10 +135,14 @@ export default function GameSelect() {
   }
 
   async function createSession(gameId) {
-    const { session_number } = await apiJson('/sessions', {
-      method: 'POST',
-      ...jsonBody({ game_id: gameId, discipline, subarea }),
-    }, 'Não foi possível criar a sessão.')
+    const { session_number } = await apiJson(
+      '/sessions',
+      {
+        method: 'POST',
+        ...jsonBody({ game_id: gameId, discipline, subarea }),
+      },
+      'Não foi possível criar a sessão.'
+    )
     return session_number
   }
 
@@ -183,7 +201,11 @@ export default function GameSelect() {
         <>
           <PageHead
             className="a2l-anim-in"
-            eyebrow={<><LuGamepad2 size={13} /> Biblioteca</>}
+            eyebrow={
+              <>
+                <LuGamepad2 size={13} /> Biblioteca
+              </>
+            }
             title="Escolha um jogo"
             subtitle="Cada jogo trabalha habilidades diferentes. Toque em um para começar."
           />
@@ -214,7 +236,8 @@ export default function GameSelect() {
                       display: 'grid',
                       placeItems: 'center',
                       borderRadius: 'var(--a2l-radius-md)',
-                      background: 'linear-gradient(160deg, var(--a2l-brand-50), var(--a2l-mint-50))',
+                      background:
+                        'linear-gradient(160deg, var(--a2l-brand-50), var(--a2l-mint-50))',
                       marginBottom: 14,
                     }}
                   >
@@ -228,7 +251,13 @@ export default function GameSelect() {
                       <LuGamepad2 size={34} style={{ color: 'var(--a2l-brand-400)' }} />
                     )}
                   </div>
-                  <div style={{ fontFamily: 'var(--a2l-font-display)', fontWeight: 700, color: 'var(--a2l-ink-900)' }}>
+                  <div
+                    style={{
+                      fontFamily: 'var(--a2l-font-display)',
+                      fontWeight: 700,
+                      color: 'var(--a2l-ink-900)',
+                    }}
+                  >
                     {game.name}
                   </div>
                 </Card>
@@ -240,7 +269,11 @@ export default function GameSelect() {
         <div style={{ maxWidth: 620, margin: '0 auto' }}>
           <PageHead
             className="a2l-anim-in"
-            eyebrow={<><LuTarget size={13} /> Preparar sessão</>}
+            eyebrow={
+              <>
+                <LuTarget size={13} /> Preparar sessão
+              </>
+            }
             title={selectedGame.name}
             subtitle={
               selectedGame.has_options
@@ -248,7 +281,12 @@ export default function GameSelect() {
                 : 'Tudo pronto — é só começar.'
             }
             action={
-              <Button variant="ghost" size="sm" icon={<LuRepeat size={15} />} onClick={() => setSelectedGame(null)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={<LuRepeat size={15} />}
+                onClick={() => setSelectedGame(null)}
+              >
                 Trocar jogo
               </Button>
             }
@@ -273,7 +311,9 @@ export default function GameSelect() {
                     >
                       <option value="">Selecione…</option>
                       {disciplineOptions.map(d => (
-                        <option key={d} value={d}>{d}</option>
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
                       ))}
                     </select>
                   </Field>
@@ -297,7 +337,9 @@ export default function GameSelect() {
                           : 'Escolha a disciplina primeiro'}
                       </option>
                       {subareaOptions.map(s => (
-                        <option key={s} value={s}>{s}</option>
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
                       ))}
                     </select>
                   </Field>

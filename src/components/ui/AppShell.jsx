@@ -22,9 +22,15 @@ export function UserChip({ name, role }) {
       <span
         aria-hidden="true"
         style={{
-          width: 34, height: 34, borderRadius: '50%',
-          display: 'grid', placeItems: 'center',
-          fontFamily: 'var(--a2l-font-display)', fontWeight: 800, fontSize: 13, color: '#fff',
+          width: 34,
+          height: 34,
+          borderRadius: '50%',
+          display: 'grid',
+          placeItems: 'center',
+          fontFamily: 'var(--a2l-font-display)',
+          fontWeight: 800,
+          fontSize: 13,
+          color: '#fff',
           background: 'linear-gradient(135deg, var(--a2l-mint-500), var(--a2l-brand-500))',
           flex: 'none',
         }}
@@ -32,10 +38,20 @@ export function UserChip({ name, role }) {
         {initials(name)}
       </span>
       <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.25 }}>
-        <span style={{ fontFamily: 'var(--a2l-font-display)', fontWeight: 700, fontSize: 'var(--a2l-text-sm)' }}>
+        <span
+          style={{
+            fontFamily: 'var(--a2l-font-display)',
+            fontWeight: 700,
+            fontSize: 'var(--a2l-text-sm)',
+          }}
+        >
           {name || 'Aluno(a)'}
         </span>
-        {role && <span style={{ fontSize: 'var(--a2l-text-xs)', color: 'var(--a2l-ink-500)' }}>{role}</span>}
+        {role && (
+          <span style={{ fontSize: 'var(--a2l-text-xs)', color: 'var(--a2l-ink-500)' }}>
+            {role}
+          </span>
+        )}
       </span>
     </span>
   )
@@ -47,7 +63,7 @@ export function UserChip({ name, role }) {
  */
 export default function AppShell({
   width = 'lg',
-  back = null,          // string (rota), -1, ou { to, label }
+  back = null, // string (rota), -1, ou { to, label }
   backLabel = 'Voltar',
   actions = null,
   topbar = true,
@@ -104,7 +120,18 @@ export function AuthShell({ children }) {
       <div className="a2l-anim-in" style={{ textAlign: 'center' }}>
         <Logo size={46} iconSize={25} showText={false} />
         <h1 style={{ fontSize: 'var(--a2l-text-2xl)', marginTop: 14 }}>
-          Adapt<span style={{ background: 'linear-gradient(120deg, var(--a2l-brand-600), var(--a2l-mint-600))', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>2</span>Learn
+          Adapt
+          <span
+            style={{
+              background: 'linear-gradient(120deg, var(--a2l-brand-600), var(--a2l-mint-600))',
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              color: 'transparent',
+            }}
+          >
+            2
+          </span>
+          Learn
         </h1>
         <p style={{ color: 'var(--a2l-ink-500)', marginTop: 6, fontSize: 'var(--a2l-text-base)' }}>
           Aprender jogando, no seu ritmo.

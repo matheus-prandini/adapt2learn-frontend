@@ -34,16 +34,32 @@ export default function MetricsTab({ games }) {
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <div className="a2l-filters" style={{ marginBottom: 24 }}>
         <SegmentedControl value={view} onChange={setView} items={VIEWS} />
-        <DatePicker label="De" value={draftFrom} onChange={setDraftFrom} slotProps={{ textField: { size: 'small' } }} />
-        <DatePicker label="Até" value={draftTo} onChange={setDraftTo} slotProps={{ textField: { size: 'small' } }} />
-        <Button onClick={apply} icon={<LuSearch size={16} />} disabled={!isValid(draftFrom) || !isValid(draftTo)}>
+        <DatePicker
+          label="De"
+          value={draftFrom}
+          onChange={setDraftFrom}
+          slotProps={{ textField: { size: 'small' } }}
+        />
+        <DatePicker
+          label="Até"
+          value={draftTo}
+          onChange={setDraftTo}
+          slotProps={{ textField: { size: 'small' } }}
+        />
+        <Button
+          onClick={apply}
+          icon={<LuSearch size={16} />}
+          disabled={!isValid(draftFrom) || !isValid(draftTo)}
+        >
           Aplicar
         </Button>
       </div>
 
-      {view === 'platform'
-        ? <PlatformMetrics range={applied} />
-        : <GameMetricsBuilder games={games} range={applied} />}
+      {view === 'platform' ? (
+        <PlatformMetrics range={applied} />
+      ) : (
+        <GameMetricsBuilder games={games} range={applied} />
+      )}
     </LocalizationProvider>
   )
 }

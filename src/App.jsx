@@ -32,16 +32,79 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        <Route path="/" element={<Private><Dashboard /></Private>} />
-        <Route path="/select" element={<Private><GameSelect /></Private>} />
-        <Route path="/warmup" element={<Private><Warmup /></Private>} />
-        <Route path="/report" element={<Private><Report /></Private>} />
-        <Route path="/questionnaire" element={<Private><Questionnaire /></Private>} />
+        <Route
+          path="/"
+          element={
+            <Private>
+              <Dashboard />
+            </Private>
+          }
+        />
+        <Route
+          path="/select"
+          element={
+            <Private>
+              <GameSelect />
+            </Private>
+          }
+        />
+        <Route
+          path="/warmup"
+          element={
+            <Private>
+              <Warmup />
+            </Private>
+          }
+        />
+        <Route
+          path="/report"
+          element={
+            <Private>
+              <Report />
+            </Private>
+          }
+        />
+        <Route
+          path="/questionnaire"
+          element={
+            <Private>
+              <Questionnaire />
+            </Private>
+          }
+        />
 
-        <Route path="/creation" element={<Staff><TeacherCreation /></Staff>} />
-        <Route path="/admin" element={<Staff><Admin /></Staff>} />
-        <Route path="/admin/games/new" element={<Staff><NewGameForm /></Staff>} />
-        <Route path="/admin/games/:id" element={<Staff><GameDetails /></Staff>} />
+        <Route
+          path="/creation"
+          element={
+            <Staff>
+              <TeacherCreation />
+            </Staff>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <Staff>
+              <Admin />
+            </Staff>
+          }
+        />
+        <Route
+          path="/admin/games/new"
+          element={
+            <Staff>
+              <NewGameForm />
+            </Staff>
+          }
+        />
+        <Route
+          path="/admin/games/:id"
+          element={
+            <Staff>
+              <GameDetails />
+            </Staff>
+          }
+        />
 
         {/* Aliases antigos — os jogos (bundles externos) podem apontar para eles. */}
         <Route path="/dashboard" element={<Navigate to="/" replace />} />
