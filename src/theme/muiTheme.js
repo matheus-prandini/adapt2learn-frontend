@@ -11,8 +11,18 @@ export function createMuiTheme(mode = 'light') {
   return createTheme({
     palette: {
       mode,
-      primary: { main: colors.brand[500], dark: colors.brand[700], light: colors.brand[300], contrastText: '#fff' },
-      secondary: { main: colors.mint[500], dark: colors.mint[700], light: colors.mint[100], contrastText: '#fff' },
+      primary: {
+        main: colors.brand[500],
+        dark: colors.brand[700],
+        light: colors.brand[300],
+        contrastText: '#fff',
+      },
+      secondary: {
+        main: colors.mint[500],
+        dark: colors.mint[700],
+        light: colors.mint[100],
+        contrastText: '#fff',
+      },
       success: { main: colors.success },
       error: { main: colors.danger },
       warning: { main: colors.sun[600] },

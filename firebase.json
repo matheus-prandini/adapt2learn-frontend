@@ -1,11 +1,7 @@
 {
   "hosting": {
     "public": "build",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "headers": [
       {
         "source": "**/*.br",
@@ -16,25 +12,19 @@
       },
       {
         "source": "**/*.wasm.br",
-        "headers": [
-          { "key": "Content-Type", "value": "application/wasm" }
-        ]
+        "headers": [{ "key": "Content-Type", "value": "application/wasm" }]
       },
       {
         "source": "**/*.js.br",
-        "headers": [
-          { "key": "Content-Type", "value": "application/javascript" }
-        ]
+        "headers": [{ "key": "Content-Type", "value": "application/javascript" }]
       },
       {
         "source": "**/*.data.br",
-        "headers": [
-          { "key": "Content-Type", "value": "application/octet-stream" }
-        ]
+        "headers": [{ "key": "Content-Type", "value": "application/octet-stream" }]
       }
     ],
     "rewrites": [
-      { "source": "/api/**",  "run": { "serviceId": "adapt2learn", "region": "us-central1" } },
+      { "source": "/api/**", "run": { "serviceId": "adapt2learn", "region": "us-central1" } },
       { "source": "/games/**", "function": "serveGame" },
       { "source": "**", "destination": "/index.html" }
     ]

@@ -3,14 +3,26 @@
 
 export const colors = {
   brand: {
-    50: '#EEF0FF', 100: '#E1E4FF', 200: '#C7CCFF', 300: '#A6ACFF',
-    400: '#868DF7', 500: '#6C5CE7', 600: '#5A48DC', 700: '#4938B4', 800: '#372A87',
+    50: '#EEF0FF',
+    100: '#E1E4FF',
+    200: '#C7CCFF',
+    300: '#A6ACFF',
+    400: '#868DF7',
+    500: '#6C5CE7',
+    600: '#5A48DC',
+    700: '#4938B4',
+    800: '#372A87',
   },
   mint: { 50: '#E6FAF6', 100: '#C6F3EB', 500: '#10B9A3', 600: '#0C9B88', 700: '#0A7A6B' },
   sun: { 50: '#FFF7E6', 100: '#FFEDC2', 500: '#FFB020', 600: '#E4930A', 700: '#B87407' },
   ink: {
-    900: '#0C1024', 800: '#1B2137', 700: '#333B54', 600: '#4E5773',
-    500: '#6B748F', 400: '#939BB3', 300: '#B9C0D2',
+    900: '#0C1024',
+    800: '#1B2137',
+    700: '#333B54',
+    600: '#4E5773',
+    500: '#6B748F',
+    400: '#939BB3',
+    300: '#B9C0D2',
   },
   line: '#E4E7F2',
   lineSoft: '#EFF1F8',
@@ -28,14 +40,26 @@ export const colors = {
 // Mantém em sincronia com o bloco :root[data-theme='dark'] de global.css.
 export const darkColors = {
   brand: {
-    50: '#1B1E3A', 100: '#262A54', 200: '#343A72', 300: '#4C55A4',
-    400: '#7A82F0', 500: '#7B6BF2', 600: '#A49BFF', 700: '#BDB6FF', 800: '#D6D1FF',
+    50: '#1B1E3A',
+    100: '#262A54',
+    200: '#343A72',
+    300: '#4C55A4',
+    400: '#7A82F0',
+    500: '#7B6BF2',
+    600: '#A49BFF',
+    700: '#BDB6FF',
+    800: '#D6D1FF',
   },
   mint: { 50: '#0D2A28', 100: '#12403B', 500: '#17C9B1', 600: '#4EDCC7', 700: '#86EBDA' },
   sun: { 50: '#2E220C', 100: '#46340F', 500: '#FFB93A', 600: '#FFC968', 700: '#FFDB9B' },
   ink: {
-    900: '#F3F5FB', 800: '#E3E7F1', 700: '#C8CFDE', 600: '#A6AEC4',
-    500: '#8B94AB', 400: '#6E7691', 300: '#4F5773',
+    900: '#F3F5FB',
+    800: '#E3E7F1',
+    700: '#C8CFDE',
+    600: '#A6AEC4',
+    500: '#8B94AB',
+    400: '#6E7691',
+    300: '#4F5773',
   },
   line: '#272F49',
   lineSoft: '#1F2740',
@@ -82,7 +106,8 @@ export function getChartPalette(mode) {
 }
 
 export const font = {
-  display: "'Plus Jakarta Sans', 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  display:
+    "'Plus Jakarta Sans', 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
   body: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   mono: "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
 }
@@ -109,5 +134,14 @@ export function getShadow(mode) {
   return mode === 'dark' ? darkShadow : shadow
 }
 
-const tokens = { colors, darkColors, chartPalette, darkChartPalette, font, radius, shadow, darkShadow }
+const tokens = {
+  colors,
+  darkColors,
+  chartPalette,
+  darkChartPalette,
+  font,
+  radius,
+  shadow,
+  darkShadow,
+}
 export default tokens

@@ -1,0 +1,36 @@
+name: CI
+
+# Testes e build em todo pull request. O deploy continua exclusivo do
+# sync_deploy.yml, que dispara só em push na main — assim uma PR quebrada
+# nunca chega perto de produção, e a main recebe código já verificado.
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22.x'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
+
+      # public/games fica vazio aqui (o sync do GCS precisa de credenciais e
+      # só roda no deploy); o build do app não depende dos jogos.
+      - name: Build
+        run: npm run build

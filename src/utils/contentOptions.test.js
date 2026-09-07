@@ -1,8 +1,4 @@
-import {
-  buildContentCatalog,
-  filterAllowedSubareas,
-  hasSubareaRestriction,
-} from './contentOptions'
+import { buildContentCatalog, filterAllowedSubareas, hasSubareaRestriction } from './contentOptions'
 
 const docs = [
   { discipline: 'Matemática', subarea: 'Geometria Plana' },
@@ -16,15 +12,11 @@ describe('restrição de subárea por escola (estudo Messias Pedreiro)', () => {
   const subareas = catalog.getSubareas('Matemática')
 
   test('Messias Pedreiro só vê Geometria Plana', () => {
-    expect(filterAllowedSubareas('Messias Pedreiro', subareas)).toEqual([
-      'Geometria Plana',
-    ])
+    expect(filterAllowedSubareas('Messias Pedreiro', subareas)).toEqual(['Geometria Plana'])
   })
 
   test('comparação ignora caixa e espaços no school_id', () => {
-    expect(filterAllowedSubareas('  messias pedreiro ', subareas)).toEqual([
-      'Geometria Plana',
-    ])
+    expect(filterAllowedSubareas('  messias pedreiro ', subareas)).toEqual(['Geometria Plana'])
   })
 
   test('escolas sem restrição recebem a lista completa', () => {

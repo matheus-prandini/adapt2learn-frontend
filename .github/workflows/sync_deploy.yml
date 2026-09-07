@@ -50,15 +50,13 @@ jobs:
       # 7) Testes — rodam antes do build para falhar cedo. Cobrem, entre outras
       # coisas, a restrição de subárea por escola usada no estudo em andamento.
       - name: Run tests
-        env:
-          CI: true
-        run: npm test -- --watchAll=false
+        run: npm test
+
+      - name: Lint
+        run: npm run lint
 
       # 8) Build do frontend
       - name: Build frontend
-        env:
-          CI: false
-          NODE_OPTIONS: --openssl-legacy-provider
         run: npm run build
 
       # 9) Deploy no Firebase Hosting

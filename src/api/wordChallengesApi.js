@@ -26,10 +26,7 @@ export async function listWordChallengesForSchool(schoolId) {
   const res = await apiFetch(`/word-challenges/list?${qs}`)
   if (res.status === 404) return []
 
-  const data = await parseJsonOrThrow(
-    res,
-    'Não foi possível carregar opções de desafios.'
-  )
+  const data = await parseJsonOrThrow(res, 'Não foi possível carregar opções de desafios.')
   return normalizeWordChallengeList(data)
 }
 

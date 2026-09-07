@@ -83,9 +83,7 @@ export function buildContentCatalog(docs = [], wordChallengeItems = []) {
       const key = normalizeContentKey(discipline)
       const entry = byDisciplineKey.get(key)
       if (!entry) return []
-      return Array.from(entry.subareas.values()).sort((a, b) =>
-        a.localeCompare(b, 'pt-BR')
-      )
+      return Array.from(entry.subareas.values()).sort((a, b) => a.localeCompare(b, 'pt-BR'))
     },
   }
 }

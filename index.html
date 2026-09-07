@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#6C5CE7" />
+    <meta
+      name="description"
+      content="Adapt2Learn — plataforma de aprendizagem adaptativa por meio de jogos educacionais."
+    />
+
+    <!-- Tipografia: Plus Jakarta Sans (títulos) + Inter (texto) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <title>Adapt2Learn</title>
+
+    <!--
+      Resolve o tema antes do primeiro paint. Sem isto, uma pessoa com tema
+      escuro salvo veria um flash branco enquanto o React monta.
+      Mantenha a chave em sincronia com THEME_STORAGE_KEY (src/theme/ThemeContext.jsx).
+    -->
+    <script>
+      ;(function () {
+        try {
+          var stored = window.localStorage.getItem('a2l-theme')
+          var pref =
+            stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system'
+          var dark =
+            pref === 'dark' ||
+            (pref === 'system' &&
+              window.matchMedia &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
+          var meta = document.querySelector('meta[name="theme-color"]')
+          if (meta) meta.setAttribute('content', dark ? '#0B0F1E' : '#6C5CE7')
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light')
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <noscript>Você precisa habilitar o JavaScript para usar esta aplicação.</noscript>
+    <div id="root"></div>
+    <script type="module" src="/src/index.jsx"></script>
+  </body>
+</html>
