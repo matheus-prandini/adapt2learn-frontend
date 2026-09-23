@@ -122,3 +122,19 @@ export function getBankHealth({ domain, school_id, discipline, subarea }) {
   const qs = new URLSearchParams({ domain, school_id, discipline, subarea })
   return studyJson(`/study/bank-health?${qs}`)
 }
+
+/**
+ * Propõe ou aplica a alocação de onda e domínio tratado (§2 do protocolo).
+ *
+ * `dry_run: true` devolve a proposta, o equilíbrio realizado e a **semente**. A
+ * semente tem de voltar no apply: sem ela a alocação gravada seria outra que a
+ * mostrada na tela, e a reprodutibilidade que o artigo afirma deixaria de
+ * existir.
+ */
+export function allocateStudy(corpo) {
+  return studyJson('/study/allocate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(corpo),
+  })
+}

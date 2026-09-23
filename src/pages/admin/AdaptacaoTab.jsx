@@ -23,6 +23,7 @@ import { SCHOOLS } from '../../constants/schools'
 import { Alert, Badge, Button, Card, EmptyState, Loader, Stat } from '../../components/ui'
 import ActivationDialog from './ActivationDialog'
 import AdicionarParticipante from './AdicionarParticipante'
+import AlocacaoCard from './AlocacaoCard'
 import PrepararSessaoCard from './PrepararSessaoCard'
 import SectionTitle from './SectionTitle'
 
@@ -344,6 +345,9 @@ export default function AdaptacaoTab() {
           </table>
         </div>
       </Card>
+
+      {/* ------------------------------------------------------ alocação */}
+      <AlocacaoCard onApplied={() => carregar({ silencioso: true })} />
 
       {/* ----------------------------------------------------- preparação */}
       <PrepararSessaoCard domains={dominios} schools={SCHOOLS} />
