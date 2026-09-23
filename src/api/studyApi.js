@@ -103,3 +103,22 @@ export function updateStudyConfig(fields) {
     body: JSON.stringify(fields),
   })
 }
+
+/**
+ * Dispara o pré-cálculo do `W` da onda. **Demora minutos** — a chamada é
+ * síncrona no backend de propósito (ver `POST /study/precompute`), então quem
+ * chama precisa manter o estado de carregamento por todo esse tempo.
+ */
+export function precomputeWeights(corpo) {
+  return studyJson('/study/precompute', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(corpo),
+  })
+}
+
+/** Relatório de curadoria do banco: itens por banda e rejeitados com motivo. */
+export function getBankHealth({ domain, school_id, discipline, subarea }) {
+  const qs = new URLSearchParams({ domain, school_id, discipline, subarea })
+  return studyJson(`/study/bank-health?${qs}`)
+}

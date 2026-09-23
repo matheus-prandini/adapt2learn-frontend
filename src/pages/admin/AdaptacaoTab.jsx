@@ -19,8 +19,11 @@ import {
   STUDY_ERROR,
   updateParticipant,
 } from '../../api/studyApi'
+import { SCHOOLS } from '../../constants/schools'
 import { Alert, Badge, Button, Card, EmptyState, Loader, Stat } from '../../components/ui'
 import ActivationDialog from './ActivationDialog'
+import AdicionarParticipante from './AdicionarParticipante'
+import PrepararSessaoCard from './PrepararSessaoCard'
 import SectionTitle from './SectionTitle'
 
 /**
@@ -342,6 +345,9 @@ export default function AdaptacaoTab() {
         </div>
       </Card>
 
+      {/* ----------------------------------------------------- preparação */}
+      <PrepararSessaoCard domains={dominios} schools={SCHOOLS} />
+
       {/* --------------------------------------------------- participantes */}
       <Card>
         <SectionTitle
@@ -355,10 +361,17 @@ export default function AdaptacaoTab() {
           Participantes
         </SectionTitle>
 
+        <AdicionarParticipante
+          domains={dominios}
+          schools={SCHOOLS}
+          jaNoRoster={new Set(participantes.map(p => p.uid))}
+          onAdded={() => carregar({ silencioso: true })}
+        />
+
         {participantes.length === 0 ? (
           <EmptyState
             title="Nenhum participante no roster"
-            description="Matricule os participantes do estudo antes da alocação."
+            description="Use o formulário acima para matricular os participantes do estudo."
           />
         ) : (
           <div className="a2l-table-wrap">
