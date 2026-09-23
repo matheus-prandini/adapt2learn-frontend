@@ -24,6 +24,7 @@ import { Alert, Badge, Button, Card, EmptyState, Loader, Stat } from '../../comp
 import ActivationDialog from './ActivationDialog'
 import AdicionarParticipante from './AdicionarParticipante'
 import AlocacaoCard from './AlocacaoCard'
+import BancoDePalavrasCard from './BancoDePalavrasCard'
 import PrepararSessaoCard from './PrepararSessaoCard'
 import SectionTitle from './SectionTitle'
 
@@ -351,6 +352,9 @@ export default function AdaptacaoTab() {
 
       {/* ----------------------------------------------------- preparação */}
       <PrepararSessaoCard domains={dominios} schools={SCHOOLS} />
+
+      {/* ------------------------------------------ banco e régua */}
+      <BancoDePalavrasCard schools={SCHOOLS} />
 
       {/* --------------------------------------------------- participantes */}
       <Card>

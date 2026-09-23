@@ -138,3 +138,21 @@ export function allocateStudy(corpo) {
     body: JSON.stringify(corpo),
   })
 }
+
+/** Banco de palavras item a item, com banda, sondagem e posição na régua. */
+export function getWordBank({ school_id, discipline, subarea }) {
+  const qs = new URLSearchParams({ school_id, discipline, subarea })
+  return studyJson(`/study/word-bank?${qs}`)
+}
+
+/**
+ * Marca ou desmarca um item como sondagem. **Muda a régua do estudo** — a
+ * chamada vai para a trilha de auditoria do lado do backend.
+ */
+export function setProbe(challengeId, probe) {
+  return studyJson(`/study/word-bank/${encodeURIComponent(challengeId)}/probe`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ probe }),
+  })
+}
