@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
-import { LuChartColumn, LuUsers, LuGamepad2, LuTarget, LuSettings } from 'react-icons/lu'
+import {
+  LuChartColumn,
+  LuUsers,
+  LuGamepad2,
+  LuTarget,
+  LuSettings,
+  LuActivity,
+} from 'react-icons/lu'
 import { listGamesWithIcons } from '../api/games'
 import { SCHOOLS } from '../constants/schools'
 import { AppShell, PageHead, Tabs } from '../components/ui'
@@ -9,6 +16,7 @@ import MetricsTab from './admin/MetricsTab'
 import StudentsTab from './admin/StudentsTab'
 import SessionsTab from './admin/SessionsTab'
 import GamesTab from './admin/GamesTab'
+import AdaptacaoTab from './admin/AdaptacaoTab'
 
 const ADMIN_TABS = [
   { id: 'metrics', label: 'Métricas', icon: <LuChartColumn size={16} /> },
@@ -16,6 +24,7 @@ const ADMIN_TABS = [
   { id: 'sessions', label: 'Sessões', icon: <LuTarget size={16} /> },
   { id: 'games', label: 'Jogos', icon: <LuGamepad2 size={16} /> },
   { id: 'personalization', label: 'Personalização', icon: <LuSettings size={16} /> },
+  { id: 'adaptacao', label: 'Adaptação', icon: <LuActivity size={16} /> },
 ]
 
 /**
@@ -110,6 +119,7 @@ export default function Admin() {
           />
         )}
         {panel('personalization', <PersonalizationPanel />)}
+        {panel('adaptacao', <AdaptacaoTab />)}
       </div>
     </AppShell>
   )
