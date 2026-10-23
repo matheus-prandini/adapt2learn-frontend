@@ -93,6 +93,9 @@ jobs:
       # 10) Deploy no Firebase Hosting
       # firebase-tools direto (autentica via ADC exportado pelo
       # google-github-actions/auth -> GOOGLE_APPLICATION_CREDENTIALS).
+      # Versao fixa de proposito: com o range ^15 o CI pegou a 15.34.1
+      # sozinho, que passou a checar a API do Hosting via serviceusage
+      # antes do deploy, e quebrou sem ninguem ter mexido no workflow.
       # Ao reenviar/atualizar um jogo que ja existe, o build pode sair identico
       # ao que ja esta no ar; o Firebase deduplica a versao e recusa a release
       # com 400 "is the current active version". Isso NAO e falha real (nada
@@ -102,7 +105,7 @@ jobs:
         run: |
           set -o pipefail
           set +e
-          npx firebase-tools@^15 deploy --only hosting --project adapt2learn-api --non-interactive 2>&1 | tee deploy.log
+          npx firebase-tools@15.34.1 deploy --only hosting --project adapt2learn-api --non-interactive 2>&1 | tee deploy.log
           status=${PIPESTATUS[0]}
           if [ "$status" -ne 0 ]; then
             if grep -q "is the current active version" deploy.log; then
