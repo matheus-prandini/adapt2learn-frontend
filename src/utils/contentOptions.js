@@ -13,12 +13,11 @@ export function normalizeContentKey(value) {
 /**
  * Restrição TEMPORÁRIA por escola (estudo em andamento): enquanto a escola
  * estiver listada aqui, os alunos só conseguem selecionar as subáreas
- * permitidas. Remova a entrada da escola para liberar todas novamente.
+ * permitidas. Vazio = nenhuma escola restrita. Para travar de novo, adicione
+ * a entrada (ex.: `'messias pedreiro': ['Geometria Plana']`).
  * Chaves e valores são comparados via normalizeContentKey (case/acentos ok).
  */
-const SCHOOL_SUBAREA_ALLOWLIST = {
-  'messias pedreiro': ['Geometria Plana'],
-}
+const SCHOOL_SUBAREA_ALLOWLIST = {}
 
 /**
  * @param {string} [schoolId]
