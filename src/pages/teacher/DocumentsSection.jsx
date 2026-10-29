@@ -31,6 +31,8 @@ export default function DocumentsSection({ discipline = '', subarea = '', onCont
   const [loadingEx, setLoadingEx] = useState(false)
   const [pendingDelete, setPendingDelete] = useState(null) // question_id aguardando confirmação
   const [deleting, setDeleting] = useState(false)
+  const [pendingDeleteDoc, setPendingDeleteDoc] = useState(null) // documento aguardando confirmação
+  const [deletingDoc, setDeletingDoc] = useState(false)
 
   const loadDocs = async () => {
     const res = await apiFetch('/documents')
@@ -131,6 +133,37 @@ export default function DocumentsSection({ discipline = '', subarea = '', onCont
       toast.error(err.message || 'Erro ao remover exemplo')
     } finally {
       setDeleting(false)
+    }
+  }
+
+  // Só sai documento vazio, e quem decide isso é o backend: com questão em
+  // session_questions ou warmup_questions ele responde 409 em vez de apagar.
+  const confirmDeleteDocument = async () => {
+    if (!pendingDeleteDoc) return
+    const doc = pendingDeleteDoc
+    setDeletingDoc(true)
+    try {
+      const res = await apiFetch(`/documents/${doc.id}`, { method: 'DELETE' })
+      await parseJsonOrThrow(res, 'Erro ao excluir documento.')
+      setDocs(prev => prev.filter(d => d.id !== doc.id))
+      if (selectedDoc?.id === doc.id) {
+        setSelectedDoc(null)
+        setExamples([])
+      }
+      toast.success('Documento excluído')
+      // As opções de disciplina/subárea são montadas a partir dos documentos.
+      onContentChanged?.()
+    } catch (err) {
+      console.error(err)
+      // A mensagem do 409 cita a collection; para o professor isso não diz nada.
+      toast.error(
+        err.status === 409
+          ? 'Este documento já tem questões geradas. Remova as questões antes de excluí-lo.'
+          : err.message || 'Erro ao excluir documento'
+      )
+    } finally {
+      setDeletingDoc(false)
+      setPendingDeleteDoc(null)
     }
   }
 
@@ -272,6 +305,19 @@ export default function DocumentsSection({ discipline = '', subarea = '', onCont
                       <Badge tone="neutral">{d.subarea}</Badge>
                     </div>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon={<LuTrash2 size={14} />}
+                    aria-label={`Excluir ${d.filename}`}
+                    title="Excluir documento (só sem questões geradas)"
+                    onClick={e => {
+                      e.stopPropagation()
+                      setPendingDeleteDoc(d)
+                    }}
+                    onKeyDown={e => e.stopPropagation()}
+                    style={{ color: 'var(--a2l-danger)', flexShrink: 0 }}
+                  />
                 </div>
               </Card>
             ))}
@@ -371,6 +417,21 @@ export default function DocumentsSection({ discipline = '', subarea = '', onCont
         busy={deleting}
         onConfirm={confirmDeleteExample}
         onCancel={() => setPendingDelete(null)}
+      />
+
+      <ConfirmDialog
+        open={!!pendingDeleteDoc}
+        tone="danger"
+        title="Excluir documento"
+        message={
+          pendingDeleteDoc
+            ? `“${pendingDeleteDoc.filename}” sai da sua lista. Só é removido documento sem nenhuma questão gerada — havendo questões, nada é apagado.`
+            : ''
+        }
+        confirmLabel="Excluir"
+        busy={deletingDoc}
+        onConfirm={confirmDeleteDocument}
+        onCancel={() => setPendingDeleteDoc(null)}
       />
     </div>
   )
